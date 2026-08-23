@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-orange: #F15A24;
+    --brand-bg: #FAF6EE;
+    --brand-dark: #1C1C1C;
+    --brand-muted: #6B6B6B;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #FAF6EE;
+    color: #1C1C1C;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #FAF6EE;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #E0D9CB;
+    border-radius: 6px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #F15A24;
+  }
+}
+
+/* App utility classes */
+.brand-gradient {
+  background: linear-gradient(135deg, #FF8A00 0%, #E8380D 100%);
+}
+
+.brand-gradient-subtle {
+  background: linear-gradient(135deg, #FFF5F0 0%, #FFEBE3 100%);
+}
+
+.brand-gradient-card {
+  background: linear-gradient(135deg, rgba(255, 138, 0, 0.05) 0%, rgba(232, 56, 13, 0.08) 100%);
+}
+
+.brand-border-gradient {
+  border-image: linear-gradient(135deg, #FF8A00, #E8380D) 1;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #FF8A00 0%, #E8380D 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Android ripple / tap feedback */
+.active-press:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Glassmorphic elements */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-badge {
+  background: rgba(241, 90, 36, 0.12);
+  backdrop-filter: blur(6px);
+}
+
+/* Safe area insets for iOS/Android notches */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
