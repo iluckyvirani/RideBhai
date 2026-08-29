@@ -23,7 +23,8 @@ import {
   ChevronRight,
   HelpCircle,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Building
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 
@@ -31,6 +32,7 @@ interface LandingPageProps {
   onSearchInitiated: (params: { fromCity: string; toCity: string; date: string; seats: number }) => void;
   onOpenDriverPortal: () => void;
   onOpenRiderPortal: () => void;
+  onOpenAgencyPortal?: () => void;
   onOpenAdminPortal: () => void;
 }
 
@@ -38,6 +40,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onSearchInitiated,
   onOpenDriverPortal,
   onOpenRiderPortal,
+  onOpenAgencyPortal,
   onOpenAdminPortal,
 }) => {
   const { packages, rides, drivers } = useAppStore();
@@ -96,6 +99,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <LandingNav
         onOpenRiderApp={onOpenRiderPortal}
         onOpenDriverApp={onOpenDriverPortal}
+        onOpenAgencyPortal={onOpenAgencyPortal}
         onOpenAdminPortal={onOpenAdminPortal}
       />
 
@@ -274,29 +278,152 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             </div>
 
-            {/* Dual Driver CTA Banner */}
-            <div className="max-w-4xl mx-auto mt-8 p-5 sm:p-6 bg-[#1C1C1C] text-white rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-white/10">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#F15A24] flex items-center justify-center text-white flex-shrink-0">
-                  <Car className="w-6 h-6" />
+            {/* Small Hero Banners Grid */}
+            <div className="max-w-4xl mx-auto mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Driver Banner with Visual Image */}
+              <div
+                onClick={onOpenDriverPortal}
+                className="group relative overflow-hidden p-4 sm:p-5 bg-gradient-to-r from-[#1C1C1C] via-[#2A2A2A] to-[#1C1C1C] text-white rounded-3xl shadow-xl border border-white/10 flex items-center justify-between gap-3 hover:border-[#F15A24] transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  {/* Photo thumbnail */}
+                  <div className="relative w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 border border-white/20 shadow-md">
+                    <img
+                      src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=200&q=80"
+                      alt="Drive on Highway"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-1 right-1 w-5 h-5 rounded-lg bg-[#F15A24] flex items-center justify-center text-white">
+                      <Car className="w-3 h-3" />
+                    </div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="px-2 py-0.5 rounded-full bg-[#F15A24]/20 text-[#FF7A45] border border-[#F15A24]/30 text-[9px] font-extrabold uppercase">
+                        For Car Owners
+                      </span>
+                    </div>
+                    <h4 className="text-xs sm:text-sm font-extrabold truncate text-white">
+                      Driving Intercity? Share Seats!
+                    </h4>
+                    <p className="text-[11px] text-white/75 truncate">
+                      Earn up to <strong className="text-[#FF7A45]">₹50,000/mo</strong> • Offset 100% fuel
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-sm sm:text-base font-extrabold">
-                    Are you driving intercity? Share your empty seats!
-                  </h4>
-                  <p className="text-xs text-white/70">
-                    Earn up to <strong>₹25,000–₹50,000/month</strong> and offset 100% of fuel & tolls.
-                  </p>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDriverPortal();
+                  }}
+                  className="px-3.5 py-2 bg-white text-[#1C1C1C] hover:bg-[#FFF5F0] font-extrabold text-[11px] rounded-xl shadow-xs transition-all flex items-center gap-1 flex-shrink-0 active-press whitespace-nowrap"
+                >
+                  <span>Driver Center</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#F15A24]" />
+                </button>
+              </div>
+
+              {/* Travel Agency Banner with Visual Image */}
+              <div
+                onClick={onOpenAgencyPortal || onOpenDriverPortal}
+                className="group relative overflow-hidden p-4 sm:p-5 bg-gradient-to-r from-white via-[#FFF9F5] to-white text-[#1C1C1C] rounded-3xl shadow-lg border border-[#EBE5D8] flex items-center justify-between gap-3 hover:border-[#F15A24] transition-all cursor-pointer"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  {/* Photo thumbnail */}
+                  <div className="relative w-14 h-14 rounded-2xl overflow-hidden flex-shrink-0 border border-[#FFD8CB] shadow-md">
+                    <img
+                      src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=200&q=80"
+                      alt="Travel Agency Tours"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute bottom-1 right-1 w-5 h-5 rounded-lg bg-[#00A86B] flex items-center justify-center text-white">
+                      <Building className="w-3 h-3" />
+                    </div>
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[9px] font-extrabold uppercase">
+                        For Travel Agencies
+                      </span>
+                    </div>
+                    <h4 className="text-xs sm:text-sm font-extrabold truncate text-[#1C1C1C]">
+                      Agency Tour Partner Portal
+                    </h4>
+                    <p className="text-[11px] text-[#6B6B6B] truncate">
+                      Broadcast client tours to <strong>5,000+ drivers</strong>
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onOpenAgencyPortal) onOpenAgencyPortal();
+                    else onOpenDriverPortal();
+                  }}
+                  className="px-3.5 py-2 bg-[#FAF6EE] hover:bg-[#FFF0EB] text-[#1C1C1C] hover:text-[#F15A24] border border-[#EBE5D8] hover:border-[#F15A24] font-extrabold text-[11px] rounded-xl transition-all flex items-center gap-1 flex-shrink-0 active-press whitespace-nowrap"
+                >
+                  <span>Post Tours</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-[#F15A24]" />
+                </button>
+              </div>
+            </div>
+
+            {/* Visual Hero Showcase Banner with Real Highway Travel Image */}
+            <div className="max-w-4xl mx-auto mt-8 relative rounded-3xl overflow-hidden shadow-2xl border border-[#EBE5D8] group">
+              <div className="relative h-64 sm:h-80 w-full overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1400&q=85"
+                  alt="Ride Bhai Highway Carpooling"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-90"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
+
+                {/* Floating Highlights Badges */}
+                <div className="absolute top-4 left-4 sm:top-6 sm:left-6 flex flex-wrap items-center gap-2">
+                  <div className="px-3 py-1.5 rounded-full bg-white/90 backdrop-blur-md text-[#1C1C1C] text-xs font-extrabold flex items-center gap-1.5 shadow-md">
+                    <ShieldCheck className="w-4 h-4 text-[#00A86B]" />
+                    <span>100% KYC Verified Drivers</span>
+                  </div>
+                  <div className="hidden sm:inline-flex px-3 py-1.5 rounded-full bg-[#1C1C1C]/80 backdrop-blur-md text-white text-xs font-extrabold items-center gap-1.5 border border-white/20">
+                    <Sparkles className="w-3.5 h-3.5 text-[#F15A24]" />
+                    <span>50,000+ Completed Trips</span>
+                  </div>
+                </div>
+
+                {/* Floating Bottom Card Overlays */}
+                <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+                  <div className="space-y-1.5 text-white max-w-lg">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F15A24] text-white text-[10px] font-extrabold uppercase">
+                      Live Route Example
+                    </div>
+                    <h3 className="text-lg sm:text-2xl font-black leading-tight drop-shadow-md">
+                      Delhi NCR ↔ Jaipur Highway
+                    </h3>
+                    <p className="text-xs text-white/80 line-clamp-2">
+                      Travel in comfortable AC SUVs & Sedans. Meet verified co-travelers and share fuel costs seamlessly.
+                    </p>
+                  </div>
+
+                  <div className="p-3 sm:p-4 rounded-2xl bg-white/95 backdrop-blur-md border border-white/30 shadow-xl text-[#1C1C1C] flex items-center gap-3 self-stretch sm:self-auto flex-shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-[#FFF0EB] text-[#F15A24] flex items-center justify-center font-black text-sm">
+                      ₹
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-[#6B6B6B] block uppercase">Average Fare</span>
+                      <strong className="text-base font-black text-[#F15A24]">₹450 / seat</strong>
+                      <span className="text-[10px] text-[#00A86B] font-bold block">Save ~60% vs Cabs</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={onOpenDriverPortal}
-                className="px-6 py-3 bg-white text-[#1C1C1C] hover:bg-[#FFF5F0] font-extrabold text-xs rounded-2xl shadow-md transition-all flex items-center gap-2 flex-shrink-0 active-press"
-              >
-                <span>Register as Driver</span>
-                <ChevronRight className="w-4 h-4 text-[#F15A24]" />
-              </button>
             </div>
           </div>
         </section>
@@ -483,6 +610,89 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </section>
 
+        {/* FOR TRAVEL AGENCIES PARTNER SECTION */}
+        <section id="travel-agencies" className="py-20 bg-white relative overflow-hidden border-t border-[#EBE5D8]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF0EB] border border-[#FFD8CB]">
+                <Sparkles className="w-3.5 h-3.5 text-[#F15A24]" />
+                <span className="text-[11px] font-extrabold text-[#F15A24] uppercase tracking-wider">
+                  For Travel Agencies & Tour Operators
+                </span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#1C1C1C] font-display">
+                Already Have Client Tour Bookings? <br />
+                <span className="text-gradient">Broadcast Directly to 5,000+ Drivers</span>
+              </h2>
+              <p className="text-sm text-[#6B6B6B] leading-relaxed">
+                Connect your pre-booked tourist packages (e.g. <em>Agra to Jaipur 4 Pax 3D/1N</em>) with verified vehicle drivers. Keep your commission and let drivers claim trips via instant WhatsApp.
+              </p>
+            </div>
+
+            {/* 3 Step Agency Workflow */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              <div className="bg-[#FAF6EE] rounded-3xl p-6 border border-[#EBE5D8] space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#F15A24] text-white font-extrabold flex items-center justify-center">
+                  1
+                </div>
+                <h3 className="text-sm font-extrabold text-[#1C1C1C]">
+                  Register & Upload Business KYC
+                </h3>
+                <p className="text-xs text-[#6B6B6B] leading-relaxed">
+                  Submit GST, Trade License, and Company PAN. Our compliance team verifies your agency to guarantee safety and prevent spam.
+                </p>
+              </div>
+
+              <div className="bg-[#FAF6EE] rounded-3xl p-6 border border-[#EBE5D8] space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#F15A24] text-white font-extrabold flex items-center justify-center">
+                  2
+                </div>
+                <h3 className="text-sm font-extrabold text-[#1C1C1C]">
+                  Activate Posting Subscription
+                </h3>
+                <p className="text-xs text-[#6B6B6B] leading-relaxed">
+                  Choose a flexible agency posting package to broadcast unlimited tour leads with zero commission deduction on trip payouts.
+                </p>
+              </div>
+
+              <div className="bg-[#FAF6EE] rounded-3xl p-6 border border-[#EBE5D8] space-y-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#00A86B] text-white font-extrabold flex items-center justify-center">
+                  3
+                </div>
+                <h3 className="text-sm font-extrabold text-[#1C1C1C]">
+                  Post Tours & Receive Driver Calls
+                </h3>
+                <p className="text-xs text-[#6B6B6B] leading-relaxed">
+                  Enter route, pax count, days/nights, total client price, and your agency commission cut. Verified drivers directly message you on WhatsApp.
+                </p>
+              </div>
+            </div>
+
+            {/* Example Live Card Banner */}
+            <div className="p-6 rounded-3xl bg-[#1C1C1C] text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-emerald-400 text-[10px] font-bold">
+                  <span>★ Example Live Tour Posting</span>
+                </div>
+                <h4 className="text-base font-extrabold">
+                  Agra → Jaipur (4 Members • 3 Days 1 Night • AC Sedan)
+                </h4>
+                <p className="text-xs text-white/70">
+                  Total Client Price: <strong>₹1,000</strong> • Agency Commission: <strong className="text-[#FF7A45]">₹200</strong> • Driver Net Payout: <strong className="text-emerald-400">₹800</strong>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={onOpenAgencyPortal}
+                className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#F15A24] to-[#FF7A45] hover:opacity-90 text-white font-extrabold text-xs shadow-md active-press whitespace-nowrap"
+              >
+                Register as Travel Agency Partner
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* EARNINGS CALCULATOR */}
         <EarningsCalculator onRegisterDriver={onOpenDriverPortal} />
 
@@ -621,7 +831,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             {/* Brand column */}
             <div className="space-y-4 md:col-span-1">
               <div className="bg-white/10 p-2 rounded-2xl inline-block">
-                <Logo size="md" showTagline={false} />
+                <Logo size="md" showTagline={false} variant="light" />
               </div>
               <p className="text-xs text-white/60 leading-relaxed">
                 India’s leading intercity highway carpool network. Connecting verified drivers and passengers for split fuel costs.

@@ -34,7 +34,7 @@ export const RiderChatView: React.FC<RiderChatViewProps> = ({ selectedRideId }) 
   };
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-150px)] pb-1 animate-fade-in">
+    <div className="flex flex-col h-[calc(100vh-175px)] sm:h-[calc(100vh-165px)] pb-1 animate-fade-in">
       {/* Top Driver Context Bar */}
       {driver && (
         <div className="bg-white rounded-3xl p-3 border border-[#EBE5D8] shadow-xs flex items-center justify-between mb-2 flex-shrink-0">
@@ -67,7 +67,7 @@ export const RiderChatView: React.FC<RiderChatViewProps> = ({ selectedRideId }) 
       )}
 
       {/* Messages Thread */}
-      <div className="flex-1 overflow-y-auto space-y-2.5 p-1 min-h-0 pr-1.5">
+      <div className="flex-1 overflow-y-auto space-y-2.5 p-1 min-h-0 pr-1">
         {chats.map((msg) => {
           const isMe = msg.senderRole === 'rider';
           return (
@@ -96,7 +96,7 @@ export const RiderChatView: React.FC<RiderChatViewProps> = ({ selectedRideId }) 
         })}
       </div>
 
-      {/* Quick Replies Carousel */}
+      {/* Quick Replies Carousel without scrollbar */}
       <div className="py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar flex-shrink-0">
         {quickReplies.map((qr, idx) => (
           <button

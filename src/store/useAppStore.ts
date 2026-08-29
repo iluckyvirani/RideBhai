@@ -15,6 +15,13 @@ import {
   NotificationItem,
   DisputeItem,
   AppViewMode,
+  TravelAgency,
+  AgencyStatus,
+  AgencyDocuments,
+  AgencyPackage,
+  AgencyActiveSubscription,
+  AgencyTripPost,
+  AgencyTripStatus,
 } from '../types';
 import { INITIAL_DRIVERS } from '../data/mockDrivers';
 import { INITIAL_RIDES } from '../data/mockRides';
@@ -25,6 +32,12 @@ import { INITIAL_BOOKINGS } from '../data/mockBookings';
 import { INITIAL_CHATS } from '../data/mockChats';
 import { INITIAL_DISPUTES } from '../data/mockDisputes';
 import { INITIAL_NOTIFICATIONS } from '../data/mockNotifications';
+import {
+  INITIAL_AGENCIES,
+  INITIAL_AGENCY_PACKAGES,
+  INITIAL_AGENCY_SUBSCRIPTIONS,
+  INITIAL_AGENCY_TRIPS,
+} from '../data/mockAgencies';
 
 const STORAGE_KEYS = {
   ROLE: 'ridebhai_role',
@@ -42,6 +55,11 @@ const STORAGE_KEYS = {
   APP_VIEW: 'ridebhai_app_view_v1',
   RIDER_AUTH: 'ridebhai_rider_auth_v1',
   DRIVER_AUTH: 'ridebhai_driver_auth_v1',
+  AGENCY_AUTH: 'ridebhai_agency_auth_v1',
+  AGENCIES: 'ridebhai_agencies_v1',
+  AGENCY_PACKAGES: 'ridebhai_agency_packages_v1',
+  AGENCY_SUBSCRIPTIONS: 'ridebhai_agency_subscriptions_v1',
+  AGENCY_TRIPS: 'ridebhai_agency_trips_v1',
 };
 
 // Safe JSON parser from LocalStorage
@@ -72,6 +90,7 @@ export function useAppStore() {
   const [appView, setAppViewState] = useState<AppViewMode>(() => loadFromStorage(STORAGE_KEYS.APP_VIEW, 'landing'));
   const [isRiderLoggedIn, setIsRiderLoggedInState] = useState<boolean>(() => loadFromStorage(STORAGE_KEYS.RIDER_AUTH, false));
   const [isDriverLoggedIn, setIsDriverLoggedInState] = useState<boolean>(() => loadFromStorage(STORAGE_KEYS.DRIVER_AUTH, false));
+  const [isAgencyLoggedIn, setIsAgencyLoggedInState] = useState<boolean>(() => loadFromStorage(STORAGE_KEYS.AGENCY_AUTH, false));
   const [role, setRoleState] = useState<UserRole>(() => loadFromStorage(STORAGE_KEYS.ROLE, 'rider'));
   const [hasOnboarded, setHasOnboardedState] = useState<boolean>(() => loadFromStorage(STORAGE_KEYS.ONBOARDED, true));
   const [drivers, setDriversState] = useState<Driver[]>(() => loadFromStorage(STORAGE_KEYS.DRIVERS, INITIAL_DRIVERS));
@@ -84,10 +103,21 @@ export function useAppStore() {
   const [disputes, setDisputesState] = useState<DisputeItem[]>(() => loadFromStorage(STORAGE_KEYS.DISPUTES, INITIAL_DISPUTES));
   const [notifications, setNotificationsState] = useState<NotificationItem[]>(() => loadFromStorage(STORAGE_KEYS.NOTIFICATIONS, INITIAL_NOTIFICATIONS));
 
+  // Agency specific state
+  const [agencies, setAgenciesState] = useState<TravelAgency[]>(() => loadFromStorage(STORAGE_KEYS.AGENCIES, INITIAL_AGENCIES));
+  const [agencyPackages, setAgencyPackagesState] = useState<AgencyPackage[]>(() => loadFromStorage(STORAGE_KEYS.AGENCY_PACKAGES, INITIAL_AGENCY_PACKAGES));
+  const [agencySubscriptions, setAgencySubscriptionsState] = useState<AgencyActiveSubscription[]>(() => loadFromStorage(STORAGE_KEYS.AGENCY_SUBSCRIPTIONS, INITIAL_AGENCY_SUBSCRIPTIONS));
+  const [agencyTripPosts, setAgencyTripPostsState] = useState<AgencyTripPost[]>(() => loadFromStorage(STORAGE_KEYS.AGENCY_TRIPS, INITIAL_AGENCY_TRIPS));
+
   // Current active driver profile (defaults to Aman Singhal drv-current)
   const currentDriver = useMemo(() => {
     return drivers.find((d) => d.id === 'drv-current') || drivers[0];
   }, [drivers]);
+
+  // Current active agency profile
+  const currentAgency = useMemo(() => {
+    return agencies.find((a) => a.id === 'agency-current') || agencies[0];
+  }, [agencies]);
 
   // View Navigation
   const setAppView = useCallback((view: AppViewMode) => {
@@ -148,6 +178,38 @@ export function useAppStore() {
     notifyListeners();
   }, []);
 
+  // Agency Auth Actions
+  const loginAgency = useCallback((phone: string, agencyName?: string, ownerName?: string, city?: string) => {
+    setIsAgencyLoggedInState(true);
+    saveToStorage(STORAGE_KEYS.AGENCY_AUTH, true);
+    setAgenciesState((prev) => {
+      const exists = prev.find((a) => a.id === 'agency-current');
+      if (exists) {
+        const updated = prev.map((a) => {
+          if (a.id === 'agency-current') {
+            return {
+              ...a,
+              agencyName: agencyName || a.agencyName,
+              ownerName: ownerName || a.ownerName,
+              phone: phone || a.phone,
+              city: city || a.city,
+            };
+          }
+          return a;
+        });
+        saveToStorage(STORAGE_KEYS.AGENCIES, updated);
+        return updated;
+      }
+      return prev;
+    });
+    notifyListeners();
+  }, []);
+
+  const logoutAgency = useCallback(() => {
+    setIsAgencyLoggedInState(false);
+    saveToStorage(STORAGE_KEYS.AGENCY_AUTH, false);
+    notifyListeners();
+  }, []);
 
   // Persist whenever state changes
   const setRole = useCallback((newRole: UserRole) => {
@@ -234,6 +296,42 @@ export function useAppStore() {
     notifyListeners();
   }, []);
 
+  const updateAgencies = useCallback((updater: (prev: TravelAgency[]) => TravelAgency[]) => {
+    setAgenciesState((prev) => {
+      const next = updater(prev);
+      saveToStorage(STORAGE_KEYS.AGENCIES, next);
+      return next;
+    });
+    notifyListeners();
+  }, []);
+
+  const updateAgencyPackages = useCallback((updater: (prev: AgencyPackage[]) => AgencyPackage[]) => {
+    setAgencyPackagesState((prev) => {
+      const next = updater(prev);
+      saveToStorage(STORAGE_KEYS.AGENCY_PACKAGES, next);
+      return next;
+    });
+    notifyListeners();
+  }, []);
+
+  const updateAgencySubscriptions = useCallback((updater: (prev: AgencyActiveSubscription[]) => AgencyActiveSubscription[]) => {
+    setAgencySubscriptionsState((prev) => {
+      const next = updater(prev);
+      saveToStorage(STORAGE_KEYS.AGENCY_SUBSCRIPTIONS, next);
+      return next;
+    });
+    notifyListeners();
+  }, []);
+
+  const updateAgencyTripPosts = useCallback((updater: (prev: AgencyTripPost[]) => AgencyTripPost[]) => {
+    setAgencyTripPostsState((prev) => {
+      const next = updater(prev);
+      saveToStorage(STORAGE_KEYS.AGENCY_TRIPS, next);
+      return next;
+    });
+    notifyListeners();
+  }, []);
+
   // --- CORE BOOST LOGIC: Computed Live On Every Read ---
   const isDriverBoosted = useCallback((driverId: string): boolean => {
     const now = Date.now();
@@ -248,9 +346,51 @@ export function useAppStore() {
     return { pkg, expiresAt: activeDP.expiresAt };
   }, [driverPackages, packages]);
 
+  // --- AGENCY SUBSCRIPTION & VERIFICATION SELECTORS ---
+  const getAgencyActiveSubscription = useCallback((agencyId: string): { sub: AgencyActiveSubscription; pkg: AgencyPackage } | null => {
+    const now = Date.now();
+    const activeSub = agencySubscriptions.find((s) => s.agencyId === agencyId && s.expiresAt > now && s.postsRemaining > 0);
+    if (!activeSub) return null;
+    const pkg = agencyPackages.find((p) => p.id === activeSub.packageId) || agencyPackages[0];
+    return { sub: activeSub, pkg };
+  }, [agencySubscriptions, agencyPackages]);
+
+  const isAgencyVerified = useCallback((agencyId: string): boolean => {
+    const target = agencies.find((a) => a.id === agencyId);
+    return target ? target.status === 'verified' : false;
+  }, [agencies]);
+
+  // CRITICAL RULE: Verify agency status AND package before posting
+  const canAgencyPost = useCallback((agencyId: string = currentAgency.id): { canPost: boolean; reason?: string; code?: 'not_verified' | 'no_package' } => {
+    const target = agencies.find((a) => a.id === agencyId) || currentAgency;
+    if (target.status !== 'verified') {
+      if (target.status === 'pending_verification') {
+        return {
+          canPost: false,
+          code: 'not_verified',
+          reason: 'Your agency documents are under verification by the Ride Bhai Admin team. You can post tour bookings once approved.',
+        };
+      }
+      return {
+        canPost: false,
+        code: 'not_verified',
+        reason: 'You must submit your business verification documents (GST / Trade License / PAN) and be verified by admin before posting.',
+      };
+    }
+
+    const subInfo = getAgencyActiveSubscription(agencyId);
+    if (!subInfo) {
+      return {
+        canPost: false,
+        code: 'no_package',
+        reason: 'Active Posting Package required. Please purchase an Agency Package to publish your tour bookings to drivers.',
+      };
+    }
+
+    return { canPost: true };
+  }, [agencies, currentAgency, getAgencyActiveSubscription]);
+
   // --- SEARCH & RANKING SELECTOR ---
-  // Strictly partitions into [Featured / Boosted] and [Regular], sorts each group, and concatenates.
-  // CRITICAL RULE: Strips driver phone number on regular rides before handing to UI.
   const getRankedRides = useCallback(
     (filterParams?: {
       fromCity?: string;
@@ -295,7 +435,6 @@ export function useAppStore() {
         const activePkgInfo = getDriverActivePackage(driver.id);
 
         if (boosted) {
-          // Featured Ride: Includes Driver Phone and Full Contact CTA capability
           featuredGroup.push({
             ...ride,
             isFeatured: true,
@@ -309,11 +448,10 @@ export function useAppStore() {
               totalRides: driver.totalRides,
               vehicle: driver.vehicle,
               idVerified: driver.idVerified,
-              phone: driver.phone, // Included for featured
+              phone: driver.phone,
             },
           });
         } else {
-          // Regular Ride: Phone number is strictly OMITTED from the returned object (never sent to client)
           regularGroup.push({
             ...ride,
             isFeatured: false,
@@ -326,17 +464,14 @@ export function useAppStore() {
               totalRides: driver.totalRides,
               vehicle: driver.vehicle,
               idVerified: driver.idVerified,
-              // phone is undefined here
             },
           });
         }
       }
 
-      // 3. Sort each group internally (by departure time / rating)
       featuredGroup.sort((a, b) => (b.driver.rating || 0) - (a.driver.rating || 0));
       regularGroup.sort((a, b) => a.pricePerSeat - b.pricePerSeat);
 
-      // 4. Concatenate: ALL featured rides first, then regular rides (never interleave)
       return [...featuredGroup, ...regularGroup];
     },
     [rides, drivers, isDriverBoosted, getDriverActivePackage]
@@ -355,7 +490,6 @@ export function useAppStore() {
       };
       updateRides((prev) => [newRide, ...prev]);
 
-      // Add driver notification
       const newNotif: NotificationItem = {
         id: `notif-${Date.now()}`,
         userId: currentDriver.id,
@@ -394,15 +528,12 @@ export function useAppStore() {
         bookedAt: new Date().toISOString(),
       };
 
-      // Decrement seats
       updateRides((prev) =>
         prev.map((r) => (r.id === rideId ? { ...r, availableSeats: r.availableSeats - seatsCount } : r))
       );
 
-      // Save booking
       updateBookings((prev) => [newBooking, ...prev]);
 
-      // Add Rider & Driver notifications
       const riderNotif: NotificationItem = {
         id: `notif-rdr-${Date.now()}`,
         userId: currentRider.id,
@@ -447,13 +578,11 @@ export function useAppStore() {
         expiresAt,
       };
 
-      // Overwrite/extend existing package for current driver
       updateDriverPackages((prev) => {
         const filtered = prev.filter((dp) => dp.driverId !== currentDriver.id);
         return [newDriverPackage, ...filtered];
       });
 
-      // Notification
       const notif: NotificationItem = {
         id: `notif-pkg-${Date.now()}`,
         userId: currentDriver.id,
@@ -471,10 +600,10 @@ export function useAppStore() {
     [packages, currentDriver, updateDriverPackages, updateNotifications]
   );
 
-  // 4. Simulate Package Expiry (for live ranking demotion testing)
+  // 4. Simulate Package Expiry
   const simulatePackageExpiry = useCallback(
     (driverId: string = currentDriver.id) => {
-      const pastTime = Date.now() - 1000 * 60; // 1 min ago
+      const pastTime = Date.now() - 1000 * 60;
       updateDriverPackages((prev) =>
         prev.map((dp) => (dp.driverId === driverId ? { ...dp, expiresAt: pastTime } : dp))
       );
@@ -501,7 +630,6 @@ export function useAppStore() {
     [updateDrivers]
   );
 
-  // 5b. Driver Submits Documents & Multiple Vehicles for Verification
   const submitDriverVerification = useCallback(
     (documents: DriverDocuments, vehiclesList: Vehicle[]) => {
       const primaryVehicle = vehiclesList.find((v) => v.isPrimary) || vehiclesList[0];
@@ -526,7 +654,6 @@ export function useAppStore() {
         })
       );
 
-      // Notification to driver
       updateNotifications((prev) => [
         {
           id: `notif-${Date.now()}`,
@@ -583,7 +710,271 @@ export function useAppStore() {
     [currentDriver.id, updateDrivers]
   );
 
-  // 6. Driver Accept / Reject Booking Request
+  // 6. Travel Agency Actions
+  const submitAgencyVerification = useCallback(
+    (agencyId: string, docs: AgencyDocuments) => {
+      updateAgencies((prev) =>
+        prev.map((a) => {
+          if (a.id === agencyId || a.id === 'agency-current') {
+            return {
+              ...a,
+              status: 'pending_verification' as AgencyStatus,
+              idVerified: false,
+              rejectionReason: undefined,
+              documents: {
+                ...a.documents,
+                ...docs,
+                submittedAt: new Date().toISOString(),
+              },
+            };
+          }
+          return a;
+        })
+      );
+
+      updateNotifications((prev) => [
+        {
+          id: `notif-${Date.now()}`,
+          userId: agencyId,
+          userRole: 'agency',
+          title: 'KYC Submitted 📄',
+          message: 'Your Agency registration & GST documents have been submitted to Ride Bhai admin for verification.',
+          type: 'agency',
+          read: false,
+          time: 'Just now',
+        },
+        ...prev,
+      ]);
+    },
+    [updateAgencies, updateNotifications]
+  );
+
+  const adminVerifyAgency = useCallback(
+    (agencyId: string, status: AgencyStatus, reason?: string) => {
+      updateAgencies((prev) =>
+        prev.map((a) =>
+          a.id === agencyId
+            ? {
+                ...a,
+                status,
+                idVerified: status === 'verified',
+                rejectionReason: status === 'rejected' ? (reason || 'Verification documents were unclear or invalid.') : undefined,
+              }
+            : a
+        )
+      );
+
+      updateNotifications((prev) => [
+        {
+          id: `notif-${Date.now()}`,
+          userId: agencyId,
+          userRole: 'agency',
+          title: status === 'verified' ? 'Agency Verified! 🎉' : 'Verification Update ⚠️',
+          message: status === 'verified'
+            ? 'Your agency is verified! You can now subscribe to a package and publish tour bookings to drivers.'
+            : `Your verification was rejected: ${reason || 'Please re-upload proper documents.'}`,
+          type: 'agency',
+          read: false,
+          time: 'Just now',
+        },
+        ...prev,
+      ]);
+    },
+    [updateAgencies, updateNotifications]
+  );
+
+  const purchaseAgencyPackage = useCallback(
+    (agencyId: string, packageId: string) => {
+      const pkg = agencyPackages.find((p) => p.id === packageId);
+      if (!pkg) throw new Error('Agency Package not found');
+
+      const now = Date.now();
+      const expiresAt = now + pkg.durationDays * 24 * 60 * 60 * 1000;
+
+      const newSub: AgencyActiveSubscription = {
+        id: `sub-${Date.now()}`,
+        agencyId,
+        packageId,
+        purchasedAt: now,
+        expiresAt,
+        postsRemaining: pkg.postLimit,
+      };
+
+      updateAgencySubscriptions((prev) => {
+        const filtered = prev.filter((s) => s.agencyId !== agencyId);
+        return [newSub, ...filtered];
+      });
+
+      updateAgencies((prev) =>
+        prev.map((a) => (a.id === agencyId ? { ...a, activePackageId: packageId } : a))
+      );
+
+      updateNotifications((prev) => [
+        {
+          id: `notif-${Date.now()}`,
+          userId: agencyId,
+          userRole: 'agency',
+          title: 'Agency Package Activated! 🎫',
+          message: `Your "${pkg.name}" is now active until ${new Date(expiresAt).toLocaleDateString()}. You can now publish tour bookings directly!`,
+          type: 'agency',
+          read: false,
+          time: 'Just now',
+        },
+        ...prev,
+      ]);
+
+      return newSub;
+    },
+    [agencyPackages, updateAgencySubscriptions, updateAgencies, updateNotifications]
+  );
+
+  // 7. Post Agency Tour Trip (Strictly checks verification & active package)
+  const postAgencyTrip = useCallback(
+    (tripData: {
+      fromCity: string;
+      toCity: string;
+      passengers: number;
+      duration: string;
+      startDate: string;
+      endDate?: string;
+      pickupTime?: string;
+      pickupLocation: string;
+      dropLocation: string;
+      requiredVehicleType: string;
+      totalCustomerPrice: number;
+      agencyCommission: number;
+      tripDetails: string;
+      routeHighlights?: string[];
+      tourType?: string;
+      tollTaxOption?: string;
+      parkingOption?: string;
+      driverNightAllowance?: string;
+      kmLimit?: string;
+      luggageCapacity?: string;
+      driverPreferences?: string;
+      paymentTerms?: string;
+      payoutMode?: string;
+    }) => {
+      const gateCheck = canAgencyPost(currentAgency.id);
+      if (!gateCheck.canPost) {
+        throw new Error(gateCheck.reason || 'Cannot post trip.');
+      }
+
+      const driverNet = Number(tripData.totalCustomerPrice) - Number(tripData.agencyCommission);
+      const cleanPhone = currentAgency.whatsappPhone || currentAgency.phone.replace(/[^0-9]/g, '');
+
+      const newTrip: AgencyTripPost = {
+        ...tripData,
+        id: `trip-agency-${Date.now()}`,
+        agencyId: currentAgency.id,
+        agencyName: currentAgency.agencyName,
+        agencyPhone: currentAgency.phone,
+        whatsappNumber: cleanPhone,
+        agencyCity: currentAgency.city,
+        agencyRating: currentAgency.rating || 4.9,
+        driverNetPayout: driverNet > 0 ? driverNet : 0,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+      };
+
+      updateAgencyTripPosts((prev) => [newTrip, ...prev]);
+
+      // Decrement agency posts remaining if not unlimited
+      updateAgencySubscriptions((prev) =>
+        prev.map((s) => {
+          if (s.agencyId === currentAgency.id && s.postsRemaining < 9000) {
+            return { ...s, postsRemaining: Math.max(0, s.postsRemaining - 1) };
+          }
+          return s;
+        })
+      );
+
+      // Increment agency total posts count
+      updateAgencies((prev) =>
+        prev.map((a) => (a.id === currentAgency.id ? { ...a, totalToursPosted: (a.totalToursPosted || 0) + 1 } : a))
+      );
+
+      updateNotifications((prev) => [
+        {
+          id: `notif-${Date.now()}`,
+          userId: currentAgency.id,
+          userRole: 'agency',
+          title: 'Tour Booking Live! 📍',
+          message: `Your booking for ${newTrip.fromCity} → ${newTrip.toCity} (${newTrip.passengers} Pax, ${newTrip.duration}) is now broadcast to drivers.`,
+          type: 'agency',
+          read: false,
+          time: 'Just now',
+        },
+        ...prev,
+      ]);
+
+      return newTrip;
+    },
+    [currentAgency, canAgencyPost, updateAgencyTripPosts, updateAgencySubscriptions, updateAgencies, updateNotifications]
+  );
+
+  const claimAgencyTrip = useCallback(
+    (tripId: string, driverId?: string, driverName?: string, driverPhone?: string) => {
+      const dId = driverId || currentDriver.id;
+      const dName = driverName || currentDriver.name;
+      const dPhone = driverPhone || currentDriver.phone;
+
+      updateAgencyTripPosts((prev) =>
+        prev.map((t) => {
+          if (t.id !== tripId) return t;
+          return {
+            ...t,
+            status: 'claimed' as AgencyTripStatus,
+            claimedByDriverId: dId,
+            claimedByDriverName: dName,
+            claimedByDriverPhone: dPhone,
+            claimedAt: new Date().toISOString(),
+          };
+        })
+      );
+    },
+    [currentDriver, updateAgencyTripPosts]
+  );
+
+  const updateAgencyTripStatus = useCallback(
+    (tripId: string, status: AgencyTripStatus) => {
+      updateAgencyTripPosts((prev) =>
+        prev.map((t) => (t.id === tripId ? { ...t, status } : t))
+      );
+    },
+    [updateAgencyTripPosts]
+  );
+
+  const saveAgencyPackage = useCallback(
+    (pkg: AgencyPackage) => {
+      updateAgencyPackages((prev) => {
+        const exists = prev.some((p) => p.id === pkg.id);
+        if (exists) {
+          return prev.map((p) => (p.id === pkg.id ? pkg : p));
+        }
+        return [...prev, pkg];
+      });
+    },
+    [updateAgencyPackages]
+  );
+
+  const deleteAgencyPackage = useCallback(
+    (pkgId: string) => {
+      updateAgencyPackages((prev) => prev.filter((p) => p.id !== pkgId));
+    },
+    [updateAgencyPackages]
+  );
+
+  const updateCurrentAgency = useCallback(
+    (updates: Partial<TravelAgency>) => {
+      updateAgencies((prev) =>
+        prev.map((a) => (a.id === 'agency-current' || a.id === currentAgency.id ? { ...a, ...updates } : a))
+      );
+    },
+    [currentAgency.id, updateAgencies]
+  );
+
+  // 8. Driver Accept / Reject Booking Request
   const handleBookingRequest = useCallback(
     (bookingId: string, action: 'accept' | 'reject') => {
       updateBookings((prev) =>
@@ -599,7 +990,7 @@ export function useAppStore() {
     [updateBookings]
   );
 
-  // 7. Trip Lifecycle Simulation (Start ride, Complete ride)
+  // 9. Trip Lifecycle Simulation
   const simulateTripStart = useCallback(
     (bookingId: string) => {
       updateBookings((prev) =>
@@ -626,7 +1017,7 @@ export function useAppStore() {
     [updateBookings]
   );
 
-  // 8. Submit Rating / Review
+  // 10. Submit Rating / Review
   const submitReview = useCallback(
     (bookingId: string, rating: number, comment: string) => {
       const targetBooking = bookings.find((b) => b.id === bookingId);
@@ -642,7 +1033,6 @@ export function useAppStore() {
         prev.map((b) => (b.id === bookingId ? { ...b, review } : b))
       );
 
-      // Recompute driver rating
       updateDrivers((prev) =>
         prev.map((d) => {
           if (d.id !== targetBooking.driverId) return d;
@@ -659,26 +1049,30 @@ export function useAppStore() {
     [bookings, updateBookings, updateDrivers]
   );
 
-  // 9. In-app Chat messaging
+  // 11. In-app Chat messaging
   const sendChatMessage = useCallback(
     (text: string, bookingId?: string, rideId?: string) => {
+      const senderRole = role === 'driver' ? 'driver' : role === 'agency' ? 'agency' : 'rider';
+      const senderId = role === 'driver' ? currentDriver.id : role === 'agency' ? currentAgency.id : currentRider.id;
+      const senderName = role === 'driver' ? currentDriver.name : role === 'agency' ? currentAgency.agencyName : currentRider.name;
+
       const newMsg: ChatMessage = {
         id: `msg-${Date.now()}`,
         bookingId,
         rideId,
-        senderId: role === 'driver' ? currentDriver.id : currentRider.id,
-        senderRole: role === 'driver' ? 'driver' : 'rider',
-        senderName: role === 'driver' ? currentDriver.name : currentRider.name,
+        senderId,
+        senderRole,
+        senderName,
         text,
         timestamp: 'Just now',
       };
       updateChats((prev) => [...prev, newMsg]);
       return newMsg;
     },
-    [role, currentDriver, currentRider, updateChats]
+    [role, currentDriver, currentAgency, currentRider, updateChats]
   );
 
-  // 10. Update Rider Profile / Verify ID
+  // 12. Update Rider Profile
   const updateRiderProfile = useCallback(
     (updates: Partial<Rider>) => {
       setCurrentRiderState((prev) => {
@@ -690,7 +1084,7 @@ export function useAppStore() {
     []
   );
 
-  // 11. Admin CRUD on Packages
+  // 13. Admin CRUD on Packages
   const savePackage = useCallback(
     (pkg: Package) => {
       updatePackages((prev) => {
@@ -711,7 +1105,7 @@ export function useAppStore() {
     [updatePackages]
   );
 
-  // 12. Resolve Dispute
+  // 14. Resolve Dispute
   const resolveDispute = useCallback(
     (disputeId: string) => {
       updateDisputes((prev) =>
@@ -721,7 +1115,7 @@ export function useAppStore() {
     [updateDisputes]
   );
 
-  // 13. Reset Entire Demo Data
+  // 15. Reset Entire Demo Data
   const resetDemoData = useCallback(() => {
     localStorage.clear();
     setRoleState('rider');
@@ -735,10 +1129,15 @@ export function useAppStore() {
     setChatsState(INITIAL_CHATS);
     setDisputesState(INITIAL_DISPUTES);
     setNotificationsState(INITIAL_NOTIFICATIONS);
+    setAgenciesState(INITIAL_AGENCIES);
+    setAgencyPackagesState(INITIAL_AGENCY_PACKAGES);
+    setAgencySubscriptionsState(INITIAL_AGENCY_SUBSCRIPTIONS);
+    setAgencyTripPostsState(INITIAL_AGENCY_TRIPS);
+    setIsAgencyLoggedInState(false);
     notifyListeners();
   }, []);
 
-  // 14. Admin Grant Boost to specific driver
+  // 16. Admin Grant Boost to specific driver
   const grantDriverBoost = useCallback(
     (driverId: string, packageId: string = 'pkg-weekly-boost') => {
       const pkg = packages.find((p) => p.id === packageId) || packages[0];
@@ -768,10 +1167,13 @@ export function useAppStore() {
     setAppView,
     isRiderLoggedIn,
     isDriverLoggedIn,
+    isAgencyLoggedIn,
     loginRider,
     logoutRider,
     loginDriver,
     logoutDriver,
+    loginAgency,
+    logoutAgency,
 
     // Role & Entity State
     role,
@@ -789,10 +1191,20 @@ export function useAppStore() {
     disputes,
     notifications,
 
+    // Agency State
+    agencies,
+    agencyPackages,
+    agencySubscriptions,
+    agencyTripPosts,
+    currentAgency,
+
     // Live Derived / Selectors
     isDriverBoosted,
     getDriverActivePackage,
     getRankedRides,
+    getAgencyActiveSubscription,
+    isAgencyVerified,
+    canAgencyPost,
 
     // Actions
     postRide,
@@ -816,6 +1228,18 @@ export function useAppStore() {
     resetDemoData,
     updateNotifications,
     updateDriverPackages,
+
+    // Agency Actions
+    submitAgencyVerification,
+    adminVerifyAgency,
+    purchaseAgencyPackage,
+    postAgencyTrip,
+    claimAgencyTrip,
+    updateAgencyTripStatus,
+    saveAgencyPackage,
+    deleteAgencyPackage,
+    updateCurrentAgency,
+    updateAgencies,
+    updateAgencyTripPosts,
   };
 }
-

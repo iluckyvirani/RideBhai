@@ -22,13 +22,17 @@
     overflow-x: hidden;
   }
 
-  /* Custom scrollbar */
+  /* Custom scrollbar - subtle vertical only */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 0px;
+  }
+  ::-webkit-scrollbar:horizontal {
+    display: none !important;
+    height: 0px !important;
   }
   ::-webkit-scrollbar-track {
-    background: #FAF6EE;
+    background: transparent;
   }
   ::-webkit-scrollbar-thumb {
     background: #E0D9CB;
@@ -37,6 +41,17 @@
   ::-webkit-scrollbar-thumb:hover {
     background: #F15A24;
   }
+}
+
+/* Universal scrollbar hiding for horizontal carousels & chips */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+.no-scrollbar {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
 }
 
 /* App utility classes */

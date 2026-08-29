@@ -43,7 +43,7 @@ export const MyBookingsView: React.FC<MyBookingsViewProps> = ({ onOpenChat }) =>
   const displayList = activeTab === 'upcoming' ? upcomingBookings : pastBookings;
 
   return (
-    <div className="space-y-4 pb-24 animate-fade-in">
+    <div className="space-y-4 pb-32 animate-fade-in">
       {/* Top Tabs */}
       <div className="grid grid-cols-2 gap-2 bg-[#F2EDE2] p-1 rounded-2xl text-xs font-extrabold">
         <button

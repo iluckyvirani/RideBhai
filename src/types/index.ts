@@ -1,6 +1,8 @@
-export type UserRole = 'rider' | 'driver' | 'admin';
+export type UserRole = 'rider' | 'driver' | 'agency' | 'admin';
 
 export type DriverStatus = 'unverified' | 'pending_verification' | 'verified' | 'rejected';
+
+export type AgencyStatus = 'unverified' | 'pending_verification' | 'verified' | 'rejected';
 
 export type FuelType = 'electric' | 'petrol' | 'diesel' | 'cng' | 'hybrid';
 
@@ -70,6 +72,105 @@ export interface Driver {
   vehicles?: Vehicle[];
   documents?: DriverDocuments;
   onboardingStep?: number;
+}
+
+// --- Travel Agency Partner Types ---
+export interface AgencyDocuments {
+  gstNumber?: string;
+  gstDoc?: string;
+  panNumber?: string;
+  panDoc?: string;
+  tradeLicenseNumber?: string;
+  tradeLicenseDoc?: string;
+  ownerAadhaarNumber?: string;
+  ownerAadhaarDoc?: string;
+  officeAddressProofDoc?: string;
+  submittedAt?: string;
+  verificationNotes?: string;
+}
+
+export interface TravelAgency {
+  id: string;
+  agencyName: string;
+  ownerName: string;
+  phone: string;
+  whatsappPhone?: string;
+  email: string;
+  city: string;
+  address: string;
+  logo?: string;
+  rating: number;
+  totalReviews: number;
+  totalToursPosted: number;
+  joinedAt: string;
+  status: AgencyStatus;
+  rejectionReason?: string;
+  idVerified: boolean;
+  documents?: AgencyDocuments;
+  activePackageId?: string;
+}
+
+export interface AgencyPackage {
+  id: string;
+  name: string;
+  price: number;
+  durationDays: number;
+  postLimit: number; // e.g. 10 or 9999 for unlimited
+  badgeText: string;
+  benefitsDescription: string[];
+  isActive: boolean;
+  popular?: boolean;
+}
+
+export interface AgencyActiveSubscription {
+  id: string;
+  agencyId: string;
+  packageId: string;
+  purchasedAt: number; // timestamp ms
+  expiresAt: number; // timestamp ms
+  postsRemaining: number;
+}
+
+export type AgencyTripStatus = 'active' | 'claimed' | 'completed' | 'cancelled';
+
+export interface AgencyTripPost {
+  id: string;
+  agencyId: string;
+  agencyName: string;
+  agencyPhone: string;
+  whatsappNumber: string;
+  agencyCity: string;
+  agencyRating: number;
+  fromCity: string;
+  toCity: string;
+  routeHighlights?: string[];
+  passengers: number; // e.g. 4 member
+  duration: string; // e.g. "3 Days 1 Night"
+  startDate: string; // YYYY-MM-DD
+  endDate?: string;
+  pickupTime?: string;
+  pickupLocation: string;
+  dropLocation: string;
+  requiredVehicleType: string; // e.g. "Sedan (Dzire/Etios)", "SUV (Ertiga/Innova)"
+  totalCustomerPrice: number; // e.g. ₹1000
+  agencyCommission: number; // e.g. ₹200
+  driverNetPayout: number; // e.g. ₹800 (totalCustomerPrice - agencyCommission)
+  tripDetails: string; // Full itinerary, inclusions & requirements
+  tourType?: string; // e.g. "Family Tour", "Sightseeing", "Pilgrimage", "Corporate", "Honeymoon"
+  tollTaxOption?: string; // e.g. "Paid directly by Guest at tolls", "Included in Fare", "Extra on actuals"
+  parkingOption?: string; // e.g. "Paid by Guest on spots", "Included in package"
+  driverNightAllowance?: string; // e.g. "₹300/Night included", "Provided by guest", "No night stay"
+  kmLimit?: string; // e.g. "750 Km package (₹11/Km extra beyond limit)"
+  luggageCapacity?: string; // e.g. "2 Large Trolley + 2 Handbags"
+  driverPreferences?: string; // e.g. "Hindi/English speaking driver, AC throughout journey, Non-smoking vehicle"
+  paymentTerms?: string; // e.g. "₹500 advance collected by agency, balance ₹300 direct to driver on completion"
+  payoutMode?: string; // e.g. "Direct Cash from Guest", "Instant UPI by Agency", "Split 50-50"
+  status: AgencyTripStatus;
+  createdAt: string;
+  claimedByDriverId?: string;
+  claimedByDriverName?: string;
+  claimedByDriverPhone?: string;
+  claimedAt?: string;
 }
 
 export interface Rider {
@@ -191,7 +292,7 @@ export interface ChatMessage {
   bookingId?: string;
   rideId?: string;
   senderId: string;
-  senderRole: 'rider' | 'driver';
+  senderRole: 'rider' | 'driver' | 'agency';
   senderName: string;
   text: string;
   timestamp: string;
@@ -203,7 +304,7 @@ export interface NotificationItem {
   userRole: UserRole;
   title: string;
   message: string;
-  type: 'booking' | 'payment' | 'boost' | 'verification' | 'system';
+  type: 'booking' | 'payment' | 'boost' | 'verification' | 'system' | 'agency';
   time: string;
   read: boolean;
 }
@@ -226,12 +327,14 @@ export interface CityLocation {
   popularPoints: string[];
 }
 
-export type AppViewMode = 'landing' | 'rider-app' | 'driver-app' | 'admin-portal';
+export type AppViewMode = 'landing' | 'rider-app' | 'driver-app' | 'agency-app' | 'admin-portal';
 
 export interface AuthState {
   isRiderLoggedIn: boolean;
   isDriverLoggedIn: boolean;
+  isAgencyLoggedIn?: boolean;
   riderPhone?: string;
   driverPhone?: string;
+  agencyPhone?: string;
 }
 

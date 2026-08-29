@@ -27,6 +27,13 @@ import { ManageBookingsView } from './components/driver/ManageBookingsView';
 import { DriverPackagesView } from './components/driver/DriverPackagesView';
 import { DriverVerificationView } from './components/driver/DriverVerificationView';
 import { DriverProfileView } from './components/driver/DriverProfileView';
+import { AgencyToursFeed } from './components/driver/AgencyToursFeed';
+
+// Travel Agency Views
+import { AgencyDashboard } from './components/agency/AgencyDashboard';
+import { AgencyVerificationView } from './components/agency/AgencyVerificationView';
+import { AgencyPackagesView } from './components/agency/AgencyPackagesView';
+import { PostAgencyTripModal } from './components/agency/PostAgencyTripModal';
 
 export function App() {
   const {
@@ -34,12 +41,13 @@ export function App() {
     setAppView,
     role,
     setRole,
-    hasOnboarded,
-    setHasOnboarded,
     bookings,
     currentDriver,
+    currentAgency,
     isDriverLoggedIn,
     isRiderLoggedIn,
+    isAgencyLoggedIn,
+    agencyTripPosts,
   } = useAppStore();
 
   const [showSplash, setShowSplash] = useState(false);
@@ -49,7 +57,7 @@ export function App() {
   // Auth Modal trigger
   const [authModalConfig, setAuthModalConfig] = useState<{
     isOpen: boolean;
-    role: 'rider' | 'driver';
+    role: 'rider' | 'driver' | 'agency';
     title?: string;
     subtitle?: string;
     onSuccess?: () => void;
@@ -73,6 +81,7 @@ export function App() {
   // Modals
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isPostRideOpen, setIsPostRideOpen] = useState(false);
+  const [isPostAgencyTripOpen, setIsPostAgencyTripOpen] = useState(false);
   const [isBookingSuccessOpen, setIsBookingSuccessOpen] = useState(false);
 
   // Navigation handlers from Landing Website
@@ -117,6 +126,28 @@ export function App() {
     }
   };
 
+  const handleLandingOpenAgencyPortal = () => {
+    if (!isAgencyLoggedIn) {
+      setAuthModalConfig({
+        isOpen: true,
+        role: 'agency',
+        title: 'Travel Agency Partner Portal',
+        subtitle: 'Register your travel firm to broadcast pre-booked tours to drivers',
+        onSuccess: () => {
+          setRole('agency');
+          setActiveTab('agency-home');
+          setActiveScreen('main');
+          setAppView('agency-app');
+        },
+      });
+    } else {
+      setRole('agency');
+      setActiveTab('agency-home');
+      setActiveScreen('main');
+      setAppView('agency-app');
+    }
+  };
+
   const handleRoleChange = (newRole: any) => {
     setRole(newRole);
     if (newRole === 'rider') {
@@ -129,6 +160,9 @@ export function App() {
         setActiveTab('my-rides');
       }
       setAppView('driver-app');
+    } else if (newRole === 'agency') {
+      setActiveTab('agency-home');
+      setAppView('agency-app');
     } else if (newRole === 'admin') {
       setAppView('admin-portal');
     }
@@ -157,6 +191,8 @@ export function App() {
     (b) => b.driverId === currentDriver.id && b.status === 'pending'
   ).length;
 
+  const openAgencyLeadsCount = agencyTripPosts.filter((p) => p.status === 'active').length;
+
   if (showSplash) {
     return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
@@ -169,6 +205,7 @@ export function App() {
           onSearchInitiated={handleLandingSearch}
           onOpenDriverPortal={handleLandingOpenDriverPortal}
           onOpenRiderPortal={handleLandingOpenRiderPortal}
+          onOpenAgencyPortal={handleLandingOpenAgencyPortal}
           onOpenAdminPortal={() => setAppView('admin-portal')}
         />
         <AuthModal
@@ -200,16 +237,24 @@ export function App() {
     }
     if (role === 'driver') {
       if (activeTab === 'my-rides') return 'Driver Dashboard';
+      if (activeTab === 'agency-tours') return 'Agency Tour Leads';
       if (activeTab === 'requests') return 'Passenger Requests';
       if (activeTab === 'packages') return 'Boost & Earnings';
       if (activeTab === 'verification') return 'Driver KYC';
       if (activeTab === 'profile') return 'Driver Profile';
       return 'Driver Center';
     }
+    if (role === 'agency') {
+      if (activeTab === 'agency-home') return 'Agency Dashboard';
+      if (activeTab === 'agency-kyc') return 'Agency KYC Verification';
+      if (activeTab === 'agency-packages') return 'Posting Packages Store';
+      if (activeTab === 'agency-profile') return 'Agency Profile';
+      return 'Travel Agency Portal';
+    }
     return '';
   };
 
-  // 3. CLEAN IN-APP MOBILE VIEW (Rider App or Driver App)
+  // 3. IN-APP MOBILE VIEW (Rider App, Driver App, or Travel Agency App)
   return (
     <div className="min-h-screen bg-[#141414] flex items-center justify-center p-0 sm:p-4 selection:bg-[#F15A24] selection:text-white">
       {/* Mobile Shell Container */}
@@ -296,14 +341,17 @@ export function App() {
                   onViewRequestsClick={() => setActiveTab('requests')}
                   onViewPackagesClick={() => setActiveTab('packages')}
                   onViewVerificationClick={() => setActiveTab('verification')}
+                  onViewAgencyToursClick={() => setActiveTab('agency-tours')}
                 />
               )}
+              {activeTab === 'agency-tours' && <AgencyToursFeed />}
               {activeTab === 'post-ride' && (
                 <DriverHome
                   onPostRideClick={() => setIsPostRideOpen(true)}
                   onViewRequestsClick={() => setActiveTab('requests')}
                   onViewPackagesClick={() => setActiveTab('packages')}
                   onViewVerificationClick={() => setActiveTab('verification')}
+                  onViewAgencyToursClick={() => setActiveTab('agency-tours')}
                 />
               )}
               {activeTab === 'requests' && <ManageBookingsView />}
@@ -314,6 +362,86 @@ export function App() {
                   onSwitchRole={handleRoleChange}
                   onOpenVerification={() => setActiveTab('verification')}
                 />
+              )}
+            </>
+          )}
+
+          {/* Travel Agency Mode Screens */}
+          {role === 'agency' && (
+            <>
+              {(activeTab === 'agency-home' || activeTab === 'post-lead') && (
+                <AgencyDashboard
+                  onOpenVerification={() => setActiveTab('agency-kyc')}
+                  onOpenPackages={() => setActiveTab('agency-packages')}
+                  onSwitchRole={handleRoleChange}
+                />
+              )}
+              {activeTab === 'agency-kyc' && <AgencyVerificationView />}
+              {activeTab === 'agency-packages' && <AgencyPackagesView />}
+              {activeTab === 'agency-profile' && (
+                <div className="space-y-4 pb-12">
+                  <div className="p-5 rounded-3xl bg-white border border-[#EBE5D8] shadow-card space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#F15A24] to-[#FF7A45] flex items-center justify-center text-white font-black text-xl shadow-md">
+                        {currentAgency.agencyName.charAt(0)}
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-extrabold text-[#1C1C1C]">
+                          {currentAgency.agencyName}
+                        </h2>
+                        <p className="text-xs text-[#6B6B6B]">
+                          Owner: {currentAgency.ownerName}
+                        </p>
+                        <p className="text-[11px] text-[#6B6B6B]">
+                          Phone: {currentAgency.phone} • {currentAgency.city}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-[#FAF6EE] space-y-2">
+                      <button
+                        onClick={() => setActiveTab('agency-kyc')}
+                        className="w-full p-3 rounded-2xl bg-[#FAF6EE] hover:bg-[#F2ECE1] text-[#1C1C1C] text-xs font-bold flex items-center justify-between transition-colors"
+                      >
+                        <span>Agency KYC Documents</span>
+                        <span className="text-[10px] text-[#F15A24] font-extrabold uppercase">
+                          {currentAgency.status}
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => setActiveTab('agency-packages')}
+                        className="w-full p-3 rounded-2xl bg-[#FAF6EE] hover:bg-[#F2ECE1] text-[#1C1C1C] text-xs font-bold flex items-center justify-between transition-colors"
+                      >
+                        <span>Subscription Plans</span>
+                        <span className="text-[10px] text-emerald-600 font-extrabold">
+                          Manage
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Role Switcher */}
+                  <div className="p-5 rounded-3xl bg-white border border-[#EBE5D8] shadow-card space-y-3">
+                    <h3 className="text-xs font-extrabold text-[#1C1C1C] uppercase tracking-wider">
+                      Switch Role Mode
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => handleRoleChange('rider')}
+                        className="p-3 rounded-2xl bg-[#FAF6EE] hover:bg-[#F2ECE1] text-xs font-bold text-[#1C1C1C] text-center active-press"
+                      >
+                        Rider Mode
+                      </button>
+                      <button
+                        onClick={() => handleRoleChange('driver')}
+                        className="p-3 rounded-2xl bg-[#FAF6EE] hover:bg-[#F2ECE1] text-xs font-bold text-[#1C1C1C] text-center active-press"
+                      >
+                        Driver Mode
+                      </button>
+                    </div>
+                  </div>
+                </div>
               )}
             </>
           )}
@@ -337,12 +465,15 @@ export function App() {
                 } else {
                   setIsPostRideOpen(true);
                 }
+              } else if (tab === 'post-lead') {
+                setIsPostAgencyTripOpen(true);
               } else {
                 setActiveTab(tab);
                 setActiveScreen('main');
               }
             }}
             pendingRequestsCount={pendingRequestsCount}
+            openAgencyLeadsCount={openAgencyLeadsCount}
           />
         )}
 
@@ -358,6 +489,24 @@ export function App() {
           onClose={() => setIsPostRideOpen(false)}
           onRideCreated={() => {
             setActiveTab('my-rides');
+            setActiveScreen('main');
+          }}
+        />
+
+        {/* Post Agency Tour Trip Modal for Travel Agency */}
+        <PostAgencyTripModal
+          isOpen={isPostAgencyTripOpen}
+          onClose={() => setIsPostAgencyTripOpen(false)}
+          onOpenVerification={() => {
+            setIsPostAgencyTripOpen(false);
+            setActiveTab('agency-kyc');
+          }}
+          onOpenPackages={() => {
+            setIsPostAgencyTripOpen(false);
+            setActiveTab('agency-packages');
+          }}
+          onTripCreated={() => {
+            setActiveTab('agency-home');
             setActiveScreen('main');
           }}
         />

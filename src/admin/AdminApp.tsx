@@ -14,7 +14,14 @@ import {
   CheckCircle2,
   TrendingUp,
   Users,
-  Car
+  Car,
+  Building,
+  MapPin,
+  Eye,
+  Check,
+  XCircle,
+  Trash2,
+  DollarSign
 } from 'lucide-react';
 import { Logo } from '../components/common/Logo';
 import { useAppStore } from '../store/useAppStore';
@@ -23,16 +30,43 @@ import { DriverVerificationQueue } from '../components/admin/DriverVerificationQ
 import { PackageManager } from '../components/admin/PackageManager';
 import { DriverBoostStatusList } from '../components/admin/DriverBoostStatusList';
 import { DisputeResolutionView } from '../components/admin/DisputeResolutionView';
+import { AgencyVerificationQueue } from '../components/admin/AgencyVerificationQueue';
+import { AllAgenciesView } from '../components/admin/AllAgenciesView';
+import { AgencyTourPostsManager } from '../components/admin/AgencyTourPostsManager';
+import { AgencyPackageManager } from '../components/admin/AgencyPackageManager';
 
 interface AdminAppProps {
   onExitToWebsite: () => void;
 }
 
 export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'verifications' | 'packages' | 'boosts' | 'disputes'>('dashboard');
-  const { drivers, packages, driverPackages, bookings, disputes, resetDemoData } = useAppStore();
+  const [activeTab, setActiveTab] = useState<
+    | 'dashboard'
+    | 'verifications'
+    | 'agency-kyc'
+    | 'all-agencies'
+    | 'agency-tours'
+    | 'agency-packages'
+    | 'packages'
+    | 'boosts'
+    | 'disputes'
+  >('dashboard');
 
-  const pendingKycCount = drivers.filter((d) => d.status === 'pending_verification').length;
+  const {
+    drivers,
+    packages,
+    driverPackages,
+    bookings,
+    disputes,
+    agencies,
+    agencyTripPosts,
+    adminVerifyAgency,
+    updateAgencyTripPosts,
+    resetDemoData,
+  } = useAppStore();
+
+  const pendingDriverKycCount = drivers.filter((d) => d.status === 'pending_verification').length;
+  const pendingAgencyKycCount = agencies.filter((a) => a.status === 'pending_verification').length;
   const openDisputesCount = disputes.filter((d) => d.status === 'open').length;
 
   return (
@@ -111,6 +145,47 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
             </button>
 
             <button
+              onClick={() => setActiveTab('agency-kyc')}
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 flex-shrink-0 relative ${
+                activeTab === 'agency-kyc'
+                  ? 'bg-[#1C1C1C] text-white shadow-xs'
+                  : 'text-[#6B6B6B] hover:text-[#1C1C1C] hover:bg-[#FAF6EE]'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 text-[#F15A24]" />
+              <span>Agency KYC</span>
+              {pendingAgencyKycCount > 0 && (
+                <span className="w-5 h-5 rounded-full bg-[#F15A24] text-white text-[10px] font-extrabold flex items-center justify-center ml-1">
+                  {pendingAgencyKycCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('all-agencies')}
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 flex-shrink-0 ${
+                activeTab === 'all-agencies'
+                  ? 'bg-[#1C1C1C] text-white shadow-xs'
+                  : 'text-[#6B6B6B] hover:text-[#1C1C1C] hover:bg-[#FAF6EE]'
+              }`}
+            >
+              <Building className="w-4 h-4" />
+              <span>Travel Agencies</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('agency-tours')}
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 flex-shrink-0 ${
+                activeTab === 'agency-tours'
+                  ? 'bg-[#1C1C1C] text-white shadow-xs'
+                  : 'text-[#6B6B6B] hover:text-[#1C1C1C] hover:bg-[#FAF6EE]'
+              }`}
+            >
+              <MapPin className="w-4 h-4" />
+              <span>Tour Leads ({agencyTripPosts.length})</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('verifications')}
               className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 flex-shrink-0 relative ${
                 activeTab === 'verifications'
@@ -119,12 +194,24 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
               }`}
             >
               <ShieldCheck className="w-4 h-4" />
-              <span>KYC Queue</span>
-              {pendingKycCount > 0 && (
+              <span>Driver KYC</span>
+              {pendingDriverKycCount > 0 && (
                 <span className="w-5 h-5 rounded-full bg-[#F15A24] text-white text-[10px] font-extrabold flex items-center justify-center ml-1">
-                  {pendingKycCount}
+                  {pendingDriverKycCount}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('agency-packages')}
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 flex-shrink-0 ${
+                activeTab === 'agency-packages'
+                  ? 'bg-[#1C1C1C] text-white shadow-xs'
+                  : 'text-[#6B6B6B] hover:text-[#1C1C1C] hover:bg-[#FAF6EE]'
+              }`}
+            >
+              <PackageCheck className="w-4 h-4 text-emerald-600" />
+              <span>Agency Plans</span>
             </button>
 
             <button
@@ -136,7 +223,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
               }`}
             >
               <PackageCheck className="w-4 h-4" />
-              <span>Boost Packages CRUD</span>
+              <span>Driver Packages</span>
             </button>
 
             <button
@@ -148,7 +235,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
               }`}
             >
               <Sparkles className="w-4 h-4" />
-              <span>Driver Boost Statuses</span>
+              <span>Driver Boosts</span>
             </button>
 
             <button
@@ -160,7 +247,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
               }`}
             >
               <AlertTriangle className="w-4 h-4" />
-              <span>Disputes & Refunds</span>
+              <span>Disputes</span>
               {openDisputesCount > 0 && (
                 <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-extrabold flex items-center justify-center ml-1">
                   {openDisputesCount}
@@ -176,6 +263,10 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EBE5D8] shadow-card">
           {activeTab === 'dashboard' && <AdminDashboard onSwitchRole={() => {}} />}
           {activeTab === 'verifications' && <DriverVerificationQueue />}
+          {activeTab === 'agency-kyc' && <AgencyVerificationQueue />}
+          {activeTab === 'all-agencies' && <AllAgenciesView />}
+          {activeTab === 'agency-tours' && <AgencyTourPostsManager />}
+          {activeTab === 'agency-packages' && <AgencyPackageManager />}
           {activeTab === 'packages' && <PackageManager />}
           {activeTab === 'boosts' && <DriverBoostStatusList />}
           {activeTab === 'disputes' && <DisputeResolutionView />}

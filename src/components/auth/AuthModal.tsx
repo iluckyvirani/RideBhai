@@ -17,7 +17,7 @@ import { useAppStore } from '../../store/useAppStore';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetRole?: 'rider' | 'driver';
+  targetRole?: 'rider' | 'driver' | 'agency';
   onSuccess?: () => void;
   title?: string;
   subtitle?: string;
@@ -31,11 +31,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   title,
   subtitle,
 }) => {
-  const { loginRider, loginDriver } = useAppStore();
+  const { loginRider, loginDriver, loginAgency } = useAppStore();
 
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
   const [fullName, setFullName] = useState('');
+  const [agencyName, setAgencyName] = useState('');
+  const [city, setCity] = useState('Jaipur');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [generatedOtp, setGeneratedOtp] = useState('4829');
   const [showSimulatedSms, setShowSimulatedSms] = useState(false);
@@ -134,6 +136,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setIsVerifying(false);
       if (targetRole === 'rider') {
         loginRider(phone, fullName || 'Traveler');
+      } else if (targetRole === 'agency') {
+        loginAgency(phone, agencyName || 'Royal Rajasthan Tours', fullName || 'Vikram Rathore', city);
       } else {
         loginDriver(phone, fullName || 'Driver Partner', undefined, 'unverified');
       }
@@ -175,14 +179,30 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="p-5 pb-3 flex items-center justify-between border-b border-[#F2ECE1]">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-[#FFF0EB] flex items-center justify-center text-[#F15A24]">
-              {targetRole === 'driver' ? <Car className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
+              {targetRole === 'driver' ? (
+                <Car className="w-5 h-5" />
+              ) : targetRole === 'agency' ? (
+                <Sparkles className="w-5 h-5" />
+              ) : (
+                <ShieldCheck className="w-5 h-5" />
+              )}
             </div>
             <div>
               <h3 className="text-base font-extrabold text-[#1C1C1C]">
-                {title || (targetRole === 'driver' ? 'Driver Partner Registration' : 'Rider Verification')}
+                {title ||
+                  (targetRole === 'driver'
+                    ? 'Driver Partner Registration'
+                    : targetRole === 'agency'
+                    ? 'Travel Agency Partner Portal'
+                    : 'Rider Verification')}
               </h3>
               <p className="text-xs text-[#6B6B6B]">
-                {subtitle || (targetRole === 'driver' ? 'Enter mobile number to verify & complete KYC onboarding' : 'Login with mobile OTP to book & message drivers')}
+                {subtitle ||
+                  (targetRole === 'driver'
+                    ? 'Enter mobile number to verify & complete KYC onboarding'
+                    : targetRole === 'agency'
+                    ? 'Enter agency details & mobile number to start onboarding'
+                    : 'Login with mobile OTP to book & message drivers')}
               </p>
             </div>
           </div>
@@ -198,10 +218,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="p-6">
           {step === 'phone' ? (
             <form onSubmit={handleSendOtp} className="space-y-4">
-              {/* Optional Name */}
+              {/* Agency Name if role is agency */}
+              {targetRole === 'agency' && (
+                <div>
+                  <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1.5">
+                    Travel Agency / Firm Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={agencyName}
+                    onChange={(e) => setAgencyName(e.target.value)}
+                    placeholder="e.g. Royal Rajasthan Tours & Travels"
+                    className="w-full text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE] px-3.5 py-3 rounded-2xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24]"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Name */}
               <div>
                 <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1.5">
-                  Your Full Name
+                  {targetRole === 'agency' ? 'Owner / Contact Person Name *' : 'Your Full Name *'}
                 </label>
                 <div className="relative flex items-center">
                   <div className="absolute left-3.5 text-[#6B6B6B]">
@@ -211,7 +248,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder={targetRole === 'driver' ? 'e.g. Aman Singhal' : 'e.g. Rahul Sharma'}
+                    placeholder={
+                      targetRole === 'agency'
+                        ? 'e.g. Vikram Rathore'
+                        : targetRole === 'driver'
+                        ? 'e.g. Aman Singhal'
+                        : 'e.g. Rahul Sharma'
+                    }
                     className="w-full text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE] pl-10 pr-3.5 py-3 rounded-2xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24]"
                     required
                   />
@@ -221,7 +264,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               {/* Mobile Number */}
               <div>
                 <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1.5">
-                  10-Digit Mobile Number
+                  10-Digit Mobile Number (WhatsApp Connected) *
                 </label>
                 <div className="relative flex items-center">
                   <div className="absolute left-3.5 flex items-center gap-1 text-xs font-bold text-[#1C1C1C] border-r border-[#EBE5D8] pr-2.5">

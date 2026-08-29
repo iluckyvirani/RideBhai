@@ -20,6 +20,7 @@ interface DriverHomeProps {
   onViewRequestsClick: () => void;
   onViewPackagesClick: () => void;
   onViewVerificationClick: () => void;
+  onViewAgencyToursClick?: () => void;
 }
 
 export const DriverHome: React.FC<DriverHomeProps> = ({
@@ -27,11 +28,13 @@ export const DriverHome: React.FC<DriverHomeProps> = ({
   onViewRequestsClick,
   onViewPackagesClick,
   onViewVerificationClick,
+  onViewAgencyToursClick,
 }) => {
   const {
     currentDriver,
     rides,
     bookings,
+    agencyTripPosts,
     isDriverBoosted,
     getDriverActivePackage,
   } = useAppStore();
@@ -52,8 +55,10 @@ export const DriverHome: React.FC<DriverHomeProps> = ({
     ? Math.max(0, Math.ceil((activePkg.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)))
     : 0;
 
+  const activeAgencyLeadsCount = agencyTripPosts.filter((p) => p.status === 'active').length;
+
   return (
-    <div className="space-y-4 pb-24 animate-fade-in">
+    <div className="space-y-4 pb-32 animate-fade-in">
       {/* Driver Verification Status Banner */}
       {currentDriver.status !== 'verified' && (
         <div
@@ -80,6 +85,36 @@ export const DriverHome: React.FC<DriverHomeProps> = ({
             </div>
           </div>
           <ChevronRight className="w-4 h-4" />
+        </div>
+      )}
+
+      {/* NEW: Travel Agency Booking Leads Card */}
+      {onViewAgencyToursClick && (
+        <div
+          onClick={onViewAgencyToursClick}
+          className="p-4 rounded-3xl bg-gradient-to-r from-[#1C1C1C] via-[#2A2A2A] to-[#1C1C1C] text-white shadow-card cursor-pointer hover:border-[#F15A24] border border-white/10 active-press transition-all relative overflow-hidden"
+        >
+          <div className="flex items-center justify-between relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#F15A24] to-[#FF7A45] flex items-center justify-center text-white shadow-xs font-bold">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#FF7A45] bg-[#F15A24]/20 px-2 py-0.5 rounded-full">
+                    {activeAgencyLeadsCount} Open Tour Leads
+                  </span>
+                </div>
+                <h3 className="text-xs font-extrabold text-white mt-0.5">
+                  Travel Agency Bookings
+                </h3>
+                <p className="text-[10px] text-white/70">
+                  Agra ↔ Jaipur, Delhi ↔ Manali • Direct WhatsApp Claiming
+                </p>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-white/70" />
+          </div>
         </div>
       )}
 

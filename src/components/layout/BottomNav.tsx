@@ -14,6 +14,9 @@ import {
   Layers,
   AlertCircle,
   LayoutDashboard,
+  Building,
+  Briefcase,
+  MapPin
 } from 'lucide-react';
 
 interface BottomNavProps {
@@ -22,6 +25,7 @@ interface BottomNavProps {
   onTabChange: (tab: string) => void;
   unreadChatCount?: number;
   pendingRequestsCount?: number;
+  openAgencyLeadsCount?: number;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -30,6 +34,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onTabChange,
   unreadChatCount = 0,
   pendingRequestsCount = 0,
+  openAgencyLeadsCount = 0,
 }) => {
   const getTabs = () => {
     if (role === 'rider') {
@@ -44,10 +49,20 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     if (role === 'driver') {
       return [
         { id: 'my-rides', label: 'My Rides', icon: Car },
+        { id: 'agency-tours', label: 'Tour Leads', icon: Sparkles, badge: openAgencyLeadsCount },
         { id: 'post-ride', label: 'Post Ride', icon: PlusCircle, highlight: true },
         { id: 'requests', label: 'Requests', icon: Users, badge: pendingRequestsCount },
-        { id: 'packages', label: 'Earnings & Boost', icon: Sparkles },
         { id: 'profile', label: 'Profile', icon: User },
+      ];
+    }
+
+    if (role === 'agency') {
+      return [
+        { id: 'agency-home', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'post-lead', label: 'Post Lead', icon: PlusCircle, highlight: true },
+        { id: 'agency-packages', label: 'Plans', icon: Sparkles },
+        { id: 'agency-kyc', label: 'KYC Verify', icon: ShieldCheck },
+        { id: 'agency-profile', label: 'Profile', icon: Building },
       ];
     }
 

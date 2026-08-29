@@ -40,7 +40,7 @@ export const RiderHome: React.FC<RiderHomeProps> = ({ onSearch, onSelectRide }) 
   };
 
   return (
-    <div className="space-y-5 pb-24 animate-fade-in">
+    <div className="space-y-5 pb-32 animate-fade-in">
       {/* Hero Banner with Warm Orange Branding */}
       <div className="relative rounded-3xl p-5 bg-gradient-to-br from-[#FFF5F0] to-[#FFEBE3] border border-[#FFD8CB] overflow-hidden shadow-card">
         <div className="relative z-10 space-y-1.5">
@@ -67,141 +67,159 @@ export const RiderHome: React.FC<RiderHomeProps> = ({ onSearch, onSelectRide }) 
       </div>
 
       {/* Main Search Form Card */}
-      <div className="bg-white rounded-3xl p-4 shadow-card border border-[#EBE5D8] relative">
-        <form onSubmit={handleSearchSubmit} className="space-y-3">
-          {/* Leaving From */}
-          <div className="relative">
-            <label className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1">
-              Leaving From
-            </label>
-            <div className="relative flex items-center">
-              <div className="w-7 h-7 rounded-lg bg-[#FAF6EE] flex items-center justify-center text-[#F15A24] mr-2">
-                <MapPin className="w-4 h-4" />
+      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-card border border-[#EBE5D8] relative space-y-3.5">
+        <form onSubmit={handleSearchSubmit} className="space-y-3.5">
+          {/* Connected Route Container */}
+          <div className="relative rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] p-3 space-y-2">
+            {/* Leaving From */}
+            <div className="relative">
+              <label className="text-[10px] font-extrabold text-[#8A8170] uppercase tracking-wider block mb-1">
+                Leaving From
+              </label>
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center flex-shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                </div>
+                <input
+                  type="text"
+                  value={fromCity}
+                  onChange={(e) => setFromCity(e.target.value)}
+                  onFocus={() => setShowFromSuggest(true)}
+                  placeholder="Enter departure city"
+                  className="w-full text-xs sm:text-sm font-extrabold text-[#1C1C1C] bg-transparent outline-none placeholder-[#A39B8B]"
+                  required
+                />
               </div>
-              <input
-                type="text"
-                value={fromCity}
-                onChange={(e) => setFromCity(e.target.value)}
-                onFocus={() => setShowFromSuggest(true)}
-                placeholder="Pick departure city"
-                className="w-full text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE] px-3 py-2.5 rounded-xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24]"
-                required
-              />
+
+              {/* From Suggestions Dropdown */}
+              {showFromSuggest && (
+                <>
+                  <div
+                    className="fixed inset-0 z-20"
+                    onClick={() => setShowFromSuggest(false)}
+                  />
+                  <div className="absolute left-0 right-0 top-full mt-2 z-30 bg-white rounded-2xl shadow-xl border border-[#EBE5D8] max-h-48 overflow-y-auto p-1.5 animate-slide-up">
+                    {POPULAR_CITIES.map((c) => (
+                      <button
+                        key={c.name}
+                        type="button"
+                        onClick={() => {
+                          setFromCity(c.name);
+                          setShowFromSuggest(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-bold text-[#1C1C1C] hover:bg-[#FAF6EE] rounded-xl flex items-center justify-between transition-colors"
+                      >
+                        <span>{c.name}</span>
+                        <span className="text-[10px] text-[#9E9E9E] font-normal">{c.state}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* From Suggestions Dropdown */}
-            {showFromSuggest && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white rounded-2xl shadow-xl border border-[#EBE5D8] max-h-48 overflow-y-auto p-1.5 animate-slide-up">
-                {POPULAR_CITIES.map((c) => (
-                  <button
-                    key={c.name}
-                    type="button"
-                    onClick={() => {
-                      setFromCity(c.name);
-                      setShowFromSuggest(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs font-medium text-[#1C1C1C] hover:bg-[#FAF6EE] rounded-xl flex items-center justify-between"
-                  >
-                    <span>{c.name}</span>
-                    <span className="text-[10px] text-[#9E9E9E]">{c.state}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Swap Button Divider */}
-          <div className="relative flex justify-center -my-2 z-10">
-            <button
-              type="button"
-              onClick={handleSwap}
-              className="w-8 h-8 rounded-full bg-white border border-[#EBE5D8] shadow-sm flex items-center justify-center text-[#F15A24] hover:bg-[#FFF0EB] active-press"
-              title="Swap Cities"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Going To */}
-          <div className="relative">
-            <label className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1">
-              Going To
-            </label>
-            <div className="relative flex items-center">
-              <div className="w-7 h-7 rounded-lg bg-[#FAF6EE] flex items-center justify-center text-[#E8380D] mr-2">
-                <MapPin className="w-4 h-4" />
-              </div>
-              <input
-                type="text"
-                value={toCity}
-                onChange={(e) => setToCity(e.target.value)}
-                onFocus={() => setShowToSuggest(true)}
-                placeholder="Pick destination city"
-                className="w-full text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE] px-3 py-2.5 rounded-xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24]"
-                required
-              />
+            {/* Middle Divider with Floating Swap Button */}
+            <div className="relative flex items-center justify-center py-1">
+              <div className="w-full border-t border-[#EBE5D8]/80"></div>
+              <button
+                type="button"
+                onClick={handleSwap}
+                className="absolute right-3 w-8 h-8 rounded-full bg-white border border-[#EBE5D8] shadow-xs flex items-center justify-center text-[#F15A24] hover:bg-[#FFF0EB] hover:border-[#F15A24]/40 active-press transition-all"
+                title="Swap Cities"
+              >
+                <ArrowRightLeft className="w-3.5 h-3.5" />
+              </button>
             </div>
 
-            {/* To Suggestions Dropdown */}
-            {showToSuggest && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white rounded-2xl shadow-xl border border-[#EBE5D8] max-h-48 overflow-y-auto p-1.5 animate-slide-up">
-                {POPULAR_CITIES.map((c) => (
-                  <button
-                    key={c.name}
-                    type="button"
-                    onClick={() => {
-                      setToCity(c.name);
-                      setShowToSuggest(false);
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs font-medium text-[#1C1C1C] hover:bg-[#FAF6EE] rounded-xl flex items-center justify-between"
-                  >
-                    <span>{c.name}</span>
-                    <span className="text-[10px] text-[#9E9E9E]">{c.state}</span>
-                  </button>
-                ))}
+            {/* Going To */}
+            <div className="relative">
+              <label className="text-[10px] font-extrabold text-[#8A8170] uppercase tracking-wider block mb-1">
+                Going To
+              </label>
+              <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 rounded-full bg-orange-100 border border-orange-300 flex items-center justify-center flex-shrink-0">
+                  <MapPin className="w-3.5 h-3.5 text-[#F15A24]" />
+                </div>
+                <input
+                  type="text"
+                  value={toCity}
+                  onChange={(e) => setToCity(e.target.value)}
+                  onFocus={() => setShowToSuggest(true)}
+                  placeholder="Enter destination city"
+                  className="w-full text-xs sm:text-sm font-extrabold text-[#1C1C1C] bg-transparent outline-none placeholder-[#A39B8B]"
+                  required
+                />
               </div>
-            )}
+
+              {/* To Suggestions Dropdown */}
+              {showToSuggest && (
+                <>
+                  <div
+                    className="fixed inset-0 z-20"
+                    onClick={() => setShowToSuggest(false)}
+                  />
+                  <div className="absolute left-0 right-0 top-full mt-2 z-30 bg-white rounded-2xl shadow-xl border border-[#EBE5D8] max-h-48 overflow-y-auto p-1.5 animate-slide-up">
+                    {POPULAR_CITIES.map((c) => (
+                      <button
+                        key={c.name}
+                        type="button"
+                        onClick={() => {
+                          setToCity(c.name);
+                          setShowToSuggest(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs font-bold text-[#1C1C1C] hover:bg-[#FAF6EE] rounded-xl flex items-center justify-between transition-colors"
+                      >
+                        <span>{c.name}</span>
+                        <span className="text-[10px] text-[#9E9E9E] font-normal">{c.state}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Date & Seats Row */}
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <div>
-              <label className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1">
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Travel Date */}
+            <div className="bg-[#FAF6EE] rounded-2xl border border-[#EBE5D8] p-3 hover:border-[#F15A24]/40 transition-colors">
+              <label className="text-[10px] font-extrabold text-[#8A8170] uppercase tracking-wider block mb-1.5">
                 Travel Date
               </label>
-              <div className="flex items-center bg-[#FAF6EE] rounded-xl border border-[#EBE5D8] px-2.5 py-2">
-                <Calendar className="w-3.5 h-3.5 text-[#6B6B6B] mr-1.5 flex-shrink-0" />
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[#F15A24] flex-shrink-0" />
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full text-xs font-bold text-[#1C1C1C] bg-transparent focus:outline-none"
+                  className="w-full text-xs font-extrabold text-[#1C1C1C] bg-transparent outline-none cursor-pointer"
                   required
                 />
               </div>
             </div>
 
-            <div>
-              <label className="text-[10px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1">
+            {/* Passengers */}
+            <div className="bg-[#FAF6EE] rounded-2xl border border-[#EBE5D8] p-3 hover:border-[#F15A24]/40 transition-colors">
+              <label className="text-[10px] font-extrabold text-[#8A8170] uppercase tracking-wider block mb-1.5">
                 Passengers
               </label>
-              <div className="flex items-center justify-between bg-[#FAF6EE] rounded-xl border border-[#EBE5D8] px-3 py-1.5">
-                <div className="flex items-center text-xs font-bold text-[#1C1C1C]">
-                  <Users className="w-3.5 h-3.5 text-[#6B6B6B] mr-1" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-extrabold text-[#1C1C1C]">
+                  <Users className="w-4 h-4 text-[#F15A24] flex-shrink-0" />
                   <span>{seats} Seat{seats > 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setSeats(Math.max(1, seats - 1))}
-                    className="w-6 h-6 rounded-lg bg-white border border-[#EBE5D8] flex items-center justify-center text-xs font-bold text-[#1C1C1C]"
+                    className="w-6 h-6 rounded-full bg-white border border-[#EBE5D8] shadow-2xs hover:bg-[#FFF5F0] hover:text-[#F15A24] hover:border-[#F15A24]/40 flex items-center justify-center text-xs font-black text-[#1C1C1C] transition-all"
                   >
                     -
                   </button>
                   <button
                     type="button"
                     onClick={() => setSeats(Math.min(4, seats + 1))}
-                    className="w-6 h-6 rounded-lg bg-white border border-[#EBE5D8] flex items-center justify-center text-xs font-bold text-[#1C1C1C]"
+                    className="w-6 h-6 rounded-full bg-white border border-[#EBE5D8] shadow-2xs hover:bg-[#FFF5F0] hover:text-[#F15A24] hover:border-[#F15A24]/40 flex items-center justify-center text-xs font-black text-[#1C1C1C] transition-all"
                   >
                     +
                   </button>
@@ -213,7 +231,7 @@ export const RiderHome: React.FC<RiderHomeProps> = ({ onSearch, onSelectRide }) 
           {/* Search Button */}
           <button
             type="submit"
-            className="w-full py-3.5 mt-2 rounded-2xl brand-gradient text-white font-extrabold text-sm shadow-md active-press flex items-center justify-center gap-2 hover:opacity-95"
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#F15A24] via-[#F15A24] to-[#FF7A45] text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg active-press flex items-center justify-center gap-2 transition-all tracking-wide hover:opacity-95"
           >
             <Search className="w-4 h-4" />
             <span>Search Available Rides</span>

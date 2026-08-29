@@ -6,15 +6,17 @@ import { useAppStore } from '../../store/useAppStore';
 interface LandingNavProps {
   onOpenRiderApp: () => void;
   onOpenDriverApp: () => void;
+  onOpenAgencyPortal?: () => void;
   onOpenAdminPortal?: () => void;
 }
 
 export const LandingNav: React.FC<LandingNavProps> = ({
   onOpenRiderApp,
   onOpenDriverApp,
+  onOpenAgencyPortal,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isRiderLoggedIn, isDriverLoggedIn } = useAppStore();
+  const { isRiderLoggedIn, isDriverLoggedIn, isAgencyLoggedIn } = useAppStore();
 
   const scrollTo = (id: string) => {
     setMobileMenuOpen(false);
@@ -34,7 +36,7 @@ export const LandingNav: React.FC<LandingNavProps> = ({
           </div>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-6 lg:gap-7">
             <button
               onClick={() => scrollTo('how-it-works')}
               className="text-xs font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
@@ -46,6 +48,12 @@ export const LandingNav: React.FC<LandingNavProps> = ({
               className="text-xs font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
             >
               For Drivers
+            </button>
+            <button
+              onClick={() => scrollTo('travel-agencies')}
+              className="text-xs font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
+            >
+              Travel Agencies
             </button>
             <button
               onClick={() => scrollTo('earnings-calculator')}
@@ -60,32 +68,35 @@ export const LandingNav: React.FC<LandingNavProps> = ({
               onClick={() => scrollTo('safety-trust')}
               className="text-xs font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
             >
-              Safety & Verification
-            </button>
-            <button
-              onClick={() => scrollTo('driver-registration')}
-              className="text-xs font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
-            >
-              Driver Registration
+              Safety
             </button>
           </nav>
 
           {/* Right Action CTAs */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-2.5">
+            {onOpenAgencyPortal && (
+              <button
+                onClick={onOpenAgencyPortal}
+                className="px-3.5 py-2 rounded-2xl text-xs font-extrabold bg-[#FAF6EE] hover:bg-white text-[#1C1C1C] border border-[#EBE5D8] hover:border-[#F15A24] transition-all flex items-center gap-1.5 active-press"
+              >
+                <span>{isAgencyLoggedIn ? 'Agency Portal' : 'For Travel Agencies'}</span>
+              </button>
+            )}
+
             <button
               onClick={onOpenDriverApp}
-              className="px-4 py-2.5 rounded-2xl text-xs font-extrabold bg-white hover:bg-[#FFF5F0] text-[#1C1C1C] border border-[#EBE5D8] shadow-xs hover:border-[#F15A24] transition-all flex items-center gap-2 active-press"
+              className="px-3.5 py-2 rounded-2xl text-xs font-extrabold bg-white hover:bg-[#FFF5F0] text-[#1C1C1C] border border-[#EBE5D8] shadow-xs hover:border-[#F15A24] transition-all flex items-center gap-1.5 active-press"
             >
-              <Car className="w-4 h-4 text-[#F15A24]" />
-              <span>{isDriverLoggedIn ? 'Driver Dashboard' : 'Register as Driver'}</span>
+              <Car className="w-3.5 h-3.5 text-[#F15A24]" />
+              <span>{isDriverLoggedIn ? 'Driver Dashboard' : 'Driver Center'}</span>
             </button>
 
             <button
               onClick={onOpenRiderApp}
-              className="px-5 py-2.5 rounded-2xl text-xs font-extrabold text-white bg-gradient-to-r from-[#F15A24] to-[#FF7A45] shadow-md hover:shadow-lg transition-all flex items-center gap-2 active-press"
+              className="px-4 py-2 rounded-2xl text-xs font-extrabold text-white bg-gradient-to-r from-[#F15A24] to-[#FF7A45] shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 active-press"
             >
               <span>{isRiderLoggedIn ? 'Open Rider App' : 'Search Rides'}</span>
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
 

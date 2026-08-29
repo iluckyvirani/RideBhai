@@ -54,10 +54,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
       <div className="flex items-center gap-2">
         {/* Role Pill Indicator */}
-        <div className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-white shadow-xs">
+        <div className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#EBE5D8] bg-white shadow-xs">
           {role === 'rider' && <span className="text-[#F15A24]">Rider App</span>}
-          {role === 'driver' && <span className="text-[#2E9E5B]">Driver App</span>}
-          {role === 'admin' && <span className="text-amber-600">Admin App</span>}
+          {role === 'driver' && <span className="text-[#00A86B]">Driver App</span>}
+          {role === 'agency' && <span className="text-[#F15A24]">Agency App</span>}
+          {role === 'admin' && <span className="text-amber-600">Admin</span>}
         </div>
 
         {/* Notifications Button with unread badge */}
