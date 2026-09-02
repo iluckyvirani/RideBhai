@@ -14,12 +14,14 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { UserRole } from '../../types';
+import { MyBookingsPreview } from '../common/MyBookingsPreview';
 
 interface RiderProfileViewProps {
   onSwitchRole: (role: UserRole) => void;
+  onOpenBookings?: () => void;
 }
 
-export const RiderProfileView: React.FC<RiderProfileViewProps> = ({ onSwitchRole }) => {
+export const RiderProfileView: React.FC<RiderProfileViewProps> = ({ onSwitchRole, onOpenBookings }) => {
   const { currentRider, updateRiderProfile, resetDemoData } = useAppStore();
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
@@ -119,6 +121,10 @@ export const RiderProfileView: React.FC<RiderProfileViewProps> = ({ onSwitchRole
             )}
           </div>
         )}
+      </div>
+
+      <div className="bg-white rounded-3xl p-4 border border-[#EBE5D8] shadow-card">
+        <MyBookingsPreview mode="rider" onShowAll={() => onOpenBookings?.()} />
       </div>
 
       {/* Account Info Details */}

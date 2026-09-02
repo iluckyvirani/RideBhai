@@ -27,6 +27,9 @@ export const AgencyPackagesView: React.FC = () => {
 
   const activeSub = getAgencyActiveSubscription(currentAgency.id);
   const payPkg = agencyPackages.find((p) => p.id === purchasingId);
+  const daysLeft = activeSub
+    ? Math.max(0, Math.ceil((activeSub.sub.expiresAt - Date.now()) / (24 * 60 * 60 * 1000)))
+    : 0;
 
   const handlePurchase = (packageId: string) => {
     setPurchasingId(packageId);
@@ -47,7 +50,14 @@ export const AgencyPackagesView: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4 pb-12 animate-fade-in">
+    <div className="space-y-4 pb-24 animate-fade-in">
+      <div>
+        <h2 className="text-lg font-extrabold text-[#1C1C1C]">Posting plans</h2>
+        <p className="text-[11px] text-[#6B6B6B]">
+          Buy a plan in-app to post cars and tours. Your current active plan is shown first.
+        </p>
+      </div>
+
       {/* Active Subscription Banner */}
       {activeSub ? (
         <div className="p-5 rounded-3xl bg-gradient-to-br from-[#1C1C1C] to-[#2D2D2D] text-white shadow-card relative overflow-hidden">
@@ -55,14 +65,16 @@ export const AgencyPackagesView: React.FC = () => {
             <div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#00A86B]/20 text-[#00A86B] border border-[#00A86B]/30 text-[10px] font-extrabold mb-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00A86B] animate-pulse"></span>
-                <span>Active Subscription</span>
+                <span>Your current active plan</span>
               </div>
               <h2 className="text-base font-extrabold text-white">
                 {activeSub.pkg.name}
               </h2>
               <p className="text-xs text-white/70 mt-1">
-                Valid until {new Date(activeSub.sub.expiresAt).toLocaleDateString()}
+                Purchased {new Date(activeSub.sub.purchasedAt).toLocaleDateString('en-IN')} · valid until{' '}
+                {new Date(activeSub.sub.expiresAt).toLocaleDateString('en-IN')}
               </p>
+              <p className="text-[11px] font-extrabold text-[#FF7A45] mt-1">{daysLeft} days left</p>
             </div>
 
             <div className="w-12 h-12 rounded-2xl bg-[#F15A24] flex items-center justify-center text-white shadow-lg">

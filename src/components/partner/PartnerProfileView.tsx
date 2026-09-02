@@ -4,17 +4,20 @@ import { useAppStore } from '../../store/useAppStore';
 import { UserRole } from '../../types';
 import { PartnerCarsView } from './PartnerCarsView';
 import { PartnerToursView } from './PartnerToursView';
+import { MyBookingsPreview } from '../common/MyBookingsPreview';
 
 interface PartnerProfileViewProps {
   onSwitchRole: (role: UserRole) => void;
   onOpenVerification: () => void;
   onOpenPackages: () => void;
+  onOpenBookings: () => void;
 }
 
 export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
   onSwitchRole,
   onOpenVerification,
   onOpenPackages,
+  onOpenBookings,
 }) => {
   const { currentDriver, currentAgency, resetDemoData, logoutPartner } = useAppStore();
 
@@ -48,6 +51,10 @@ export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
         <PartnerToursView />
       </div>
 
+      <div className="p-4 rounded-3xl bg-white border border-[#EBE5D8] shadow-card">
+        <MyBookingsPreview mode="partner" onShowAll={onOpenBookings} />
+      </div>
+
       <div className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-2">
         <button
           onClick={onOpenVerification}
@@ -65,7 +72,7 @@ export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
           <span className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#F15A24]" /> Posting packages (in-app pay)
           </span>
-          <span className="text-[10px] font-extrabold text-emerald-600">Pay & unlock posts</span>
+          <span className="text-[10px] font-extrabold text-emerald-600">Open Plans tab</span>
         </button>
       </div>
 

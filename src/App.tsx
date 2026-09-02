@@ -140,7 +140,7 @@ export function App() {
     if (activeTab === 'tours') return 'Tour packages';
     if (activeTab === 'profile') return isPartnerShell ? 'Partner profile' : 'Profile';
     if (activeTab === 'verification') return 'KYC verification';
-    if (activeTab === 'packages') return 'Packages & plans';
+    if (activeTab === 'packages') return 'Posting plans';
     return 'Ride Bhai';
   };
 
@@ -202,9 +202,13 @@ export function App() {
                 onSwitchRole={handleRoleChange}
                 onOpenVerification={() => setActiveTab('verification')}
                 onOpenPackages={() => setActiveTab('packages')}
+                onOpenBookings={() => setActiveTab('bookings')}
               />
             ) : (
-              <RiderProfileView onSwitchRole={handleRoleChange} />
+              <RiderProfileView
+                onSwitchRole={handleRoleChange}
+                onOpenBookings={() => setActiveTab('bookings')}
+              />
             ))}
 
           {activeTab === 'verification' && isPartnerShell && (
@@ -217,7 +221,7 @@ export function App() {
           {activeTab === 'packages' && isPartnerShell && <AgencyPackagesView />}
         </main>
 
-        {activeTab !== 'verification' && activeTab !== 'packages' ? (
+        {activeTab !== 'verification' ? (
           <BottomNav
             role={isPartnerShell ? 'partner' : 'rider'}
             activeTab={activeTab}

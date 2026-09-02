@@ -6,9 +6,10 @@ import { Inquiry } from '../../types';
 
 interface InquiriesViewProps {
   mode: 'rider' | 'partner';
+  embedded?: boolean;
 }
 
-export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode }) => {
+export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded }) => {
   const { inquiries, currentRider, currentDriver, currentAgency, carListings, agencyTripPosts } =
     useAppStore();
 
@@ -82,17 +83,19 @@ export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode }) => {
   };
 
   return (
-    <div className="space-y-4 pb-24 animate-fade-in">
+    <div className={`space-y-4 animate-fade-in ${embedded ? '' : 'pb-24'}`}>
       <div>
-        <h2 className="text-lg font-extrabold text-[#1C1C1C]">Bookings</h2>
+        <h2 className={`${embedded ? 'text-xs font-extrabold uppercase tracking-wider' : 'text-lg font-extrabold'} text-[#1C1C1C]`}>
+          {embedded ? 'Call & WhatsApp history' : 'Bookings'}
+        </h2>
         <p className="text-[11px] text-[#6B6B6B]">
           {mode === 'rider'
-            ? 'Cars and tours you contacted. Deal happens directly — no app payment.'
-            : 'Incoming Call / WhatsApp on your posts, plus other partners you contacted.'}
+            ? 'Every Call or WhatsApp you make on a car or tour is saved here.'
+            : 'Incoming contacts on your posts, plus other partners you called or WhatsApped.'}
         </p>
       </div>
 
-      {mode === 'partner' && (myListings.length > 0 || myTours.length > 0) && (
+      {mode === 'partner' && !embedded && (myListings.length > 0 || myTours.length > 0) && (
         <div className="space-y-2">
           <h3 className="text-[10px] font-extrabold uppercase tracking-wider text-[#6B6B6B]">My posts</h3>
           {myListings.map((c) => (
