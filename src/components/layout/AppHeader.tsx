@@ -53,13 +53,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Role Pill Indicator */}
-        <div className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#EBE5D8] bg-white shadow-xs">
-          {role === 'rider' && <span className="text-[#F15A24]">Rider App</span>}
-          {role === 'driver' && <span className="text-[#00A86B]">Driver App</span>}
-          {role === 'agency' && <span className="text-[#F15A24]">Agency App</span>}
-          {role === 'admin' && <span className="text-amber-600">Admin</span>}
-        </div>
+        {(role === 'partner' || role === 'driver' || role === 'agency' || role === 'rider' || role === 'admin') && (
+          <div className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#EBE5D8] bg-white shadow-xs">
+            {role === 'partner' || role === 'driver' || role === 'agency' ? (
+              <span className="text-[#00A86B]">Partner</span>
+            ) : role === 'admin' ? (
+              <span className="text-amber-600">Admin</span>
+            ) : (
+              <span className="text-[#F15A24]">Customer</span>
+            )}
+          </div>
+        )}
 
         {/* Notifications Button with unread badge */}
         <button

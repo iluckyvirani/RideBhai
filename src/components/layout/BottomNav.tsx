@@ -1,6 +1,6 @@
 import React from 'react';
 import { UserRole } from '../../types';
-import { Ticket, User, Car, Sparkles, Package } from 'lucide-react';
+import { PhoneCall, User, Car, Sparkles, Package } from 'lucide-react';
 
 interface BottomNavProps {
   role: UserRole;
@@ -18,9 +18,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ role, activeTab, onTabChan
         { id: 'profile', label: 'Profile', icon: User },
       ]
     : [
-        { id: 'bookings', label: 'Bookings', icon: Ticket },
         { id: 'cars', label: 'Cars', icon: Car },
         { id: 'tours', label: 'Tours', icon: Sparkles },
+        { id: 'bookings', label: 'Bookings', icon: PhoneCall },
         { id: 'profile', label: 'Profile', icon: User },
       ];
 
