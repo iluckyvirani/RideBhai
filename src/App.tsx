@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from './store/useAppStore';
 import { AppHeader } from './components/layout/AppHeader';
 import { BottomNav } from './components/layout/BottomNav';
@@ -108,6 +108,12 @@ export function App() {
 
   const isPartnerShell = appView === 'partner-app' || role === 'partner' || role === 'driver' || role === 'agency';
 
+  useEffect(() => {
+    if (isPartnerShell && activeTab === 'bookings') {
+      setActiveTab('profile');
+    }
+  }, [isPartnerShell, activeTab]);
+
   if (appView === 'landing') {
     return (
       <>
@@ -137,7 +143,7 @@ export function App() {
   const getHeaderTitle = () => {
     if (activeTab === 'bookings') return 'Bookings';
     if (activeTab === 'cars') return 'Cars · All India';
-    if (activeTab === 'tours') return 'Tour packages';
+    if (activeTab === 'tours') return 'Tours';
     if (activeTab === 'profile') return isPartnerShell ? 'Partner profile' : 'Profile';
     if (activeTab === 'verification') return 'KYC verification';
     if (activeTab === 'packages') return 'Posting plans';
@@ -154,9 +160,7 @@ export function App() {
         />
 
         <main className="flex-1 overflow-y-auto px-4 pt-3 pb-20">
-          {activeTab === 'bookings' && (
-            <InquiriesView mode={isPartnerShell ? 'partner' : 'rider'} />
-          )}
+          {activeTab === 'bookings' && !isPartnerShell && <InquiriesView mode="rider" />}
 
           {activeTab === 'cars' && (
             <CarsBrowseView
@@ -202,7 +206,6 @@ export function App() {
                 onSwitchRole={handleRoleChange}
                 onOpenVerification={() => setActiveTab('verification')}
                 onOpenPackages={() => setActiveTab('packages')}
-                onOpenBookings={() => setActiveTab('bookings')}
               />
             ) : (
               <RiderProfileView

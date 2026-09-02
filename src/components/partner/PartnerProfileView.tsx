@@ -1,25 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Building, ShieldCheck, Sparkles, RefreshCw } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { UserRole } from '../../types';
 import { PartnerCarsView } from './PartnerCarsView';
 import { PartnerToursView } from './PartnerToursView';
 import { MyBookingsPreview } from '../common/MyBookingsPreview';
+import { InquiriesView } from '../common/InquiriesView';
 
 interface PartnerProfileViewProps {
   onSwitchRole: (role: UserRole) => void;
   onOpenVerification: () => void;
   onOpenPackages: () => void;
-  onOpenBookings: () => void;
 }
 
 export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
   onSwitchRole,
   onOpenVerification,
   onOpenPackages,
-  onOpenBookings,
 }) => {
   const { currentDriver, currentAgency, resetDemoData, logoutPartner } = useAppStore();
+  const [showAllBookings, setShowAllBookings] = useState(false);
 
   return (
     <div className="space-y-4 pb-24 animate-fade-in">
@@ -52,7 +52,25 @@ export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
       </div>
 
       <div className="p-4 rounded-3xl bg-white border border-[#EBE5D8] shadow-card">
-        <MyBookingsPreview mode="partner" onShowAll={onOpenBookings} />
+        {showAllBookings ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#1C1C1C]">
+                My bookings
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAllBookings(false)}
+                className="text-[11px] font-extrabold text-[#F15A24]"
+              >
+                Show less
+              </button>
+            </div>
+            <InquiriesView mode="partner" embedded />
+          </div>
+        ) : (
+          <MyBookingsPreview mode="partner" onShowAll={() => setShowAllBookings(true)} />
+        )}
       </div>
 
       <div className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-2">

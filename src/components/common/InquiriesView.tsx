@@ -24,13 +24,6 @@ export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded }) 
       : [];
   const riderItems = mode === 'rider' ? inquiries.filter((i) => i.riderId === currentRider.id) : [];
 
-  const myListings =
-    mode === 'partner'
-      ? carListings.filter((c) => c.partnerId === currentDriver.id || c.partnerId === currentAgency.id)
-      : [];
-  const myTours =
-    mode === 'partner' ? agencyTripPosts.filter((t) => t.agencyId === currentAgency.id) : [];
-
   const listingContact = (inq: Inquiry) => {
     if (inq.listingType === 'car') {
       const c = carListings.find((x) => x.id === inq.listingId);
@@ -84,32 +77,15 @@ export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded }) 
 
   return (
     <div className={`space-y-4 animate-fade-in ${embedded ? '' : 'pb-24'}`}>
+      {!embedded && (
       <div>
-        <h2 className={`${embedded ? 'text-xs font-extrabold uppercase tracking-wider' : 'text-lg font-extrabold'} text-[#1C1C1C]`}>
-          {embedded ? 'Call & WhatsApp history' : 'Bookings'}
-        </h2>
+        <h2 className="text-lg font-extrabold text-[#1C1C1C]">Bookings</h2>
         <p className="text-[11px] text-[#6B6B6B]">
           {mode === 'rider'
             ? 'Every Call or WhatsApp you make on a car or tour is saved here.'
-            : 'Incoming contacts on your posts, plus other partners you called or WhatsApped.'}
+            : 'Who contacted you, and other partners you called or WhatsApped.'}
         </p>
       </div>
-
-      {mode === 'partner' && !embedded && (myListings.length > 0 || myTours.length > 0) && (
-        <div className="space-y-2">
-          <h3 className="text-[10px] font-extrabold uppercase tracking-wider text-[#6B6B6B]">My posts</h3>
-          {myListings.map((c) => (
-            <div key={c.id} className="p-3 rounded-2xl bg-white border border-[#EBE5D8] text-xs font-bold">
-              Car · {c.carName} · ₹{c.fullCarPrice.toLocaleString('en-IN')}
-            </div>
-          ))}
-          {myTours.map((t) => (
-            <div key={t.id} className="p-3 rounded-2xl bg-white border border-[#EBE5D8] text-xs font-bold">
-              Tour · {t.fromCity} → {t.toCity} · ₹{t.totalCustomerPrice.toLocaleString('en-IN')}
-              {t.status === 'closed' ? ' · Closed' : t.status === 'active' ? ' · Showing' : ''}
-            </div>
-          ))}
-        </div>
       )}
 
       {mode === 'partner' && (

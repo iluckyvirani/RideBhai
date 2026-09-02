@@ -12,7 +12,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({ role, activeTab, onTabChan
   const isPartner = role === 'partner' || role === 'driver' || role === 'agency';
   const tabs = isPartner
     ? [
-        { id: 'bookings', label: 'Bookings', icon: Ticket },
         { id: 'cars', label: 'Cars', icon: Car },
         { id: 'tours', label: 'Tours', icon: Sparkles },
         { id: 'packages', label: 'Plans', icon: Package },

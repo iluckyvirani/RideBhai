@@ -44,8 +44,12 @@ export const PartnerToursView: React.FC = () => {
                   {tour.fromCity} → {tour.toCity}
                 </p>
                 <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-                  {tour.duration} · {tour.passengers} pax · ₹
-                  {tour.totalCustomerPrice.toLocaleString('en-IN')}
+                  {tour.duration} · {tour.passengers} pax
+                </p>
+                <p className="text-[11px] font-bold text-[#1C1C1C] mt-1">
+                  Total ₹{tour.totalCustomerPrice.toLocaleString('en-IN')} · Agency ₹
+                  {tour.agencyCommission.toLocaleString('en-IN')} · Car ₹
+                  {tour.driverNetPayout.toLocaleString('en-IN')}
                 </p>
               </div>
               <span

@@ -45,23 +45,17 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
 
   return (
     <div className="space-y-3 pb-24 animate-fade-in">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-extrabold text-[#1C1C1C]">Tour packages</h2>
-          <p className="text-[11px] text-[#6B6B6B]">
-            {canPost ? 'Call / WhatsApp other partners’ tours — e.g. to offer your car. ' : ''}
-            {isFiltered
-              ? `Showing ${applied.from || 'any'} → ${applied.to || 'any'}`
-              : canPost
-                ? 'All India until you filter.'
-                : 'Showing all India · apply a filter for a specific route'}
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] text-[#6B6B6B] leading-snug pr-2">
+          {isFiltered
+            ? `${applied.from || 'Any'} → ${applied.to || 'any'}`
+            : 'All India · filter a route'}
+        </p>
+        <div className="flex items-center gap-2 flex-shrink-0">
           {canPost && (
             <button
               onClick={onPostTour}
-              className="px-3 py-2 rounded-2xl brand-gradient text-white text-[11px] font-extrabold"
+              className="px-3 py-2 rounded-2xl brand-gradient text-white text-[11px] font-extrabold whitespace-nowrap"
             >
               Post tour
             </button>
@@ -69,6 +63,7 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
           <button
             onClick={() => setShowFilter((v) => !v)}
             className="p-2 rounded-2xl bg-white border border-[#EBE5D8] text-[#F15A24]"
+            aria-label="Filter tours"
           >
             <Filter className="w-4 h-4" />
           </button>
@@ -133,25 +128,42 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
 
       {tours.map((tour) => (
         <article key={tour.id} className="bg-white rounded-3xl border border-[#EBE5D8] p-4 space-y-3 shadow-card">
-          <div className="flex items-start justify-between gap-2">
-            <div>
+          <div>
+            {tour.tourType ? (
               <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#F15A24]">
-                {tour.tourType || 'Tour package'}
+                {tour.tourType}
               </p>
-              <h3 className="text-sm font-extrabold text-[#1C1C1C] flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-[#F15A24]" />
-                {tour.fromCity} → {tour.toCity}
-              </h3>
-              <p className="text-[11px] text-[#6B6B6B]">
-                {tour.agencyName} · {tour.duration} · {tour.passengers} pax
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm font-extrabold text-[#F15A24] flex items-center justify-end">
+            ) : null}
+            <h3 className="text-sm font-extrabold text-[#1C1C1C] flex items-center gap-1 mt-0.5">
+              <MapPin className="w-3.5 h-3.5 text-[#F15A24] flex-shrink-0" />
+              {tour.fromCity} → {tour.toCity}
+            </h3>
+            <p className="text-[11px] text-[#6B6B6B] mt-0.5">
+              {tour.agencyName} · {tour.duration} · {tour.passengers} pax
+            </p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-1.5">
+            <div className="p-2.5 rounded-2xl bg-[#FFF0EB] border border-[#FFD8CB]">
+              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#F15A24]">Total tour</p>
+              <p className="text-sm font-extrabold text-[#1C1C1C] flex items-center mt-0.5">
                 <IndianRupee className="w-3.5 h-3.5" />
                 {tour.totalCustomerPrice.toLocaleString('en-IN')}
               </p>
-              <p className="text-[10px] font-bold text-[#6B6B6B]">Direct contact</p>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8]">
+              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#6B6B6B]">Agency cut</p>
+              <p className="text-sm font-extrabold text-[#1C1C1C] flex items-center mt-0.5">
+                <IndianRupee className="w-3.5 h-3.5" />
+                {tour.agencyCommission.toLocaleString('en-IN')}
+              </p>
+            </div>
+            <div className="p-2.5 rounded-2xl bg-[#EBF7F0] border border-[#B8E6CB]">
+              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#2E9E5B]">Net to car</p>
+              <p className="text-sm font-extrabold text-[#2E9E5B] flex items-center mt-0.5">
+                <IndianRupee className="w-3.5 h-3.5" />
+                {tour.driverNetPayout.toLocaleString('en-IN')}
+              </p>
             </div>
           </div>
 
