@@ -158,7 +158,7 @@ export const RiderProfileView: React.FC<RiderProfileViewProps> = ({ onSwitchRole
         </h4>
 
         <button
-          onClick={() => onSwitchRole('driver')}
+          onClick={() => onSwitchRole('partner')}
           className="w-full p-3.5 bg-[#FAF6EE] border border-[#EBE5D8] hover:border-[#F15A24] rounded-2xl text-left active-press transition-all flex items-center justify-between"
         >
           <div className="flex items-center gap-3">
@@ -166,8 +166,8 @@ export const RiderProfileView: React.FC<RiderProfileViewProps> = ({ onSwitchRole
               <Car className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs font-bold text-[#1C1C1C]">Switch to Driver Mode</p>
-              <p className="text-[10px] text-[#6B6B6B]">Offer empty seats, share fuel costs & earn</p>
+              <p className="text-xs font-bold text-[#1C1C1C]">Switch to Partner</p>
+              <p className="text-[10px] text-[#6B6B6B]">Post cars and tour packages from one login</p>
             </div>
           </div>
           <span className="text-xs font-bold text-[#F15A24]">Switch →</span>

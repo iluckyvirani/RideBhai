@@ -22,6 +22,8 @@ import {
   AgencyActiveSubscription,
   AgencyTripPost,
   AgencyTripStatus,
+  CarListing,
+  Inquiry,
 } from '../types';
 import { INITIAL_DRIVERS } from '../data/mockDrivers';
 import { INITIAL_RIDES } from '../data/mockRides';
@@ -38,6 +40,29 @@ import {
   INITIAL_AGENCY_SUBSCRIPTIONS,
   INITIAL_AGENCY_TRIPS,
 } from '../data/mockAgencies';
+import { INITIAL_CAR_LISTINGS, INITIAL_INQUIRIES } from '../data/mockCarListings';
+
+const DEMO_VERSION = 'partner-v7';
+const VERSION_KEY = 'ridebhai_demo_version';
+
+function wipeRideBhaiStorage() {
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.startsWith('ridebhai_'))
+      .forEach((k) => localStorage.removeItem(k));
+  } catch {
+    /* ignore */
+  }
+}
+
+try {
+  if (localStorage.getItem(VERSION_KEY) !== DEMO_VERSION) {
+    wipeRideBhaiStorage();
+    localStorage.setItem(VERSION_KEY, DEMO_VERSION);
+  }
+} catch {
+  /* ignore */
+}
 
 const STORAGE_KEYS = {
   ROLE: 'ridebhai_role',
@@ -60,6 +85,9 @@ const STORAGE_KEYS = {
   AGENCY_PACKAGES: 'ridebhai_agency_packages_v1',
   AGENCY_SUBSCRIPTIONS: 'ridebhai_agency_subscriptions_v1',
   AGENCY_TRIPS: 'ridebhai_agency_trips_v1',
+  PARTNER_AUTH: 'ridebhai_partner_auth_v2',
+  CAR_LISTINGS: 'ridebhai_car_listings_v2',
+  INQUIRIES: 'ridebhai_inquiries_v2',
 };
 
 // Safe JSON parser from LocalStorage
@@ -91,6 +119,15 @@ export function useAppStore() {
   const [isRiderLoggedIn, setIsRiderLoggedInState] = useState<boolean>(() => loadFromStorage(STORAGE_KEYS.RIDER_AUTH, false));
   const [isDriverLoggedIn, setIsDriverLoggedInState] = useState<boolean>(() => loadFromStorage(STORAGE_KEYS.DRIVER_AUTH, false));
   const [isAgencyLoggedIn, setIsAgencyLoggedInState] = useState<boolean>(() => loadFromStorage(STORAGE_KEYS.AGENCY_AUTH, false));
+  const [isPartnerLoggedIn, setIsPartnerLoggedInState] = useState<boolean>(() =>
+    loadFromStorage(STORAGE_KEYS.PARTNER_AUTH, false)
+  );
+  const [carListings, setCarListingsState] = useState<CarListing[]>(() =>
+    loadFromStorage(STORAGE_KEYS.CAR_LISTINGS, INITIAL_CAR_LISTINGS)
+  );
+  const [inquiries, setInquiriesState] = useState<Inquiry[]>(() =>
+    loadFromStorage(STORAGE_KEYS.INQUIRIES, INITIAL_INQUIRIES)
+  );
   const [role, setRoleState] = useState<UserRole>(() => loadFromStorage(STORAGE_KEYS.ROLE, 'rider'));
   const [hasOnboarded, setHasOnboardedState] = useState<boolean>(() => loadFromStorage(STORAGE_KEYS.ONBOARDED, true));
   const [drivers, setDriversState] = useState<Driver[]>(() => loadFromStorage(STORAGE_KEYS.DRIVERS, INITIAL_DRIVERS));
@@ -207,6 +244,60 @@ export function useAppStore() {
 
   const logoutAgency = useCallback(() => {
     setIsAgencyLoggedInState(false);
+    saveToStorage(STORAGE_KEYS.AGENCY_AUTH, false);
+    notifyListeners();
+  }, []);
+
+  const loginPartner = useCallback((phone: string, name?: string, firmName?: string, city?: string) => {
+    setIsPartnerLoggedInState(true);
+    setIsDriverLoggedInState(true);
+    setIsAgencyLoggedInState(true);
+    saveToStorage(STORAGE_KEYS.PARTNER_AUTH, true);
+    saveToStorage(STORAGE_KEYS.DRIVER_AUTH, true);
+    saveToStorage(STORAGE_KEYS.AGENCY_AUTH, true);
+
+    setDriversState((prev) => {
+      const updated = prev.map((d) => {
+        if (d.id === 'drv-current') {
+          return {
+            ...d,
+            name: name || d.name,
+            phone: phone || d.phone,
+            city: city || d.city,
+          };
+        }
+        return d;
+      });
+      saveToStorage(STORAGE_KEYS.DRIVERS, updated);
+      return updated;
+    });
+
+    setAgenciesState((prev) => {
+      const updated = prev.map((a) => {
+        if (a.id === 'agency-current') {
+          return {
+            ...a,
+            agencyName: firmName || name || a.agencyName,
+            ownerName: name || a.ownerName,
+            phone: phone || a.phone,
+            whatsappPhone: phone ? phone.replace(/[^0-9]/g, '').replace(/^/, '91').slice(-12) : a.whatsappPhone,
+            city: city || a.city,
+          };
+        }
+        return a;
+      });
+      saveToStorage(STORAGE_KEYS.AGENCIES, updated);
+      return updated;
+    });
+    notifyListeners();
+  }, []);
+
+  const logoutPartner = useCallback(() => {
+    setIsPartnerLoggedInState(false);
+    setIsDriverLoggedInState(false);
+    setIsAgencyLoggedInState(false);
+    saveToStorage(STORAGE_KEYS.PARTNER_AUTH, false);
+    saveToStorage(STORAGE_KEYS.DRIVER_AUTH, false);
     saveToStorage(STORAGE_KEYS.AGENCY_AUTH, false);
     notifyListeners();
   }, []);
@@ -332,6 +423,24 @@ export function useAppStore() {
     notifyListeners();
   }, []);
 
+  const updateCarListings = useCallback((updater: (prev: CarListing[]) => CarListing[]) => {
+    setCarListingsState((prev) => {
+      const next = updater(prev);
+      saveToStorage(STORAGE_KEYS.CAR_LISTINGS, next);
+      return next;
+    });
+    notifyListeners();
+  }, []);
+
+  const updateInquiries = useCallback((updater: (prev: Inquiry[]) => Inquiry[]) => {
+    setInquiriesState((prev) => {
+      const next = updater(prev);
+      saveToStorage(STORAGE_KEYS.INQUIRIES, next);
+      return next;
+    });
+    notifyListeners();
+  }, []);
+
   // --- CORE BOOST LOGIC: Computed Live On Every Read ---
   const isDriverBoosted = useCallback((driverId: string): boolean => {
     const now = Date.now();
@@ -383,12 +492,61 @@ export function useAppStore() {
       return {
         canPost: false,
         code: 'no_package',
-        reason: 'Active Posting Package required. Please purchase an Agency Package to publish your tour bookings to drivers.',
+        reason: 'Buy a posting package in the app (partner payment only). After it is active you can post cars and tours. Customers still book by Call or WhatsApp.',
       };
     }
 
     return { canPost: true };
   }, [agencies, currentAgency, getAgencyActiveSubscription]);
+
+  const partnerCars = useMemo(() => {
+    const list = currentDriver.vehicles?.length
+      ? currentDriver.vehicles
+      : currentDriver.vehicle
+        ? [currentDriver.vehicle]
+        : [];
+    return list.map((v, i) => ({
+      ...v,
+      id: v.id || v.plate || `car-${i}`,
+      currentCity: v.currentCity || currentDriver.city,
+      availability: v.availability || 'citywide',
+    }));
+  }, [currentDriver]);
+
+  const getFilteredCarListings = useCallback(
+    (filter?: { fromCity?: string; toCity?: string }) => {
+      const from = (filter?.fromCity || '').trim().toLowerCase();
+      const to = (filter?.toCity || '').trim().toLowerCase();
+      if (!from && !to) return carListings.filter((c) => c.status === 'available');
+
+      return carListings.filter((c) => {
+        if (c.status !== 'available') return false;
+        if (c.availability === 'citywide') {
+          if (from && !c.currentCity.toLowerCase().includes(from)) return false;
+          return true;
+        }
+        if (from && !c.currentCity.toLowerCase().includes(from)) return false;
+        if (to && c.toCity && !c.toCity.toLowerCase().includes(to)) return false;
+        return true;
+      });
+    },
+    [carListings]
+  );
+
+  const getFilteredTours = useCallback(
+    (filter?: { fromCity?: string; toCity?: string }) => {
+      const from = (filter?.fromCity || '').trim().toLowerCase();
+      const to = (filter?.toCity || '').trim().toLowerCase();
+      const active = agencyTripPosts.filter((t) => t.status === 'active');
+      if (!from && !to) return active;
+      return active.filter((t) => {
+        if (from && !t.fromCity.toLowerCase().includes(from)) return false;
+        if (to && !t.toCity.toLowerCase().includes(to)) return false;
+        return true;
+      });
+    },
+    [agencyTripPosts]
+  );
 
   // --- SEARCH & RANKING SELECTOR ---
   const getRankedRides = useCallback(
@@ -854,6 +1012,7 @@ export function useAppStore() {
       driverPreferences?: string;
       paymentTerms?: string;
       payoutMode?: string;
+      desiredCar?: { name: string; specs: string[] };
     }) => {
       const gateCheck = canAgencyPost(currentAgency.id);
       if (!gateCheck.canPost) {
@@ -865,6 +1024,7 @@ export function useAppStore() {
 
       const newTrip: AgencyTripPost = {
         ...tripData,
+        desiredCar: tripData.desiredCar,
         id: `trip-agency-${Date.now()}`,
         agencyId: currentAgency.id,
         agencyName: currentAgency.agencyName,
@@ -972,6 +1132,109 @@ export function useAppStore() {
       );
     },
     [currentAgency.id, updateAgencies]
+  );
+
+  const addPartnerCar = useCallback(
+    (car: Vehicle) => {
+      const withId: Vehicle = {
+        ...car,
+        id: car.id || `car-${Date.now()}`,
+      };
+      updateDrivers((prev) =>
+        prev.map((d) => {
+          if (d.id === 'drv-current' || d.id === currentDriver.id) {
+            const currentList = d.vehicles?.length ? d.vehicles : d.vehicle ? [d.vehicle] : [];
+            return {
+              ...d,
+              vehicles: [...currentList, withId],
+              vehicle: d.vehicle || withId,
+            };
+          }
+          return d;
+        })
+      );
+      return withId;
+    },
+    [currentDriver.id, updateDrivers]
+  );
+
+  const updatePartnerCar = useCallback(
+    (carId: string, updates: Partial<Vehicle>) => {
+      updateDrivers((prev) =>
+        prev.map((d) => {
+          if (d.id !== 'drv-current' && d.id !== currentDriver.id) return d;
+          const currentList = d.vehicles?.length ? d.vehicles : d.vehicle ? [d.vehicle] : [];
+          const vehicles = currentList.map((v) =>
+            (v.id || v.plate) === carId ? { ...v, ...updates } : v
+          );
+          return { ...d, vehicles, vehicle: vehicles[0] || d.vehicle };
+        })
+      );
+    },
+    [currentDriver.id, updateDrivers]
+  );
+
+  const postCarListing = useCallback(
+    (data: {
+      carId: string;
+      fullCarPrice: number;
+      availability: 'citywide' | 'route';
+      currentCity: string;
+      toCity?: string;
+      notes?: string;
+    }) => {
+      const gateCheck = canAgencyPost(currentAgency.id);
+      if (!gateCheck.canPost) {
+        throw new Error(gateCheck.reason || 'Buy a posting package first.');
+      }
+      const car = partnerCars.find((c) => (c.id || c.plate) === data.carId) || currentDriver.vehicle;
+      const phone = currentDriver.phone || currentAgency.phone;
+      const listing: CarListing = {
+        id: `car-list-${Date.now()}`,
+        partnerId: currentDriver.id,
+        partnerName: currentAgency.agencyName || currentDriver.name,
+        partnerPhone: phone,
+        partnerWhatsapp: (currentAgency.whatsappPhone || phone).replace(/[^0-9]/g, ''),
+        partnerCity: currentDriver.city,
+        partnerRating: currentDriver.rating,
+        carId: data.carId,
+        carName: `${car.make} ${car.model}`.trim(),
+        carImage: car.image,
+        plate: car.plate,
+        seats: car.seats || 5,
+        fuelType: car.fuelType,
+        fullCarPrice: data.fullCarPrice,
+        availability: data.availability,
+        currentCity: data.currentCity,
+        toCity: data.toCity,
+        notes: data.notes,
+        status: 'available',
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+      updateCarListings((prev) => [listing, ...prev]);
+      return listing;
+    },
+    [partnerCars, currentDriver, currentAgency, updateCarListings, canAgencyPost]
+  );
+
+  const logInquiry = useCallback(
+    (payload: Omit<Inquiry, 'id' | 'createdAt' | 'riderId' | 'riderName'> & { riderId?: string; riderName?: string }) => {
+      const asPartner = isPartnerLoggedIn;
+      const partnerLabel = currentAgency.agencyName || currentDriver.name;
+      const partnerPhone = currentAgency.phone || currentDriver.phone;
+      const inquiry: Inquiry = {
+        ...payload,
+        id: `inq-${Date.now()}`,
+        riderId: payload.riderId || (asPartner ? currentDriver.id : currentRider.id),
+        riderName: payload.riderName || (asPartner ? partnerLabel : currentRider.name),
+        inquirerRole: payload.inquirerRole || (asPartner ? 'partner' : 'customer'),
+        inquirerPhone: payload.inquirerPhone || (asPartner ? partnerPhone : currentRider.phone),
+        createdAt: new Date().toISOString(),
+      };
+      updateInquiries((prev) => [inquiry, ...prev]);
+      return inquiry;
+    },
+    [isPartnerLoggedIn, currentAgency, currentDriver, currentRider, updateInquiries]
   );
 
   // 8. Driver Accept / Reject Booking Request
@@ -1117,9 +1380,19 @@ export function useAppStore() {
 
   // 15. Reset Entire Demo Data
   const resetDemoData = useCallback(() => {
-    localStorage.clear();
+    wipeRideBhaiStorage();
+    try {
+      localStorage.setItem(VERSION_KEY, DEMO_VERSION);
+    } catch {
+      /* ignore */
+    }
     setRoleState('rider');
-    setHasOnboardedState(false);
+    setHasOnboardedState(true);
+    setAppViewState('landing');
+    setIsRiderLoggedInState(false);
+    setIsDriverLoggedInState(false);
+    setIsAgencyLoggedInState(false);
+    setIsPartnerLoggedInState(false);
     setDriversState(INITIAL_DRIVERS);
     setRidesState(INITIAL_RIDES);
     setPackagesState(INITIAL_PACKAGES);
@@ -1133,8 +1406,10 @@ export function useAppStore() {
     setAgencyPackagesState(INITIAL_AGENCY_PACKAGES);
     setAgencySubscriptionsState(INITIAL_AGENCY_SUBSCRIPTIONS);
     setAgencyTripPostsState(INITIAL_AGENCY_TRIPS);
-    setIsAgencyLoggedInState(false);
+    setCarListingsState(INITIAL_CAR_LISTINGS);
+    setInquiriesState(INITIAL_INQUIRIES);
     notifyListeners();
+    window.location.reload();
   }, []);
 
   // 16. Admin Grant Boost to specific driver
@@ -1168,12 +1443,15 @@ export function useAppStore() {
     isRiderLoggedIn,
     isDriverLoggedIn,
     isAgencyLoggedIn,
+    isPartnerLoggedIn,
     loginRider,
     logoutRider,
     loginDriver,
     logoutDriver,
     loginAgency,
     logoutAgency,
+    loginPartner,
+    logoutPartner,
 
     // Role & Entity State
     role,
@@ -1197,6 +1475,9 @@ export function useAppStore() {
     agencySubscriptions,
     agencyTripPosts,
     currentAgency,
+    carListings,
+    inquiries,
+    partnerCars,
 
     // Live Derived / Selectors
     isDriverBoosted,
@@ -1205,6 +1486,8 @@ export function useAppStore() {
     getAgencyActiveSubscription,
     isAgencyVerified,
     canAgencyPost,
+    getFilteredCarListings,
+    getFilteredTours,
 
     // Actions
     postRide,
@@ -1241,5 +1524,10 @@ export function useAppStore() {
     updateCurrentAgency,
     updateAgencies,
     updateAgencyTripPosts,
+    addPartnerCar,
+    updatePartnerCar,
+    postCarListing,
+    logInquiry,
+    updateCarListings,
   };
 }

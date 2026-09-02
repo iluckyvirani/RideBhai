@@ -11,6 +11,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { MockPaymentModal } from '../common/MockPaymentModal';
 
 export const AgencyPackagesView: React.FC = () => {
   const {
@@ -21,20 +22,27 @@ export const AgencyPackagesView: React.FC = () => {
   } = useAppStore();
 
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
+  const [payOpen, setPayOpen] = useState(false);
   const [successNotif, setSuccessNotif] = useState('');
 
   const activeSub = getAgencyActiveSubscription(currentAgency.id);
+  const payPkg = agencyPackages.find((p) => p.id === purchasingId);
 
   const handlePurchase = (packageId: string) => {
+    setPurchasingId(packageId);
+    setPayOpen(true);
+  };
+
+  const handlePaySuccess = () => {
+    if (!purchasingId) return;
     try {
-      setPurchasingId(packageId);
-      purchaseAgencyPackage(currentAgency.id, packageId);
-      setPurchasingId(null);
-      setSuccessNotif('Package activated successfully! You can now publish unlimited tour bookings.');
+      purchaseAgencyPackage(currentAgency.id, purchasingId);
+      setSuccessNotif('Package paid and activated. You can now post cars and tour packages.');
       setTimeout(() => setSuccessNotif(''), 5000);
     } catch (err: any) {
-      setPurchasingId(null);
       alert(err?.message || 'Purchase failed');
+    } finally {
+      setPurchasingId(null);
     }
   };
 
@@ -77,7 +85,7 @@ export const AgencyPackagesView: React.FC = () => {
               No Active Posting Package
             </h3>
             <p className="text-[11px] text-[#A33B12] mt-0.5 leading-relaxed">
-              To post tour bookings and connect with thousands of local drivers on WhatsApp, select a subscription package below.
+              Posting cars and tours unlocks after you pay for a plan here. This is the only in-app payment — customers contact you by Call or WhatsApp.
             </p>
           </div>
         </div>
@@ -93,7 +101,7 @@ export const AgencyPackagesView: React.FC = () => {
       {/* Package Store Cards */}
       <div className="space-y-3">
         <h3 className="text-xs font-extrabold text-[#6B6B6B] uppercase tracking-wider px-1">
-          Available Agency Posting Plans
+          Partner posting plans (pay in app)
         </h3>
 
         {agencyPackages.map((pkg) => {
@@ -162,9 +170,7 @@ export const AgencyPackagesView: React.FC = () => {
                   <span>
                     {isCurrentActive
                       ? '✓ Current Active Plan'
-                      : purchasingId === pkg.id
-                      ? 'Activating...'
-                      : `Subscribe for ₹${pkg.price.toLocaleString()}`}
+                      : `Pay ₹${pkg.price.toLocaleString()} in app`}
                   </span>
                 </button>
               </div>
@@ -172,6 +178,18 @@ export const AgencyPackagesView: React.FC = () => {
           );
         })}
       </div>
+
+      <MockPaymentModal
+        isOpen={payOpen}
+        onClose={() => {
+          setPayOpen(false);
+          setPurchasingId(null);
+        }}
+        onSuccess={handlePaySuccess}
+        title="Partner package payment"
+        amount={payPkg?.price || 0}
+        itemDescription={payPkg ? `${payPkg.name} · unlock posting cars & tours` : 'Posting package'}
+      />
     </div>
   );
 };

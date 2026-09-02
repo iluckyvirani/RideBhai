@@ -3,25 +3,14 @@ import {
   LayoutDashboard,
   ShieldCheck,
   PackageCheck,
-  Sparkles,
   AlertTriangle,
   ArrowLeft,
   Lock,
-  LogOut,
   RefreshCw,
-  Search,
-  Bell,
-  CheckCircle2,
-  TrendingUp,
-  Users,
   Car,
   Building,
   MapPin,
-  Eye,
-  Check,
-  XCircle,
-  Trash2,
-  DollarSign
+  Phone
 } from 'lucide-react';
 import { Logo } from '../components/common/Logo';
 import { useAppStore } from '../store/useAppStore';
@@ -34,6 +23,8 @@ import { AgencyVerificationQueue } from '../components/admin/AgencyVerificationQ
 import { AllAgenciesView } from '../components/admin/AllAgenciesView';
 import { AgencyTourPostsManager } from '../components/admin/AgencyTourPostsManager';
 import { AgencyPackageManager } from '../components/admin/AgencyPackageManager';
+import { AllCarListingsView } from '../components/admin/AllCarListingsView';
+import { AllInquiriesView } from '../components/admin/AllInquiriesView';
 
 interface AdminAppProps {
   onExitToWebsite: () => void;
@@ -50,18 +41,17 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
     | 'packages'
     | 'boosts'
     | 'disputes'
+    | 'all-cars'
+    | 'all-inquiries'
   >('dashboard');
 
   const {
     drivers,
-    packages,
-    driverPackages,
-    bookings,
     disputes,
     agencies,
     agencyTripPosts,
-    adminVerifyAgency,
-    updateAgencyTripPosts,
+    carListings,
+    inquiries,
     resetDemoData,
   } = useAppStore();
 
@@ -98,7 +88,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
                     Ride Bhai Operations Admin
                   </h1>
                   <p className="text-[10px] text-white/50 hidden sm:block">
-                    Platform Control & Verification Portal
+                    Partners, full-car listings & tour packages
                   </p>
                 </div>
               </div>
@@ -141,7 +131,31 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
               }`}
             >
               <LayoutDashboard className="w-4 h-4" />
-              <span>Platform KPIs</span>
+              <span>Dashboard</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('all-inquiries')}
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 flex-shrink-0 ${
+                activeTab === 'all-inquiries'
+                  ? 'bg-[#1C1C1C] text-white shadow-xs'
+                  : 'text-[#6B6B6B] hover:text-[#1C1C1C] hover:bg-[#FAF6EE]'
+              }`}
+            >
+              <Phone className="w-4 h-4" />
+              <span>Inquiries ({inquiries.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('all-cars')}
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 flex-shrink-0 ${
+                activeTab === 'all-cars'
+                  ? 'bg-[#1C1C1C] text-white shadow-xs'
+                  : 'text-[#6B6B6B] hover:text-[#1C1C1C] hover:bg-[#FAF6EE]'
+              }`}
+            >
+              <Car className="w-4 h-4" />
+              <span>Car listings ({carListings.length})</span>
             </button>
 
             <button
@@ -153,7 +167,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
               }`}
             >
               <ShieldCheck className="w-4 h-4 text-[#F15A24]" />
-              <span>Agency KYC</span>
+              <span>Firm KYC</span>
               {pendingAgencyKycCount > 0 && (
                 <span className="w-5 h-5 rounded-full bg-[#F15A24] text-white text-[10px] font-extrabold flex items-center justify-center ml-1">
                   {pendingAgencyKycCount}
@@ -170,7 +184,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
               }`}
             >
               <Building className="w-4 h-4" />
-              <span>Travel Agencies</span>
+              <span>Partner firms</span>
             </button>
 
             <button
@@ -182,7 +196,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
               }`}
             >
               <MapPin className="w-4 h-4" />
-              <span>Tour Leads ({agencyTripPosts.length})</span>
+              <span>Tours ({agencyTripPosts.length})</span>
             </button>
 
             <button
@@ -194,7 +208,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
               }`}
             >
               <ShieldCheck className="w-4 h-4" />
-              <span>Driver KYC</span>
+              <span>Partner KYC</span>
               {pendingDriverKycCount > 0 && (
                 <span className="w-5 h-5 rounded-full bg-[#F15A24] text-white text-[10px] font-extrabold flex items-center justify-center ml-1">
                   {pendingDriverKycCount}
@@ -211,31 +225,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
               }`}
             >
               <PackageCheck className="w-4 h-4 text-emerald-600" />
-              <span>Agency Plans</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('packages')}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 flex-shrink-0 ${
-                activeTab === 'packages'
-                  ? 'bg-[#1C1C1C] text-white shadow-xs'
-                  : 'text-[#6B6B6B] hover:text-[#1C1C1C] hover:bg-[#FAF6EE]'
-              }`}
-            >
-              <PackageCheck className="w-4 h-4" />
-              <span>Driver Packages</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('boosts')}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 flex-shrink-0 ${
-                activeTab === 'boosts'
-                  ? 'bg-[#1C1C1C] text-white shadow-xs'
-                  : 'text-[#6B6B6B] hover:text-[#1C1C1C] hover:bg-[#FAF6EE]'
-              }`}
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>Driver Boosts</span>
+              <span>Posting plans</span>
             </button>
 
             <button
@@ -262,6 +252,8 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-3xl p-6 sm:p-8 border border-[#EBE5D8] shadow-card">
           {activeTab === 'dashboard' && <AdminDashboard onSwitchRole={() => {}} />}
+          {activeTab === 'all-inquiries' && <AllInquiriesView />}
+          {activeTab === 'all-cars' && <AllCarListingsView />}
           {activeTab === 'verifications' && <DriverVerificationQueue />}
           {activeTab === 'agency-kyc' && <AgencyVerificationQueue />}
           {activeTab === 'all-agencies' && <AllAgenciesView />}
@@ -275,7 +267,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
 
       {/* Admin Footer */}
       <footer className="bg-white border-t border-[#EBE5D8] py-4 text-center text-xs text-[#6B6B6B]">
-        <span>Ride Bhai Admin Operations Console v2.0 • Confidential & Authorized Personnel Only</span>
+        <span>Ride Bhai Admin · Partners, full-car listings & tour packages</span>
       </footer>
     </div>
   );

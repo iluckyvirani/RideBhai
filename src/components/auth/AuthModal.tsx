@@ -17,7 +17,7 @@ import { useAppStore } from '../../store/useAppStore';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  targetRole?: 'rider' | 'driver' | 'agency';
+  targetRole?: 'rider' | 'driver' | 'agency' | 'partner';
   onSuccess?: () => void;
   title?: string;
   subtitle?: string;
@@ -31,7 +31,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   title,
   subtitle,
 }) => {
-  const { loginRider, loginDriver, loginAgency } = useAppStore();
+  const { loginRider, loginDriver, loginAgency, loginPartner } = useAppStore();
 
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
@@ -136,6 +136,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setIsVerifying(false);
       if (targetRole === 'rider') {
         loginRider(phone, fullName || 'Traveler');
+      } else if (targetRole === 'partner') {
+        loginPartner(phone, fullName || 'Partner', agencyName || fullName || 'Ride Bhai Partner', city);
       } else if (targetRole === 'agency') {
         loginAgency(phone, agencyName || 'Royal Rajasthan Tours', fullName || 'Vikram Rathore', city);
       } else {
@@ -179,7 +181,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="p-5 pb-3 flex items-center justify-between border-b border-[#F2ECE1]">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-[#FFF0EB] flex items-center justify-center text-[#F15A24]">
-              {targetRole === 'driver' ? (
+              {targetRole === 'partner' || targetRole === 'driver' ? (
                 <Car className="w-5 h-5" />
               ) : targetRole === 'agency' ? (
                 <Sparkles className="w-5 h-5" />
@@ -190,7 +192,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <div>
               <h3 className="text-base font-extrabold text-[#1C1C1C]">
                 {title ||
-                  (targetRole === 'driver'
+                  (targetRole === 'partner'
+                    ? 'Partner login'
+                    : targetRole === 'driver'
                     ? 'Driver Partner Registration'
                     : targetRole === 'agency'
                     ? 'Travel Agency Partner Portal'
@@ -198,11 +202,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </h3>
               <p className="text-xs text-[#6B6B6B]">
                 {subtitle ||
-                  (targetRole === 'driver'
+                  (targetRole === 'partner'
+                    ? 'One login to post cars and tour packages. Customers call or WhatsApp you.'
+                    : targetRole === 'driver'
                     ? 'Enter mobile number to verify & complete KYC onboarding'
                     : targetRole === 'agency'
                     ? 'Enter agency details & mobile number to start onboarding'
-                    : 'Login with mobile OTP to book & message drivers')}
+                    : 'Login with mobile OTP to browse cars and tours')}
               </p>
             </div>
           </div>
@@ -219,10 +225,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           {step === 'phone' ? (
             <form onSubmit={handleSendOtp} className="space-y-4">
               {/* Agency Name if role is agency */}
-              {targetRole === 'agency' && (
+              {(targetRole === 'agency' || targetRole === 'partner') && (
                 <div>
                   <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1.5">
-                    Travel Agency / Firm Name *
+                    {targetRole === 'partner' ? 'Firm / brand name (optional)' : 'Travel Agency / Firm Name *'}
                   </label>
                   <input
                     type="text"
@@ -230,7 +236,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onChange={(e) => setAgencyName(e.target.value)}
                     placeholder="e.g. Royal Rajasthan Tours & Travels"
                     className="w-full text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE] px-3.5 py-3 rounded-2xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24]"
-                    required
+                    required={targetRole === 'agency'}
                   />
                 </div>
               )}

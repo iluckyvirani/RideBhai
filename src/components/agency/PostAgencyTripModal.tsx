@@ -51,6 +51,10 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
   const [pickupLocation, setPickupLocation] = useState('Agra Cantt Station / Hotel Clarks');
   const [dropLocation, setDropLocation] = useState('Jaipur Hotel / Airport Drop');
   const [requiredVehicleType, setRequiredVehicleType] = useState('Sedan (Dzire / Etios / Aura)');
+  const [desiredCarName, setDesiredCarName] = useState('Swift Dzire');
+  const [desiredSpec1, setDesiredSpec1] = useState('AC');
+  const [desiredSpec2, setDesiredSpec2] = useState('4+1 seats');
+  const [desiredSpec3, setDesiredSpec3] = useState('2 large bags');
   const [totalCustomerPrice, setTotalCustomerPrice] = useState(1000);
   const [agencyCommission, setAgencyCommission] = useState(200);
   const [tourType, setTourType] = useState('Family Sightseeing Tour');
@@ -122,6 +126,10 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
         driverPreferences,
         paymentTerms,
         payoutMode,
+        desiredCar: {
+          name: desiredCarName.trim(),
+          specs: [desiredSpec1, desiredSpec2, desiredSpec3].map((s) => s.trim()).filter(Boolean),
+        },
       });
 
       setIsSubmitting(false);
@@ -194,7 +202,7 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 <PackageCheck className="w-5 h-5 text-[#F15A24] flex-shrink-0 mt-0.5" />
                 <div>
                   <h3 className="text-xs font-bold text-[#8A2B09]">
-                    Active Posting Package Required
+                    Buy posting package first (partner pay only)
                   </h3>
                   <p className="text-[11px] text-[#A33B12] mt-1 leading-relaxed">
                     {gate.reason}
@@ -209,7 +217,7 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 }}
                 className="w-full py-2.5 rounded-xl bg-gradient-to-r from-[#F15A24] to-[#FF7A45] hover:opacity-90 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 active-press"
               >
-                <span>Browse Agency Packages</span>
+                <span>Pay for posting package</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -351,6 +359,39 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                       <option value="Hatchback (WagonR / Swift)">Hatchback</option>
                     </select>
                   </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] space-y-2.5">
+                <label className="block text-[11px] font-extrabold text-[#1C1C1C]">
+                  Desired car
+                </label>
+                <p className="text-[10px] text-[#6B6B6B]">Car name plus 2–3 main specifications.</p>
+                <input
+                  value={desiredCarName}
+                  onChange={(e) => setDesiredCarName(e.target.value)}
+                  placeholder="e.g. Innova Crysta"
+                  className="w-full px-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold bg-white"
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  <input
+                    value={desiredSpec1}
+                    onChange={(e) => setDesiredSpec1(e.target.value)}
+                    placeholder="Spec 1"
+                    className="px-2.5 py-2 rounded-xl border border-[#EBE5D8] text-[11px] font-bold bg-white"
+                  />
+                  <input
+                    value={desiredSpec2}
+                    onChange={(e) => setDesiredSpec2(e.target.value)}
+                    placeholder="Spec 2"
+                    className="px-2.5 py-2 rounded-xl border border-[#EBE5D8] text-[11px] font-bold bg-white"
+                  />
+                  <input
+                    value={desiredSpec3}
+                    onChange={(e) => setDesiredSpec3(e.target.value)}
+                    placeholder="Spec 3"
+                    className="px-2.5 py-2 rounded-xl border border-[#EBE5D8] text-[11px] font-bold bg-white"
+                  />
                 </div>
               </div>
 

@@ -1,4 +1,4 @@
-export type UserRole = 'rider' | 'driver' | 'agency' | 'admin';
+export type UserRole = 'rider' | 'driver' | 'agency' | 'partner' | 'admin';
 
 export type DriverStatus = 'unverified' | 'pending_verification' | 'verified' | 'rejected';
 
@@ -26,6 +26,57 @@ export interface Vehicle {
   pucDocument?: string;
   image?: string;
   isPrimary?: boolean;
+  currentCity?: string;
+  availability?: 'citywide' | 'route';
+  toCity?: string;
+}
+
+export interface DesiredCar {
+  name: string;
+  specs: string[]; // 2–3 main specs
+}
+
+export type CarAvailability = 'citywide' | 'route';
+
+export interface CarListing {
+  id: string;
+  partnerId: string;
+  partnerName: string;
+  partnerPhone: string;
+  partnerWhatsapp: string;
+  partnerCity: string;
+  partnerRating: number;
+  carId: string;
+  carName: string;
+  carImage?: string;
+  plate?: string;
+  seats: number;
+  fuelType?: FuelType;
+  fullCarPrice: number;
+  availability: CarAvailability;
+  currentCity: string;
+  toCity?: string;
+  notes?: string;
+  status: 'available' | 'inactive';
+  createdAt: string;
+}
+
+export interface Inquiry {
+  id: string;
+  listingType: 'car' | 'tour';
+  listingId: string;
+  riderId: string;
+  riderName: string;
+  inquirerRole?: 'customer' | 'partner';
+  inquirerPhone?: string;
+  partnerId: string;
+  partnerName: string;
+  channel: 'call' | 'whatsapp';
+  createdAt: string;
+  title: string;
+  price: number;
+  fromCity?: string;
+  toCity?: string;
 }
 
 export interface DriverPreferences {
@@ -131,7 +182,7 @@ export interface AgencyActiveSubscription {
   postsRemaining: number;
 }
 
-export type AgencyTripStatus = 'active' | 'claimed' | 'completed' | 'cancelled';
+export type AgencyTripStatus = 'active' | 'claimed' | 'completed' | 'cancelled' | 'closed';
 
 export interface AgencyTripPost {
   id: string;
@@ -152,6 +203,7 @@ export interface AgencyTripPost {
   pickupLocation: string;
   dropLocation: string;
   requiredVehicleType: string; // e.g. "Sedan (Dzire/Etios)", "SUV (Ertiga/Innova)"
+  desiredCar?: DesiredCar;
   totalCustomerPrice: number; // e.g. ₹1000
   agencyCommission: number; // e.g. ₹200
   driverNetPayout: number; // e.g. ₹800 (totalCustomerPrice - agencyCommission)
@@ -327,7 +379,7 @@ export interface CityLocation {
   popularPoints: string[];
 }
 
-export type AppViewMode = 'landing' | 'rider-app' | 'driver-app' | 'agency-app' | 'admin-portal';
+export type AppViewMode = 'landing' | 'rider-app' | 'driver-app' | 'agency-app' | 'partner-app' | 'admin-portal';
 
 export interface AuthState {
   isRiderLoggedIn: boolean;
