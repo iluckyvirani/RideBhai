@@ -1,21 +1,44 @@
 import React from 'react';
-import { MapPin, Car, EyeOff, RotateCcw } from 'lucide-react';
+import { MapPin, Car, EyeOff, RotateCcw, Trash2, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { AgencyTripPost } from '../../types';
 
-export const PartnerToursView: React.FC = () => {
-  const { agencyTripPosts, currentAgency, updateAgencyTripStatus } = useAppStore();
-  const myTours = agencyTripPosts.filter((t) => t.agencyId === currentAgency.id);
+interface PartnerToursViewProps {
+  onOpenDetails?: (tour: AgencyTripPost) => void;
+}
 
-  const closeTour = (id: string, title: string) => {
+export const PartnerToursView: React.FC<PartnerToursViewProps> = ({ onOpenDetails }) => {
+  const { agencyTripPosts, currentUser, updateAgencyTripStatus, deleteAgencyTrip } = useAppStore();
+  const myTours = agencyTripPosts.filter((t) => t.agencyId === currentUser?.id);
+
+  const closeTour = async (id: string, title: string) => {
     const ok = window.confirm(
       `Confirm booking for "${title}" and stop showing this tour to customers?`
     );
     if (!ok) return;
-    updateAgencyTripStatus(id, 'closed');
+    try {
+      await updateAgencyTripStatus(id, 'closed');
+    } catch (err: any) {
+      window.alert(err?.message || 'Could not close this tour.');
+    }
   };
 
-  const reopenTour = (id: string) => {
-    updateAgencyTripStatus(id, 'active');
+  const removeTour = async (id: string, title: string) => {
+    const ok = window.confirm(`Delete tour "${title}"? Related chats will also be removed.`);
+    if (!ok) return;
+    try {
+      await deleteAgencyTrip(id);
+    } catch (err: any) {
+      window.alert(err?.message || 'Could not delete this tour.');
+    }
+  };
+
+  const reopenTour = async (id: string) => {
+    try {
+      await updateAgencyTripStatus(id, 'active');
+    } catch (err: any) {
+      window.alert(err?.message || 'Could not show this tour again.');
+    }
   };
 
   return (
@@ -25,7 +48,7 @@ export const PartnerToursView: React.FC = () => {
           My tour packages
         </h3>
         <p className="text-[10px] text-[#6B6B6B] mt-0.5">
-          After you confirm a booking by call or WhatsApp, close the tour so it no longer shows.
+          After you confirm a booking in chat or Deal with Ride Bhai, close the tour so it no longer shows.
         </p>
       </div>
 
@@ -41,10 +64,18 @@ export const PartnerToursView: React.FC = () => {
               <div>
                 <p className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-[#F15A24]" />
-                  {tour.fromCity} → {tour.toCity}
+                  {tour.fromCity} {tour.tripSide === 'two_side' ? '⇄' : '→'} {tour.toCity}
                 </p>
                 <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-                  {tour.duration} · {tour.passengers} pax
+                  {tour.tripSide === 'two_side' ? 'Two side' : 'One side'} · {tour.duration} · {tour.passengers} pax
+                </p>
+                <p className="text-[10px] text-[#6B6B6B] mt-0.5">
+                  Posted {(tour.postedDate || '').split('-').reverse().join('/')}
+                  {tour.postedTime ? ` · ${tour.postedTime}` : ''}
+                </p>
+                <p className="text-[10px] font-bold text-[#1C1C1C]">
+                  Booking {(tour.bookingDate || tour.startDate || '').split('-').reverse().join('/')}
+                  {tour.bookingTime || tour.pickupTime ? ` · ${tour.bookingTime || tour.pickupTime}` : ''}
                 </p>
                 <p className="text-[11px] font-bold text-[#1C1C1C] mt-1">
                   Total ₹{tour.totalCustomerPrice.toLocaleString('en-IN')} · Agency ₹
@@ -71,10 +102,20 @@ export const PartnerToursView: React.FC = () => {
               </p>
             )}
 
+            <button
+              type="button"
+              onClick={() => onOpenDetails?.(tour)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-[11px] font-extrabold text-[#F15A24]"
+            >
+              View details
+              <ChevronRight className="w-4 h-4" />
+            </button>
+
+            <div className="flex gap-2">
             {isLive ? (
               <button
                 onClick={() => closeTour(tour.id, `${tour.fromCity} → ${tour.toCity}`)}
-                className="w-full py-2 rounded-xl bg-[#FFF0EB] text-[#E8380D] text-[11px] font-extrabold flex items-center justify-center gap-1.5"
+                className="flex-1 py-2 rounded-xl bg-[#FFF0EB] text-[#E8380D] text-[11px] font-extrabold flex items-center justify-center gap-1.5"
               >
                 <EyeOff className="w-3.5 h-3.5" />
                 Confirm booking & close
@@ -82,12 +123,20 @@ export const PartnerToursView: React.FC = () => {
             ) : (
               <button
                 onClick={() => reopenTour(tour.id)}
-                className="w-full py-2 rounded-xl bg-[#FAF6EE] text-[#1C1C1C] text-[11px] font-extrabold flex items-center justify-center gap-1.5"
+                className="flex-1 py-2 rounded-xl bg-[#FAF6EE] text-[#1C1C1C] text-[11px] font-extrabold flex items-center justify-center gap-1.5"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 Show again
               </button>
             )}
+              <button
+                type="button"
+                onClick={() => removeTour(tour.id, `${tour.fromCity} → ${tour.toCity}`)}
+                className="inline-flex items-center justify-center gap-1 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-extrabold text-red-600"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            </div>
           </div>
         );
       })}

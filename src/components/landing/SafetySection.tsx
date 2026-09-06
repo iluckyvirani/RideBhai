@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   ShieldCheck,
-  PhoneCall,
   MessageCircle,
   FileCheck2,
   Star,
@@ -23,22 +22,22 @@ export const SafetySection: React.FC = () => {
       icon: <Car className="w-6 h-6 text-[#F15A24]" />,
       bg: 'bg-orange-50 border-orange-100',
       title: 'Full car only',
-      desc: 'You hire the whole car — no shared seat booking. See the car name, price, and city or route before you call.',
+      desc: 'You hire the whole car — no shared seat booking. See the car name, price, and city or route before you message.',
       badge: 'Private hire',
     },
     {
-      icon: <PhoneCall className="w-6 h-6 text-blue-600" />,
-      bg: 'bg-blue-50 border-blue-100',
-      title: 'Talk on a real call',
-      desc: 'No in-app chat or checkout for customers. Call the partner, confirm the trip, and close the deal directly.',
-      badge: 'Direct call',
+      icon: <MessageCircle className="w-6 h-6 text-[#F15A24]" />,
+      bg: 'bg-orange-50 border-orange-100',
+      title: 'Message direct',
+      desc: 'Chat with the partner in Ride Bhai. Confirm the trip in-app, then hide the post when it is booked.',
+      badge: 'In-app chat',
     },
     {
-      icon: <MessageCircle className="w-6 h-6 text-[#25D366]" />,
-      bg: 'bg-emerald-50 border-emerald-100',
-      title: 'WhatsApp the partner',
-      desc: 'Send the listing on WhatsApp with car or tour details. Partners confirm bookings offline, then hide the post.',
-      badge: 'WhatsApp',
+      icon: <HeartHandshake className="w-6 h-6 text-[#1C1C1C]" />,
+      bg: 'bg-[#FAF6EE] border-[#EBE5D8]',
+      title: 'Deal with Ride Bhai',
+      desc: 'Send an inquiry and Ride Bhai mediates in a separate chat. Same flow for cars and tours.',
+      badge: 'Ride Bhai',
     },
     {
       icon: <Star className="w-6 h-6 text-amber-500" />,
@@ -70,7 +69,7 @@ export const SafetySection: React.FC = () => {
             Direct contact. <span className="text-gradient">Verified partners.</span>
           </h2>
           <p className="text-sm text-[#6B6B6B]">
-            Customers never pay in the app. You see the price, then Call or WhatsApp. Partners pay only to unlock posting.
+            Customers never pay for the trip in the app. You see the price, then Message direct or Deal with Ride Bhai. Partners pay only to unlock posting.
           </p>
         </div>
 

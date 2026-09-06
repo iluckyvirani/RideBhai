@@ -5,11 +5,7 @@ import {
   Calendar,
   Clock,
   Users,
-  Car,
   DollarSign,
-  FileText,
-  Phone,
-  MessageCircle,
   AlertCircle,
   Sparkles,
   ShieldAlert,
@@ -35,56 +31,82 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
 }) => {
   const {
     currentAgency,
+    currentUser,
     canAgencyPost,
+    canPostTour,
     postAgencyTrip,
     getAgencyActiveSubscription,
   } = useAppStore();
 
-  const [fromCity, setFromCity] = useState('Agra');
-  const [toCity, setToCity] = useState('Jaipur');
-  const [passengers, setPassengers] = useState(4);
-  const [duration, setDuration] = useState('3 Days 1 Night');
-  const [startDate, setStartDate] = useState(
-    new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-  );
-  const [pickupTime, setPickupTime] = useState('08:00 AM');
-  const [pickupLocation, setPickupLocation] = useState('Agra Cantt Station / Hotel Clarks');
-  const [dropLocation, setDropLocation] = useState('Jaipur Hotel / Airport Drop');
-  const [requiredVehicleType, setRequiredVehicleType] = useState('Sedan (Dzire / Etios / Aura)');
-  const [desiredCarName, setDesiredCarName] = useState('Swift Dzire');
-  const [desiredSpec1, setDesiredSpec1] = useState('AC');
-  const [desiredSpec2, setDesiredSpec2] = useState('4+1 seats');
-  const [desiredSpec3, setDesiredSpec3] = useState('2 large bags');
-  const [totalCustomerPrice, setTotalCustomerPrice] = useState(1000);
-  const [agencyCommission, setAgencyCommission] = useState(200);
-  const [tourType, setTourType] = useState('Family Sightseeing Tour');
-  const [tollTaxOption, setTollTaxOption] = useState('Paid directly by Guest at Toll Plazas');
-  const [parkingOption, setParkingOption] = useState('Paid by Guest at monuments & hotels');
-  const [driverNightAllowance, setDriverNightAllowance] = useState('₹300/Night included in driver payout');
-  const [kmLimit, setKmLimit] = useState('550 Km included (₹10/Km extra beyond limit)');
-  const [luggageCapacity, setLuggageCapacity] = useState('2 Large Trolleys + 2 Handbags');
-  const [driverPreferences, setDriverPreferences] = useState('Hindi speaking, AC active throughout journey, Clean Car');
-  const [paymentTerms, setPaymentTerms] = useState('Agency advance token collected. Balance direct to driver by guest upon trip completion.');
-  const [payoutMode, setPayoutMode] = useState('Direct Cash from Guest');
-  const [tripDetails, setTripDetails] = useState(
-    'Family of 4 tourists arriving in Agra. Sightseeing of Taj Mahal, Agra Fort, Fatehpur Sikri route to Jaipur (Hawa Mahal, Amer Fort, City Palace). Client has already booked & confirmed token advance. Tolls & parking paid by guest directly. Clean AC vehicle required.'
-  );
-  const [highlightsInput, setHighlightsInput] = useState('Taj Mahal, Fatehpur Sikri, Chand Baori, Amer Fort');
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const nowTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+  const [fromCity, setFromCity] = useState('');
+  const [toCity, setToCity] = useState('');
+  const [tripSide, setTripSide] = useState<'one_side' | 'two_side'>('one_side');
+  const [postedDate, setPostedDate] = useState(today);
+  const [postedTime, setPostedTime] = useState(nowTime);
+  const [passengers, setPassengers] = useState('');
+  const [duration, setDuration] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [pickupTime, setPickupTime] = useState('');
+  const [pickupLocation, setPickupLocation] = useState('');
+  const [dropLocation, setDropLocation] = useState('');
+  const [desiredCarName, setDesiredCarName] = useState('');
+  const [desiredSpec1, setDesiredSpec1] = useState('');
+  const [desiredSpec2, setDesiredSpec2] = useState('');
+  const [desiredSpec3, setDesiredSpec3] = useState('');
+  const [totalCustomerPrice, setTotalCustomerPrice] = useState('');
+  const [agencyCommission, setAgencyCommission] = useState('');
+  const [tourType, setTourType] = useState('');
+  const [tollTaxOption, setTollTaxOption] = useState('');
+  const [parkingOption, setParkingOption] = useState('');
+  const [driverNightAllowance, setDriverNightAllowance] = useState('');
+  const [kmLimit, setKmLimit] = useState('');
+  const [luggageCapacity, setLuggageCapacity] = useState('');
+  const [driverPreferences, setDriverPreferences] = useState('');
+  const [paymentTerms, setPaymentTerms] = useState('');
+  const [payoutMode, setPayoutMode] = useState('');
+  const [tripDetails, setTripDetails] = useState('');
+  const [highlightsInput, setHighlightsInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
-  const gate = canAgencyPost(currentAgency.id);
-  const activeSubInfo = getAgencyActiveSubscription(currentAgency.id);
+  const gate = canAgencyPost();
+  const tourGate = canPostTour();
+  const activeSubInfo = getAgencyActiveSubscription(currentUser?.id || currentAgency.id);
   const driverNetPayout = Math.max(0, Number(totalCustomerPrice) - Number(agencyCommission));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
 
+    if (!tourGate.ok) {
+      setErrorMsg(tourGate.reason || 'Cannot post a tour yet.');
+      return;
+    }
     if (!fromCity || !toCity) {
       setErrorMsg('Please enter both pickup and destination cities.');
+      return;
+    }
+    if (!postedDate || !postedTime) {
+      setErrorMsg('Please enter posting date and time.');
+      return;
+    }
+    if (!startDate || !pickupTime) {
+      setErrorMsg('Please enter actual booking date and time.');
+      return;
+    }
+    if (!passengers) {
+      setErrorMsg('Please select passengers.');
+      return;
+    }
+    if (!desiredCarName.trim()) {
+      setErrorMsg('Please type the required car.');
       return;
     }
     if (Number(totalCustomerPrice) <= 0) {
@@ -103,16 +125,21 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
         .map((s) => s.trim())
         .filter(Boolean);
 
-      postAgencyTrip({
+      await postAgencyTrip({
         fromCity,
         toCity,
+        tripSide,
+        postedDate,
+        postedTime,
+        bookingDate: startDate,
+        bookingTime: pickupTime,
         passengers: Number(passengers),
         duration,
         startDate,
         pickupTime,
         pickupLocation,
         dropLocation,
-        requiredVehicleType,
+        requiredVehicleType: desiredCarName.trim(),
         totalCustomerPrice: Number(totalCustomerPrice),
         agencyCommission: Number(agencyCommission),
         tripDetails,
@@ -174,7 +201,7 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <h3 className="text-xs font-bold text-amber-900">
-                    Agency KYC Verification Required
+                    Profile verification required
                   </h3>
                   <p className="text-[11px] text-amber-700 mt-1 leading-relaxed">
                     {gate.reason}
@@ -189,7 +216,7 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 }}
                 className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 active-press"
               >
-                <span>Upload KYC Documents</span>
+                <span>Open profile</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -223,14 +250,37 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
             </div>
           )}
 
-          {/* If Gated, allow review or disable form */}
-          {gate.canPost && (
+          {gate.canPost && tourGate.code === 'no_agency' && (
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
+              <div className="flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="text-xs font-bold text-amber-900">Travel agency name required</h3>
+                  <p className="text-[11px] text-amber-700 mt-1 leading-relaxed">{tourGate.reason}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  if (onOpenVerification) onOpenVerification();
+                }}
+                className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"
+              >
+                Add agency name on profile
+              </button>
+            </div>
+          )}
+
+          {tourGate.ok && (
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Agency Quick Badge */}
               <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-[11px]">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span className="font-bold text-[#1C1C1C]">{currentAgency.agencyName}</span>
+                  <span className="font-bold text-[#1C1C1C]">
+                    {currentUser?.agencyName || currentAgency.agencyName}
+                  </span>
                 </div>
                 <span className="text-[#6B6B6B]">
                   Plan: <strong className="text-[#F15A24]">{activeSubInfo?.pkg.name || 'Pro'}</strong>
@@ -281,6 +331,67 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 </div>
               </div>
 
+              <div>
+                <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Trip type *</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTripSide('one_side')}
+                    className={`flex-1 py-2.5 rounded-xl text-[11px] font-extrabold ${
+                      tripSide === 'one_side'
+                        ? 'bg-[#F15A24] text-white'
+                        : 'bg-[#FAF6EE] border border-[#EBE5D8]'
+                    }`}
+                  >
+                    One side
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTripSide('two_side')}
+                    className={`flex-1 py-2.5 rounded-xl text-[11px] font-extrabold ${
+                      tripSide === 'two_side'
+                        ? 'bg-[#F15A24] text-white'
+                        : 'bg-[#FAF6EE] border border-[#EBE5D8]'
+                    }`}
+                  >
+                    Two side
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
+                    Posting date *
+                  </label>
+                  <div className="relative">
+                    <Calendar className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
+                    <input
+                      type="date"
+                      value={postedDate}
+                      onChange={(e) => setPostedDate(e.target.value)}
+                      required
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
+                    Posting time *
+                  </label>
+                  <div className="relative">
+                    <Clock className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
+                    <input
+                      type="time"
+                      value={postedTime}
+                      onChange={(e) => setPostedTime(e.target.value)}
+                      required
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Passengers & Duration */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -291,9 +402,10 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                     <Users className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
                     <select
                       value={passengers}
-                      onChange={(e) => setPassengers(Number(e.target.value))}
+                      onChange={(e) => setPassengers(e.target.value)}
                       className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
                     >
+                      <option value="">Select passengers</option>
                       <option value={1}>1 Member</option>
                       <option value={2}>2 Members</option>
                       <option value={3}>3 Members</option>
@@ -323,11 +435,10 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 </div>
               </div>
 
-              {/* Start Date & Vehicle Type */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Tour Start Date *
+                    Actual booking date *
                   </label>
                   <div className="relative">
                     <Calendar className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
@@ -340,37 +451,33 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Required Vehicle *
+                    Actual booking time *
                   </label>
                   <div className="relative">
-                    <Car className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
-                    <select
-                      value={requiredVehicleType}
-                      onChange={(e) => setRequiredVehicleType(e.target.value)}
+                    <Clock className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
+                    <input
+                      type="time"
+                      value={pickupTime}
+                      onChange={(e) => setPickupTime(e.target.value)}
+                      required
                       className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
-                    >
-                      <option value="Sedan (Dzire / Etios / Aura)">Sedan (Dzire / Etios)</option>
-                      <option value="SUV (Ertiga / Innova / XL6)">SUV (Ertiga / Innova)</option>
-                      <option value="Innova Crysta Premium">Innova Crysta</option>
-                      <option value="Tempo Traveller (12/17 Seater)">Tempo Traveller</option>
-                      <option value="Hatchback (WagonR / Swift)">Hatchback</option>
-                    </select>
+                    />
                   </div>
                 </div>
               </div>
 
               <div className="p-4 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] space-y-2.5">
                 <label className="block text-[11px] font-extrabold text-[#1C1C1C]">
-                  Desired car
+                  Required Vehicle *
                 </label>
-                <p className="text-[10px] text-[#6B6B6B]">Car name plus 2–3 main specifications.</p>
+                <p className="text-[10px] text-[#6B6B6B]">Type the car name plus 2–3 main specifications.</p>
                 <input
                   value={desiredCarName}
                   onChange={(e) => setDesiredCarName(e.target.value)}
                   placeholder="e.g. Innova Crysta"
+                  required
                   className="w-full px-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold bg-white"
                 />
                 <div className="grid grid-cols-3 gap-2">
@@ -415,7 +522,7 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                     <input
                       type="number"
                       value={totalCustomerPrice}
-                      onChange={(e) => setTotalCustomerPrice(Number(e.target.value))}
+                      onChange={(e) => setTotalCustomerPrice(e.target.value)}
                       placeholder="1000"
                       min={100}
                       step={50}
@@ -431,7 +538,7 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                     <input
                       type="number"
                       value={agencyCommission}
-                      onChange={(e) => setAgencyCommission(Number(e.target.value))}
+                      onChange={(e) => setAgencyCommission(e.target.value)}
                       placeholder="200"
                       min={0}
                       step={50}
@@ -444,7 +551,7 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 {/* Live Payout Highlight */}
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#EBE5D8]">
                   <span className="text-xs font-bold text-[#6B6B6B]">
-                    Net Driver Payout on WhatsApp:
+                    Net Driver Payout:
                   </span>
                   <span className="text-sm font-black text-[#00A86B]">
                     ₹{driverNetPayout.toLocaleString()}
@@ -472,11 +579,12 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                   <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                     Tour Category
                   </label>
-                  <select
+                    <select
                     value={tourType}
                     onChange={(e) => setTourType(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
                   >
+                    <option value="">Select category</option>
                     <option value="Family Sightseeing Tour">Family Sightseeing Tour</option>
                     <option value="Leisure Group Tour">Leisure Group Tour</option>
                     <option value="Pilgrimage / Religious Tour">Pilgrimage / Religious Tour</option>
@@ -489,11 +597,12 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                   <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                     Tolls & Border Tax Rule
                   </label>
-                  <select
+                    <select
                     value={tollTaxOption}
                     onChange={(e) => setTollTaxOption(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
                   >
+                    <option value="">Select toll rule</option>
                     <option value="Paid directly by Guest at Toll Plazas">Paid directly by Guest</option>
                     <option value="Included in Total Package Fare">Included in Fare</option>
                     <option value="Extra on actual FASTag receipts">Extra on Actuals</option>
@@ -565,11 +674,12 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                   <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                     Payment Payout Mode
                   </label>
-                  <select
+                    <select
                     value={payoutMode}
                     onChange={(e) => setPayoutMode(e.target.value)}
                     className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
                   >
+                    <option value="">Select payout mode</option>
                     <option value="Direct Cash from Guest">Direct Cash from Guest</option>
                     <option value="Instant UPI by Agency">Instant UPI by Agency</option>
                     <option value="Split 50-50 (Advance + Drop)">Split 50-50</option>
@@ -603,25 +713,6 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                   required
                   className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
                 />
-              </div>
-
-              {/* Contact Information (Pre-filled from Agency) */}
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-[11px]">
-                  <MessageCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                  <div className="truncate">
-                    <span className="text-[#6B6B6B] block text-[9px]">WhatsApp</span>
-                    <strong className="text-[#1C1C1C]">{currentAgency.whatsappPhone || currentAgency.phone}</strong>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-[11px]">
-                  <Phone className="w-4 h-4 text-[#F15A24] flex-shrink-0" />
-                  <div className="truncate">
-                    <span className="text-[#6B6B6B] block text-[9px]">Direct Call</span>
-                    <strong className="text-[#1C1C1C]">{currentAgency.phone}</strong>
-                  </div>
-                </div>
               </div>
 
               {/* Submit Button */}

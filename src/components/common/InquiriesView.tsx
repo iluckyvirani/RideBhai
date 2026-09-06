@@ -1,120 +1,103 @@
-import React from 'react';
-import { Phone, MessageCircle, Ticket } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Ticket } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
-import { ContactActions } from './ContactActions';
-import { Inquiry } from '../../types';
+import { Deal } from '../../lib/deals';
+import { ChatListSkeleton } from './SkeletonLoader';
 
 interface InquiriesViewProps {
-  mode: 'rider' | 'partner';
+  mode: 'rider' | 'partner' | 'user';
   embedded?: boolean;
+  onOpenChat?: (threadId: string) => void;
 }
 
-export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded }) => {
-  const { inquiries, currentRider, currentDriver, currentAgency, carListings, agencyTripPosts } =
-    useAppStore();
+function statusClass(status: Deal['status']) {
+  if (status === 'success') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  if (status === 'cancelled') return 'bg-red-50 text-red-700 border-red-200';
+  return 'bg-amber-50 text-amber-800 border-amber-200';
+}
 
-  const partnerIds = [currentDriver.id, currentAgency.id];
-  const incoming =
-    mode === 'partner' ? inquiries.filter((i) => partnerIds.includes(i.partnerId)) : [];
-  const outgoing =
-    mode === 'partner'
-      ? inquiries.filter(
-          (i) => i.inquirerRole === 'partner' && partnerIds.includes(i.riderId) && !partnerIds.includes(i.partnerId)
-        )
-      : [];
-  const riderItems = mode === 'rider' ? inquiries.filter((i) => i.riderId === currentRider.id) : [];
+export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded, onOpenChat }) => {
+  const { deals, currentUser, refreshDeals } = useAppStore();
+  const [loading, setLoading] = useState(true);
 
-  const listingContact = (inq: Inquiry) => {
-    if (inq.listingType === 'car') {
-      const c = carListings.find((x) => x.id === inq.listingId);
-      return { phone: c?.partnerPhone || '', whatsapp: c?.partnerWhatsapp };
-    }
-    const t = agencyTripPosts.find((x) => x.id === inq.listingId);
-    return { phone: t?.agencyPhone || '', whatsapp: t?.whatsappNumber };
-  };
+  useEffect(() => {
+    refreshDeals().finally(() => setLoading(false));
+  }, [refreshDeals]);
 
-  const renderInquiry = (inq: Inquiry, kind: 'incoming' | 'outgoing' | 'rider') => {
-    const listing = listingContact(inq);
-    const fromPartner = inq.inquirerRole === 'partner';
-    const callbackPhone = kind === 'incoming' ? inq.inquirerPhone : listing.phone;
-    const callbackWa = kind === 'incoming' ? inq.inquirerPhone : listing.whatsapp;
+  const mine = deals.filter((d) => d.channel === 'ridebhai' && currentUser?.id && (d.buyerId === currentUser.id || d.sellerId === currentUser.id));
+  const incoming = mine.filter((d) => d.sellerId === currentUser?.id);
+  const outgoing = mine.filter((d) => d.buyerId === currentUser?.id);
 
-    return (
-      <div key={inq.id} className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-extrabold uppercase text-[#F15A24]">
-            {inq.listingType} · {inq.channel}
-            {fromPartner ? ' · partner' : kind === 'rider' ? '' : ' · customer'}
-          </span>
-          <span className="text-[10px] font-bold text-[#6B6B6B]">
-            {new Date(inq.createdAt).toLocaleString('en-IN', {
-              day: 'numeric',
-              month: 'short',
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </span>
-        </div>
-        <p className="text-sm font-extrabold text-[#1C1C1C]">{inq.title}</p>
-        <p className="text-[11px] text-[#6B6B6B]">
-          {kind === 'outgoing'
-            ? `You contacted ${inq.partnerName}`
-            : kind === 'incoming'
-              ? `${fromPartner ? 'Partner' : 'Customer'}: ${inq.riderName}`
-              : `Partner: ${inq.partnerName}`}{' '}
-          · ₹{inq.price.toLocaleString('en-IN')}
-        </p>
-        <p className="text-[11px] font-bold text-[#1C1C1C] flex items-center gap-1">
-          {inq.channel === 'call' ? <Phone className="w-3 h-3" /> : <MessageCircle className="w-3 h-3" />}
-          {kind === 'outgoing' ? `You used ${inq.channel}` : `Contacted via ${inq.channel}`}
-        </p>
-        {callbackPhone ? (
-          <ContactActions phone={callbackPhone} whatsapp={callbackWa} compact />
-        ) : null}
+  const renderDeal = (deal: Deal, kind: 'incoming' | 'outgoing') => (
+    <div key={deal.id} className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] font-extrabold uppercase text-[#F15A24]">
+          {deal.listingType} · Ride Bhai
+        </span>
+        <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${statusClass(deal.status)}`}>
+          {deal.status}
+        </span>
       </div>
-    );
-  };
+      <p className="text-sm font-extrabold text-[#1C1C1C]">{deal.title}</p>
+      <p className="text-[11px] text-[#6B6B6B]">
+        {kind === 'outgoing' ? `You requested ${deal.sellerName}` : `${deal.buyerName} requested you`}
+        {' · '}₹{deal.price.toLocaleString('en-IN')}
+      </p>
+      <p className="text-[10px] font-bold text-[#6B6B6B]">
+        {new Date(deal.createdAt).toLocaleString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        })}
+      </p>
+      {deal.threadId && onOpenChat && (
+        <button
+          type="button"
+          onClick={() => onOpenChat(deal.threadId!)}
+          className="w-full py-2 rounded-xl bg-[#FAF6EE] text-[11px] font-extrabold text-[#F15A24]"
+        >
+          Open chat
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className={`space-y-4 animate-fade-in ${embedded ? '' : 'pb-24'}`}>
       {!embedded && (
-      <div>
-        <h2 className="text-lg font-extrabold text-[#1C1C1C]">Bookings</h2>
-        <p className="text-[11px] text-[#6B6B6B]">
-          {mode === 'rider'
-            ? 'Every Call or WhatsApp you make on a car or tour is saved here.'
-            : 'Who contacted you, and other partners you called or WhatsApped.'}
-        </p>
-      </div>
+        <div>
+          <h2 className="text-lg font-extrabold text-[#1C1C1C]">My bookings</h2>
+          <p className="text-[11px] text-[#6B6B6B]">
+            Ride Bhai deals only — pending, success or cancelled. Direct chats stay in Chat.
+          </p>
+        </div>
       )}
 
-      {mode === 'partner' && (
+      {loading && mine.length === 0 && <ChatListSkeleton count={3} />}
+      {!loading && mine.length === 0 && (
+        <div className="p-8 text-center rounded-3xl bg-white border border-[#EBE5D8]">
+          <Ticket className="w-8 h-8 mx-auto text-[#EBE5D8] mb-2" />
+          <p className="text-sm font-bold text-[#6B6B6B]">No Ride Bhai bookings yet.</p>
+          <p className="text-[11px] text-[#6B6B6B] mt-1">
+            Tap Deal with Ride Bhai on a car or tour.
+          </p>
+        </div>
+      )}
+
+      {(mode === 'partner' || mode === 'user' || mode === 'rider') && incoming.length > 0 && (
         <>
           <h3 className="text-[10px] font-extrabold uppercase tracking-wider text-[#6B6B6B]">Incoming</h3>
-          {incoming.length === 0 && (
-            <p className="text-xs font-bold text-[#6B6B6B]">No one has contacted your posts yet.</p>
-          )}
-          {incoming.map((inq) => renderInquiry(inq, 'incoming'))}
-
-          <h3 className="text-[10px] font-extrabold uppercase tracking-wider text-[#6B6B6B] pt-2">
-            You contacted other partners
-          </h3>
-          {outgoing.length === 0 && (
-            <p className="text-xs font-bold text-[#6B6B6B]">
-              Open Cars or Tours and Call / WhatsApp another partner’s listing.
-            </p>
-          )}
-          {outgoing.map((inq) => renderInquiry(inq, 'outgoing'))}
+          {incoming.map((deal) => renderDeal(deal, 'incoming'))}
         </>
       )}
 
-      {mode === 'rider' && riderItems.length === 0 && (
-        <div className="p-8 text-center rounded-3xl bg-white border border-[#EBE5D8]">
-          <Ticket className="w-8 h-8 mx-auto text-[#EBE5D8] mb-2" />
-          <p className="text-sm font-bold text-[#6B6B6B]">No inquiries yet.</p>
-        </div>
+      {(mode === 'partner' || mode === 'user' || mode === 'rider') && outgoing.length > 0 && (
+        <>
+          <h3 className="text-[10px] font-extrabold uppercase tracking-wider text-[#6B6B6B] pt-2">You requested</h3>
+          {outgoing.map((deal) => renderDeal(deal, 'outgoing'))}
+        </>
       )}
-      {mode === 'rider' && riderItems.map((inq) => renderInquiry(inq, 'rider'))}
     </div>
   );
 };

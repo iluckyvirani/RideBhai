@@ -288,7 +288,7 @@ export const AgencyDashboard: React.FC<AgencyDashboardProps> = ({
                   <div>
                     <div className="flex items-center gap-1.5 text-xs font-black text-[#1C1C1C]">
                       <span>{post.fromCity}</span>
-                      <span className="text-[#F15A24]">→</span>
+                      <span className="text-[#F15A24]">{post.tripSide === 'two_side' ? '⇄' : '→'}</span>
                       <span>{post.toCity}</span>
                     </div>
                     <p className="text-[11px] text-[#6B6B6B] mt-0.5 flex items-center gap-2">

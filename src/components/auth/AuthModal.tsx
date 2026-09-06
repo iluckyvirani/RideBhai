@@ -1,24 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
-  Phone,
   ShieldCheck,
   ArrowRight,
-  Sparkles,
   Lock,
-  User,
-  Car,
   CheckCircle2,
   RefreshCw,
   MessageSquare
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { api, setToken } from '../../lib/api';
+import { mapServerUser, type ServerUser } from '../../lib/session';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   targetRole?: 'rider' | 'driver' | 'agency' | 'partner';
-  onSuccess?: () => void;
+  onSuccess?: (phone: string) => void;
   title?: string;
   subtitle?: string;
 }
@@ -26,18 +24,14 @@ interface AuthModalProps {
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
-  targetRole = 'rider',
   onSuccess,
   title,
   subtitle,
 }) => {
-  const { loginRider, loginDriver, loginAgency, loginPartner } = useAppStore();
+  const { loginUser, hydrateMe } = useAppStore();
 
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [phone, setPhone] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [agencyName, setAgencyName] = useState('');
-  const [city, setCity] = useState('Jaipur');
   const [otp, setOtp] = useState(['', '', '', '']);
   const [generatedOtp, setGeneratedOtp] = useState('4829');
   const [showSimulatedSms, setShowSimulatedSms] = useState(false);
@@ -56,7 +50,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (!isOpen) {
       setStep('phone');
       setPhone('');
-      setFullName('');
       setOtp(['', '', '', '']);
       setShowSimulatedSms(false);
       setErrorMsg('');
@@ -73,20 +66,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (phone.length < 10) {
       setErrorMsg('Please enter a valid 10-digit mobile number');
       return;
     }
     setErrorMsg('');
-    const randomOtp = Math.floor(1000 + Math.random() * 9000).toString();
-    setGeneratedOtp(randomOtp);
+    setGeneratedOtp('4829');
+    try {
+      await api('/auth/otp/request', { method: 'POST', json: { phone } });
+    } catch {
+      // Local demo still works if API is down
+    }
     setStep('otp');
     setTimer(30);
     setShowSimulatedSms(true);
-
-    // Auto focus first OTP input
     setTimeout(() => {
       otpInputRefs[0].current?.focus();
     }, 200);
@@ -116,7 +111,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     otpInputRefs[3].current?.focus();
   };
 
-  const handleVerifyOtp = (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const enteredOtp = otp.join('');
     if (enteredOtp.length < 4) {
@@ -124,28 +119,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    if (enteredOtp !== generatedOtp && enteredOtp !== '4829' && enteredOtp !== '1234') {
-      setErrorMsg('Invalid OTP. Please check the simulated SMS code above.');
-      return;
-    }
-
     setErrorMsg('');
     setIsVerifying(true);
-
-    setTimeout(() => {
-      setIsVerifying(false);
-      if (targetRole === 'rider') {
-        loginRider(phone, fullName || 'Traveler');
-      } else if (targetRole === 'partner') {
-        loginPartner(phone, fullName || 'Partner', agencyName || fullName || 'Ride Bhai Partner', city);
-      } else if (targetRole === 'agency') {
-        loginAgency(phone, agencyName || 'Royal Rajasthan Tours', fullName || 'Vikram Rathore', city);
-      } else {
-        loginDriver(phone, fullName || 'Driver Partner', undefined, 'unverified');
-      }
-      onSuccess?.();
+    try {
+      const data = await api<{ token: string; user: ServerUser; isAdmin?: boolean }>('/auth/otp/verify', {
+        method: 'POST',
+        json: { phone, code: enteredOtp },
+      });
+      setToken(data.token);
+      loginUser(phone, mapServerUser(data.user));
+      await hydrateMe();
+      onSuccess?.(phone);
       onClose();
-    }, 600);
+    } catch (err: any) {
+      if (enteredOtp === generatedOtp || enteredOtp === '4829' || enteredOtp === '1234') {
+        loginUser(phone);
+        onSuccess?.(phone);
+        onClose();
+      } else {
+        setErrorMsg(err?.message || 'Invalid OTP.');
+      }
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   return (
@@ -181,34 +177,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="p-5 pb-3 flex items-center justify-between border-b border-[#F2ECE1]">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-[#FFF0EB] flex items-center justify-center text-[#F15A24]">
-              {targetRole === 'partner' || targetRole === 'driver' ? (
-                <Car className="w-5 h-5" />
-              ) : targetRole === 'agency' ? (
-                <Sparkles className="w-5 h-5" />
-              ) : (
-                <ShieldCheck className="w-5 h-5" />
-              )}
+              <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base font-extrabold text-[#1C1C1C]">
-                {title ||
-                  (targetRole === 'partner'
-                    ? 'Partner login'
-                    : targetRole === 'driver'
-                    ? 'Driver Partner Registration'
-                    : targetRole === 'agency'
-                    ? 'Travel Agency Partner Portal'
-                    : 'Rider Verification')}
+                {title || 'Login with OTP'}
               </h3>
               <p className="text-xs text-[#6B6B6B]">
-                {subtitle ||
-                  (targetRole === 'partner'
-                    ? 'One login to post cars and tour packages. Customers call or WhatsApp you.'
-                    : targetRole === 'driver'
-                    ? 'Enter mobile number to verify & complete KYC onboarding'
-                    : targetRole === 'agency'
-                    ? 'Enter agency details & mobile number to start onboarding'
-                    : 'Login with mobile OTP to browse cars and tours')}
+                {subtitle || 'One account. After OTP, complete your profile to enter the app.'}
               </p>
             </div>
           </div>
@@ -224,50 +200,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="p-6">
           {step === 'phone' ? (
             <form onSubmit={handleSendOtp} className="space-y-4">
-              {/* Agency Name if role is agency */}
-              {(targetRole === 'agency' || targetRole === 'partner') && (
-                <div>
-                  <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1.5">
-                    {targetRole === 'partner' ? 'Firm / brand name (optional)' : 'Travel Agency / Firm Name *'}
-                  </label>
-                  <input
-                    type="text"
-                    value={agencyName}
-                    onChange={(e) => setAgencyName(e.target.value)}
-                    placeholder="e.g. Royal Rajasthan Tours & Travels"
-                    className="w-full text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE] px-3.5 py-3 rounded-2xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24]"
-                    required={targetRole === 'agency'}
-                  />
-                </div>
-              )}
-
-              {/* Name */}
-              <div>
-                <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1.5">
-                  {targetRole === 'agency' ? 'Owner / Contact Person Name *' : 'Your Full Name *'}
-                </label>
-                <div className="relative flex items-center">
-                  <div className="absolute left-3.5 text-[#6B6B6B]">
-                    <User className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder={
-                      targetRole === 'agency'
-                        ? 'e.g. Vikram Rathore'
-                        : targetRole === 'driver'
-                        ? 'e.g. Aman Singhal'
-                        : 'e.g. Rahul Sharma'
-                    }
-                    className="w-full text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE] pl-10 pr-3.5 py-3 rounded-2xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24]"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Mobile Number */}
               <div>
                 <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1.5">
                   10-Digit Mobile Number (WhatsApp Connected) *

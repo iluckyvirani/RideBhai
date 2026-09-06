@@ -38,7 +38,7 @@ export const EarningsCalculator: React.FC<EarningsCalculatorProps> = ({ onRegist
             What a <span className="text-gradient">full-car hire</span> can earn
           </h2>
           <p className="text-sm text-[#6B6B6B]">
-            Customers pay you directly on Call or WhatsApp. You only pay Ride Bhai for a posting package.
+            Customers book in chat or Deal with Ride Bhai. You only pay Ride Bhai for a posting package.
           </p>
         </div>
 
@@ -117,7 +117,7 @@ export const EarningsCalculator: React.FC<EarningsCalculatorProps> = ({ onRegist
               onClick={onRegisterDriver}
               className="w-full mt-6 py-4 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2"
             >
-              Become a Partner
+              Login with OTP
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

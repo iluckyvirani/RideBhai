@@ -2,6 +2,7 @@ import React from 'react';
 import { ChevronLeft, Bell, Home, ArrowLeft } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { useAppStore } from '../../store/useAppStore';
+import { useLiveNotifications } from '../../hooks/useLiveNotifications';
 
 interface AppHeaderProps {
   title?: string;
@@ -18,8 +19,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onOpenNotifications,
   onExitToLanding,
 }) => {
-  const { notifications, role } = useAppStore();
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const { currentUser } = useAppStore();
+  const { unread: unreadCount } = useLiveNotifications();
+  const status = currentUser?.profileStatus;
 
   return (
     <header className="sticky top-0 z-30 bg-[#FAF6EE]/95 backdrop-blur-md px-4 py-3 border-b border-[#EBE5D8] flex items-center justify-between transition-all">
@@ -53,14 +55,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
-        {(role === 'partner' || role === 'driver' || role === 'agency' || role === 'rider' || role === 'admin') && (
+        {status && (
           <div className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#EBE5D8] bg-white shadow-xs">
-            {role === 'partner' || role === 'driver' || role === 'agency' ? (
-              <span className="text-[#00A86B]">Partner</span>
-            ) : role === 'admin' ? (
-              <span className="text-amber-600">Admin</span>
+            {status === 'verified' ? (
+              <span className="text-[#00A86B]">Verified</span>
+            ) : status === 'pending_verification' ? (
+              <span className="text-amber-600">Pending KYC</span>
+            ) : status === 'rejected' ? (
+              <span className="text-[#E8380D]">Rejected</span>
             ) : (
-              <span className="text-[#F15A24]">Customer</span>
+              <span className="text-[#6B6B6B]">Profile</span>
             )}
           </div>
         )}

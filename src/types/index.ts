@@ -29,6 +29,8 @@ export interface Vehicle {
   currentCity?: string;
   availability?: 'citywide' | 'route';
   toCity?: string;
+  verificationStatus?: 'pending_verification' | 'verified' | 'rejected';
+  rejectionReason?: string;
 }
 
 export interface DesiredCar {
@@ -49,6 +51,10 @@ export interface CarListing {
   carId: string;
   carName: string;
   carImage?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  color?: string;
   plate?: string;
   seats: number;
   fuelType?: FuelType;
@@ -56,7 +62,17 @@ export interface CarListing {
   availability: CarAvailability;
   currentCity: string;
   toCity?: string;
+  postedDate?: string;
+  postedTime?: string;
+  bookingDate?: string;
+  bookingTime?: string;
+  availableTillDate?: string;
+  availableTillTime?: string;
   notes?: string;
+  driverId?: string;
+  driverName?: string;
+  driverExperienceYears?: number;
+  driverExperienceNote?: string;
   status: 'available' | 'inactive';
   createdAt: string;
 }
@@ -71,7 +87,7 @@ export interface Inquiry {
   inquirerPhone?: string;
   partnerId: string;
   partnerName: string;
-  channel: 'call' | 'whatsapp';
+  channel: 'call' | 'whatsapp' | 'ridebhai';
   createdAt: string;
   title: string;
   price: number;
@@ -184,6 +200,8 @@ export interface AgencyActiveSubscription {
 
 export type AgencyTripStatus = 'active' | 'claimed' | 'completed' | 'cancelled' | 'closed';
 
+export type TourTripSide = 'one_side' | 'two_side';
+
 export interface AgencyTripPost {
   id: string;
   agencyId: string;
@@ -194,6 +212,11 @@ export interface AgencyTripPost {
   agencyRating: number;
   fromCity: string;
   toCity: string;
+  tripSide?: TourTripSide;
+  postedDate?: string; // YYYY-MM-DD — when listing was posted
+  postedTime?: string; // HH:mm
+  bookingDate?: string; // YYYY-MM-DD — actual booking / travel date
+  bookingTime?: string; // HH:mm
   routeHighlights?: string[];
   passengers: number; // e.g. 4 member
   duration: string; // e.g. "3 Days 1 Night"
@@ -377,6 +400,55 @@ export interface CityLocation {
   name: string;
   state: string;
   popularPoints: string[];
+}
+
+export type UserProfileStatus = 'incomplete' | 'pending_verification' | 'verified' | 'rejected';
+
+export interface DriverProfile {
+  id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  aadhaarDoc?: string;
+  selfieDoc?: string;
+  experienceYears: number;
+  experienceNote?: string;
+  completed: boolean;
+  verificationStatus?: 'pending_verification' | 'verified' | 'rejected';
+  rejectionReason?: string;
+}
+
+export interface BankDetails {
+  accountHolderName: string;
+  accountNumber: string;
+  ifsc: string;
+  bankName: string;
+  branchName?: string;
+  accountType: 'savings' | 'current';
+  upiId?: string;
+  completed: boolean;
+}
+
+export interface AppUser {
+  id: string;
+  phone: string;
+  name: string;
+  email: string;
+  agencyName?: string;
+  gstNumber?: string;
+  aadhaarDoc?: string;
+  aadhaarName?: string;
+  selfieDoc?: string;
+  selfieName?: string;
+  city?: string;
+  profileStatus: UserProfileStatus;
+  profileCompleted: boolean;
+  createdAt: string;
+  rejectionReason?: string;
+  vehicles?: Vehicle[];
+  driverProfile?: DriverProfile;
+  driverProfiles?: DriverProfile[];
+  bankDetails?: BankDetails;
 }
 
 export type AppViewMode = 'landing' | 'rider-app' | 'driver-app' | 'agency-app' | 'partner-app' | 'admin-portal';

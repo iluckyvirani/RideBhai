@@ -205,7 +205,7 @@ export const AgencyToursFeed: React.FC = () => {
                     <div className="flex items-center gap-2 text-sm font-black text-[#1C1C1C]">
                       <MapPin className="w-4 h-4 text-[#F15A24]" />
                       <span>{post.fromCity}</span>
-                      <span className="text-[#F15A24] font-bold">→</span>
+                      <span className="text-[#F15A24] font-bold">{post.tripSide === 'two_side' ? '⇄' : '→'}</span>
                       <span>{post.toCity}</span>
                     </div>
 

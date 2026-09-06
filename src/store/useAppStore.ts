@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react';
 import {
   UserRole,
   Driver,
@@ -24,6 +24,10 @@ import {
   AgencyTripStatus,
   CarListing,
   Inquiry,
+  AppUser,
+  UserProfileStatus,
+  DriverProfile,
+  BankDetails,
 } from '../types';
 import { INITIAL_DRIVERS } from '../data/mockDrivers';
 import { INITIAL_RIDES } from '../data/mockRides';
@@ -38,11 +42,15 @@ import {
   INITIAL_AGENCIES,
   INITIAL_AGENCY_PACKAGES,
   INITIAL_AGENCY_SUBSCRIPTIONS,
-  INITIAL_AGENCY_TRIPS,
 } from '../data/mockAgencies';
-import { INITIAL_CAR_LISTINGS, INITIAL_INQUIRIES } from '../data/mockCarListings';
+import { INITIAL_INQUIRIES } from '../data/mockCarListings';
+import { api, getToken, setToken } from '../lib/api';
+import { refreshNotifications } from '../lib/notifications';
+import { mapDeal, mapThread, type ChatThread, type Deal } from '../lib/deals';
+import { mapCarListing, mapTourListing, mergeById } from '../lib/listings';
+import { mapServerUser, type ServerUser } from '../lib/session';
 
-const DEMO_VERSION = 'partner-v7';
+const DEMO_VERSION = 'neon-listings-v1';
 const VERSION_KEY = 'ridebhai_demo_version';
 
 function wipeRideBhaiStorage() {
@@ -88,6 +96,9 @@ const STORAGE_KEYS = {
   PARTNER_AUTH: 'ridebhai_partner_auth_v2',
   CAR_LISTINGS: 'ridebhai_car_listings_v2',
   INQUIRIES: 'ridebhai_inquiries_v2',
+  USERS: 'ridebhai_users_v1',
+  CURRENT_USER_ID: 'ridebhai_current_user_id_v1',
+  USER_AUTH: 'ridebhai_user_auth_v1',
 };
 
 // Safe JSON parser from LocalStorage
@@ -113,6 +124,84 @@ function saveToStorage<T>(key: string, value: T): void {
 let storeListeners: Array<() => void> = [];
 const notifyListeners = () => storeListeners.forEach((l) => l());
 
+type SharedAuth = {
+  isLoggedIn: boolean;
+  currentUserId: string | null;
+  users: AppUser[];
+};
+
+let sharedAuth: SharedAuth = {
+  isLoggedIn: loadFromStorage(STORAGE_KEYS.USER_AUTH, false),
+  currentUserId: loadFromStorage(STORAGE_KEYS.CURRENT_USER_ID, null),
+  users: loadFromStorage(STORAGE_KEYS.USERS, []),
+};
+
+const authListeners = new Set<() => void>();
+
+function subscribeAuth(listener: () => void) {
+  authListeners.add(listener);
+  return () => authListeners.delete(listener);
+}
+
+function getSharedAuth() {
+  return sharedAuth;
+}
+
+function writeSharedAuth(partial: Partial<SharedAuth>) {
+  sharedAuth = { ...sharedAuth, ...partial };
+  if (partial.isLoggedIn !== undefined) saveToStorage(STORAGE_KEYS.USER_AUTH, sharedAuth.isLoggedIn);
+  if (partial.currentUserId !== undefined) saveToStorage(STORAGE_KEYS.CURRENT_USER_ID, sharedAuth.currentUserId);
+  if (partial.users !== undefined) saveToStorage(STORAGE_KEYS.USERS, sharedAuth.users);
+  authListeners.forEach((listener) => listener());
+  notifyListeners();
+}
+
+type SharedListings = {
+  cars: CarListing[];
+  tours: AgencyTripPost[];
+  loading: boolean;
+  error: string;
+};
+
+let sharedListings: SharedListings = { cars: [], tours: [], loading: false, error: '' };
+const listingListeners = new Set<() => void>();
+
+function subscribeListings(listener: () => void) {
+  listingListeners.add(listener);
+  return () => listingListeners.delete(listener);
+}
+
+function getSharedListings() {
+  return sharedListings;
+}
+
+function writeSharedListings(partial: Partial<SharedListings>) {
+  sharedListings = { ...sharedListings, ...partial };
+  listingListeners.forEach((listener) => listener());
+}
+
+type SharedDeals = {
+  deals: Deal[];
+  threads: ChatThread[];
+};
+
+let sharedDeals: SharedDeals = { deals: [], threads: [] };
+const dealListeners = new Set<() => void>();
+
+function subscribeDeals(listener: () => void) {
+  dealListeners.add(listener);
+  return () => dealListeners.delete(listener);
+}
+
+function getSharedDeals() {
+  return sharedDeals;
+}
+
+function writeSharedDeals(partial: Partial<SharedDeals>) {
+  sharedDeals = { ...sharedDeals, ...partial };
+  dealListeners.forEach((listener) => listener());
+}
+
 export function useAppStore() {
   // 1. Core State Hooks initialized from LocalStorage
   const [appView, setAppViewState] = useState<AppViewMode>(() => loadFromStorage(STORAGE_KEYS.APP_VIEW, 'landing'));
@@ -122,9 +211,9 @@ export function useAppStore() {
   const [isPartnerLoggedIn, setIsPartnerLoggedInState] = useState<boolean>(() =>
     loadFromStorage(STORAGE_KEYS.PARTNER_AUTH, false)
   );
-  const [carListings, setCarListingsState] = useState<CarListing[]>(() =>
-    loadFromStorage(STORAGE_KEYS.CAR_LISTINGS, INITIAL_CAR_LISTINGS)
-  );
+  const { cars: carListings, tours: agencyTripPosts, loading: listingsLoading, error: listingsError } =
+    useSyncExternalStore(subscribeListings, getSharedListings, getSharedListings);
+  const { deals, threads: chatThreads } = useSyncExternalStore(subscribeDeals, getSharedDeals, getSharedDeals);
   const [inquiries, setInquiriesState] = useState<Inquiry[]>(() =>
     loadFromStorage(STORAGE_KEYS.INQUIRIES, INITIAL_INQUIRIES)
   );
@@ -144,7 +233,12 @@ export function useAppStore() {
   const [agencies, setAgenciesState] = useState<TravelAgency[]>(() => loadFromStorage(STORAGE_KEYS.AGENCIES, INITIAL_AGENCIES));
   const [agencyPackages, setAgencyPackagesState] = useState<AgencyPackage[]>(() => loadFromStorage(STORAGE_KEYS.AGENCY_PACKAGES, INITIAL_AGENCY_PACKAGES));
   const [agencySubscriptions, setAgencySubscriptionsState] = useState<AgencyActiveSubscription[]>(() => loadFromStorage(STORAGE_KEYS.AGENCY_SUBSCRIPTIONS, INITIAL_AGENCY_SUBSCRIPTIONS));
-  const [agencyTripPosts, setAgencyTripPostsState] = useState<AgencyTripPost[]>(() => loadFromStorage(STORAGE_KEYS.AGENCY_TRIPS, INITIAL_AGENCY_TRIPS));
+  const { isLoggedIn, currentUserId, users } = useSyncExternalStore(subscribeAuth, getSharedAuth, getSharedAuth);
+
+  const currentUser = useMemo(() => {
+    if (!currentUserId) return null;
+    return users.find((u) => u.id === currentUserId) || null;
+  }, [users, currentUserId]);
 
   // Current active driver profile (defaults to Aman Singhal drv-current)
   const currentDriver = useMemo(() => {
@@ -155,6 +249,8 @@ export function useAppStore() {
   const currentAgency = useMemo(() => {
     return agencies.find((a) => a.id === 'agency-current') || agencies[0];
   }, [agencies]);
+
+  const accountId = currentUser?.id || currentAgency?.id || 'agency-current';
 
   // View Navigation
   const setAppView = useCallback((view: AppViewMode) => {
@@ -302,6 +398,288 @@ export function useAppStore() {
     notifyListeners();
   }, []);
 
+  const updateUsers = useCallback((updater: (prev: AppUser[]) => AppUser[]) => {
+    writeSharedAuth({ users: updater(sharedAuth.users) });
+  }, []);
+
+  const applyServerUser = useCallback((user: AppUser) => {
+    writeSharedAuth({
+      isLoggedIn: true,
+      currentUserId: user.id,
+      users: [user, ...sharedAuth.users.filter((u) => u.id !== user.id)],
+    });
+  }, []);
+
+  const hydrateMe = useCallback(async () => {
+    if (!getToken()) return null;
+    try {
+      const me = await api<{
+        user: ServerUser;
+        isAdmin?: boolean;
+        driverProfile?: unknown;
+        driverProfiles?: unknown[];
+        bankDetails?: unknown;
+        vehicles?: unknown[];
+        subscription?: {
+          id: string;
+          plan_id: string;
+          expires_at: string;
+          posts_remaining: number;
+          plan_name: string;
+        } | null;
+      }>('/auth/me');
+      applyServerUser(
+        mapServerUser(me.user, {
+          vehicles: me.vehicles,
+          driverProfile: me.driverProfile,
+          driverProfiles: me.driverProfiles,
+          bankDetails: me.bankDetails,
+        })
+      );
+      try {
+        localStorage.setItem('ridebhai_is_admin', me.isAdmin ? '1' : '0');
+        localStorage.setItem('ridebhai_has_plan', me.subscription ? '1' : '0');
+      } catch {
+        /* ignore */
+      }
+      refreshNotifications();
+      return me;
+    } catch {
+      return null;
+    }
+  }, [applyServerUser]);
+
+  const loginUser = useCallback((phone: string, serverUser?: AppUser) => {
+    const digits = phone.replace(/\D/g, '').slice(-10);
+    if (serverUser) {
+      applyServerUser({ ...serverUser, phone: digits || serverUser.phone });
+    } else {
+      const id = `user-${digits}`;
+      const exists = sharedAuth.users.find(
+        (u) => u.id === id || u.phone.replace(/\D/g, '').slice(-10) === digits
+      );
+      const resolvedId = exists?.id || id;
+      const nextUsers = exists
+        ? sharedAuth.users.map((u) => (u.id === exists.id ? { ...u, phone: digits } : u))
+        : [
+            {
+              id,
+              phone: digits,
+              name: '',
+              email: '',
+              profileStatus: 'incomplete' as const,
+              profileCompleted: false,
+              createdAt: new Date().toISOString(),
+            },
+            ...sharedAuth.users,
+          ];
+
+      writeSharedAuth({
+        isLoggedIn: true,
+        currentUserId: resolvedId,
+        users: nextUsers,
+      });
+    }
+
+    setIsRiderLoggedInState(true);
+    saveToStorage(STORAGE_KEYS.RIDER_AUTH, true);
+
+    setCurrentRiderState((prev) => {
+      const updated = { ...prev, phone: digits || prev.phone };
+      saveToStorage(STORAGE_KEYS.CURRENT_RIDER, updated);
+      return updated;
+    });
+  }, [applyServerUser]);
+
+  const logoutUser = useCallback(() => {
+    setToken(null);
+    try {
+      localStorage.removeItem('ridebhai_is_admin');
+      localStorage.removeItem('ridebhai_has_plan');
+    } catch {
+      /* ignore */
+    }
+    writeSharedAuth({
+      isLoggedIn: false,
+      currentUserId: null,
+    });
+    writeSharedDeals({ deals: [], threads: [] });
+    setIsRiderLoggedInState(false);
+    setIsPartnerLoggedInState(false);
+    setIsDriverLoggedInState(false);
+    setIsAgencyLoggedInState(false);
+    saveToStorage(STORAGE_KEYS.RIDER_AUTH, false);
+    saveToStorage(STORAGE_KEYS.PARTNER_AUTH, false);
+    saveToStorage(STORAGE_KEYS.DRIVER_AUTH, false);
+    saveToStorage(STORAGE_KEYS.AGENCY_AUTH, false);
+  }, []);
+
+  const submitUserProfile = useCallback(
+    async (data: {
+      name: string;
+      email: string;
+      agencyName?: string;
+      gstNumber?: string;
+      aadhaarDoc: string;
+      aadhaarName?: string;
+      selfieDoc: string;
+      selfieName?: string;
+      city?: string;
+    }) => {
+      if (!currentUserId) return;
+      if (getToken()) {
+        await api('/me/profile', {
+          method: 'PUT',
+          json: {
+            name: data.name.trim(),
+            email: data.email.trim(),
+            agencyName: data.agencyName,
+            gstNumber: data.gstNumber,
+            aadhaarDoc: data.aadhaarDoc,
+            aadhaarName: data.aadhaarName,
+            selfieDoc: data.selfieDoc,
+            selfieName: data.selfieName,
+            city: data.city?.trim(),
+          },
+        });
+        await hydrateMe();
+        return;
+      }
+      updateUsers((prev) =>
+        prev.map((u) =>
+          u.id === currentUserId
+            ? {
+                ...u,
+                name: data.name.trim(),
+                email: data.email.trim(),
+                agencyName: data.agencyName?.trim() || undefined,
+                gstNumber: data.gstNumber?.trim() || undefined,
+                aadhaarDoc: data.aadhaarDoc,
+                aadhaarName: data.aadhaarName,
+                selfieDoc: data.selfieDoc,
+                selfieName: data.selfieName,
+                city: data.city?.trim() || u.city,
+                profileCompleted: true,
+                profileStatus: 'pending_verification' as UserProfileStatus,
+                rejectionReason: undefined,
+              }
+            : u
+        )
+      );
+
+      setCurrentRiderState((prev) => {
+        const updated = {
+          ...prev,
+          name: data.name.trim() || prev.name,
+          phone: currentUser?.phone || prev.phone,
+        };
+        saveToStorage(STORAGE_KEYS.CURRENT_RIDER, updated);
+        return updated;
+      });
+
+      setDriversState((prev) => {
+        const updated = prev.map((d) =>
+          d.id === 'drv-current'
+            ? {
+                ...d,
+                name: data.name.trim() || d.name,
+                phone: currentUser?.phone || d.phone,
+                city: data.city || d.city,
+              }
+            : d
+        );
+        saveToStorage(STORAGE_KEYS.DRIVERS, updated);
+        return updated;
+      });
+
+      setAgenciesState((prev) => {
+        const updated = prev.map((a) =>
+          a.id === 'agency-current'
+            ? {
+                ...a,
+                agencyName: data.agencyName?.trim() || data.name.trim() || a.agencyName,
+                ownerName: data.name.trim() || a.ownerName,
+                phone: currentUser?.phone || a.phone,
+                city: data.city || a.city,
+                documents: {
+                  ...a.documents,
+                  gstNumber: data.gstNumber?.trim() || a.documents?.gstNumber,
+                },
+              }
+            : a
+        );
+        saveToStorage(STORAGE_KEYS.AGENCIES, updated);
+        return updated;
+      });
+
+      setNotificationsState((prev) => {
+        const next = [
+          {
+            id: `notif-${Date.now()}`,
+            userId: currentUserId,
+            userRole: 'rider' as const,
+            title: 'Profile submitted',
+            message:
+              'You can browse cars and tours now. Chat and Deal with Ride Bhai unlock after admin verifies your Aadhaar and selfie, and you buy a plan.',
+            type: 'system' as const,
+            read: false,
+            time: 'Just now',
+          },
+          ...prev,
+        ];
+        saveToStorage(STORAGE_KEYS.NOTIFICATIONS, next);
+        return next;
+      });
+    },
+    [currentUserId, currentUser, updateUsers, hydrateMe]
+  );
+
+  const adminVerifyUser = useCallback(
+    async (userId: string, status: 'verified' | 'rejected', reason?: string) => {
+      if (getToken()) {
+        await api(`/admin/kyc/${userId}`, {
+          method: 'POST',
+          json: {
+            decision: status,
+            rejectionReason: reason,
+          },
+        });
+      }
+      updateUsers((prev) =>
+        prev.map((u) =>
+          u.id === userId
+            ? {
+                ...u,
+                profileStatus: status,
+                rejectionReason: status === 'rejected' ? reason || 'Documents could not be verified.' : undefined,
+              }
+            : u
+        )
+      );
+      setNotificationsState((prev) => {
+        const next = [
+          {
+            id: `notif-${Date.now()}`,
+            userId,
+            userRole: 'rider' as const,
+            title: status === 'verified' ? 'Profile verified' : 'Profile rejected',
+            message:
+              status === 'verified'
+                ? 'Your KYC is verified. Buy a plan to unlock booking, chat, and posting.'
+                : `Profile was rejected: ${reason || 'Please re-upload clear Aadhaar and selfie photos.'}`,
+            type: 'system' as const,
+            read: false,
+            time: 'Just now',
+          },
+          ...prev,
+        ];
+        saveToStorage(STORAGE_KEYS.NOTIFICATIONS, next);
+        return next;
+      });
+    },
+    [updateUsers]
+  );
+
   // Persist whenever state changes
   const setRole = useCallback((newRole: UserRole) => {
     setRoleState(newRole);
@@ -415,22 +793,84 @@ export function useAppStore() {
   }, []);
 
   const updateAgencyTripPosts = useCallback((updater: (prev: AgencyTripPost[]) => AgencyTripPost[]) => {
-    setAgencyTripPostsState((prev) => {
-      const next = updater(prev);
-      saveToStorage(STORAGE_KEYS.AGENCY_TRIPS, next);
-      return next;
-    });
-    notifyListeners();
+    writeSharedListings({ tours: updater(sharedListings.tours) });
   }, []);
 
   const updateCarListings = useCallback((updater: (prev: CarListing[]) => CarListing[]) => {
-    setCarListingsState((prev) => {
-      const next = updater(prev);
-      saveToStorage(STORAGE_KEYS.CAR_LISTINGS, next);
-      return next;
-    });
-    notifyListeners();
+    writeSharedListings({ cars: updater(sharedListings.cars) });
   }, []);
+
+  const refreshListings = useCallback(async () => {
+    writeSharedListings({ loading: true, error: '' });
+    try {
+      const [cars, tours] = await Promise.all([
+        api<any[]>('/listings/cars'),
+        api<any[]>('/listings/tours'),
+      ]);
+      let mappedCars = (cars || []).map(mapCarListing);
+      let mappedTours = (tours || []).map(mapTourListing);
+      if (getToken()) {
+        try {
+          const [mineCars, mineTours] = await Promise.all([
+            api<any[]>('/listings/mine/cars'),
+            api<any[]>('/listings/mine/tours'),
+          ]);
+          mappedCars = mergeById(mappedCars, (mineCars || []).map(mapCarListing));
+          mappedTours = mergeById(mappedTours, (mineTours || []).map(mapTourListing));
+        } catch {
+          /* public feed still works if mine fails */
+        }
+      }
+      writeSharedListings({ cars: mappedCars, tours: mappedTours, loading: false, error: '' });
+    } catch (err: any) {
+      writeSharedListings({
+        loading: false,
+        error: err?.message || 'Could not load listings. Is the API running?',
+      });
+    }
+  }, []);
+
+  const refreshDeals = useCallback(async () => {
+    if (!getToken()) {
+      writeSharedDeals({ deals: [], threads: [] });
+      return;
+    }
+    try {
+      const [dealRows, threadRows] = await Promise.all([
+        api<any[]>('/deals'),
+        api<any[]>('/chats/threads'),
+      ]);
+      writeSharedDeals({
+        deals: (dealRows || []).map(mapDeal),
+        threads: (threadRows || []).map(mapThread),
+      });
+    } catch {
+      /* chat/bookings stay empty if API fails */
+    }
+  }, []);
+
+  const openDeal = useCallback(
+    async (payload: { listingType: 'car' | 'tour'; listingId: string; channel: 'direct' | 'ridebhai' }) => {
+      const result = await api<{ deal: any; thread: any }>('/deals', {
+        method: 'POST',
+        json: payload,
+      });
+      await refreshDeals();
+      return {
+        deal: mapDeal(result.deal),
+        thread: mapThread(result.thread),
+      };
+    },
+    [refreshDeals]
+  );
+
+  const sendThreadMessage = useCallback(async (threadId: string, body: string) => {
+    await api(`/chats/threads/${threadId}/messages`, {
+      method: 'POST',
+      json: { body },
+    });
+    await refreshDeals();
+  }, [refreshDeals]);
 
   const updateInquiries = useCallback((updater: (prev: Inquiry[]) => Inquiry[]) => {
     setInquiriesState((prev) => {
@@ -469,60 +909,242 @@ export function useAppStore() {
     return target ? target.status === 'verified' : false;
   }, [agencies]);
 
-  // CRITICAL RULE: Verify agency status AND package before posting
-  const canAgencyPost = useCallback((agencyId: string = currentAgency.id): { canPost: boolean; reason?: string; code?: 'not_verified' | 'no_package' } => {
-    const target = agencies.find((a) => a.id === agencyId) || currentAgency;
-    if (target.status !== 'verified') {
-      if (target.status === 'pending_verification') {
-        return {
-          canPost: false,
-          code: 'not_verified',
-          reason: 'Your agency documents are under verification by the Ride Bhai Admin team. You can post tour bookings once approved.',
-        };
-      }
+  const canBook = useCallback((): {
+    allowed: boolean;
+    reason?: string;
+    code?: 'incomplete' | 'unverified' | 'no_package';
+  } => {
+    if (!currentUser) {
+      return { allowed: false, code: 'incomplete', reason: 'Login with OTP and complete your profile first.' };
+    }
+    if (!currentUser.profileCompleted || currentUser.profileStatus === 'incomplete') {
+      return { allowed: false, code: 'incomplete', reason: 'Complete your profile (name, email, Aadhaar and selfie) to continue.' };
+    }
+    if (currentUser.profileStatus === 'pending_verification') {
       return {
-        canPost: false,
-        code: 'not_verified',
-        reason: 'You must submit your business verification documents (GST / Trade License / PAN) and be verified by admin before posting.',
+        allowed: false,
+        code: 'unverified',
+        reason: 'Admin is reviewing your Aadhaar and selfie. You can browse now. Booking unlocks after verification and a plan.',
       };
     }
-
-    const subInfo = getAgencyActiveSubscription(agencyId);
-    if (!subInfo) {
+    if (currentUser.profileStatus === 'rejected') {
       return {
-        canPost: false,
+        allowed: false,
+        code: 'unverified',
+        reason: currentUser.rejectionReason || 'Your profile was rejected. Update Aadhaar and selfie, then resubmit.',
+      };
+    }
+    const hasPlan =
+      Boolean(getAgencyActiveSubscription(currentUser.id)) ||
+      (typeof localStorage !== 'undefined' && localStorage.getItem('ridebhai_has_plan') === '1');
+    if (!hasPlan) {
+      return {
+        allowed: false,
         code: 'no_package',
-        reason: 'Buy a posting package in the app (partner payment only). After it is active you can post cars and tours. Customers still book by Call or WhatsApp.',
+        reason: 'KYC is done. Next: buy a plan. A plan unlocks booking, chat, and posting cars or tours.',
       };
     }
+    return { allowed: true };
+  }, [currentUser, getAgencyActiveSubscription]);
 
-    return { canPost: true };
-  }, [agencies, currentAgency, getAgencyActiveSubscription]);
+  // Posting uses the same rule as booking: verified profile + active plan
+  const canAgencyPost = useCallback(
+    (_agencyId?: string): { canPost: boolean; reason?: string; code?: 'not_verified' | 'no_package' } => {
+      const gate = canBook();
+      if (gate.allowed) return { canPost: true };
+      return {
+        canPost: false,
+        code: gate.code === 'no_package' ? 'no_package' : 'not_verified',
+        reason: gate.reason,
+      };
+    },
+    [canBook]
+  );
 
   const partnerCars = useMemo(() => {
-    const list = currentDriver.vehicles?.length
-      ? currentDriver.vehicles
-      : currentDriver.vehicle
-        ? [currentDriver.vehicle]
-        : [];
+    const list = currentUser?.vehicles || [];
     return list.map((v, i) => ({
       ...v,
       id: v.id || v.plate || `car-${i}`,
-      currentCity: v.currentCity || currentDriver.city,
+      currentCity: v.currentCity || currentUser?.city || '',
       availability: v.availability || 'citywide',
     }));
-  }, [currentDriver]);
+  }, [currentUser]);
+
+  const isVehicleReady = (v: { make?: string; model?: string; plate?: string; rcDocument?: string }) =>
+    Boolean(v.make?.trim() && v.model?.trim() && v.plate?.trim() && v.rcDocument);
+
+  const canPostCar = useCallback((): {
+    ok: boolean;
+    reason?: string;
+    code?: 'no_driver' | 'pending_driver' | 'no_vehicle' | 'pending_vehicle';
+  } => {
+    const drivers = currentUser?.driverProfiles?.length
+      ? currentUser.driverProfiles
+      : currentUser?.driverProfile
+        ? [currentUser.driverProfile]
+        : [];
+    const completeDriver = drivers.some(
+      (dp) =>
+        dp.completed &&
+        dp.name?.trim() &&
+        dp.email?.trim() &&
+        dp.phone?.trim() &&
+        dp.aadhaarDoc &&
+        dp.selfieDoc &&
+        dp.experienceYears !== undefined &&
+        dp.experienceYears !== null
+    );
+    const verifiedDriver = drivers.some(
+      (dp) =>
+        dp.completed &&
+        dp.verificationStatus === 'verified' &&
+        dp.name?.trim() &&
+        dp.email?.trim() &&
+        dp.phone?.trim() &&
+        dp.aadhaarDoc &&
+        dp.selfieDoc
+    );
+    const hasVehicle = partnerCars.some((v) => isVehicleReady(v));
+    const verifiedVehicle = partnerCars.some((v) => isVehicleReady(v) && v.verificationStatus === 'verified');
+    if (!completeDriver) {
+      return {
+        ok: false,
+        code: 'no_driver',
+        reason:
+          'Add one driver profile first: name, email, number, Aadhaar, selfie and experience. Open Profile → My drivers.',
+      };
+    }
+    if (!hasVehicle) {
+      return {
+        ok: false,
+        code: 'no_vehicle',
+        reason:
+          'Add one vehicle with full details and RC document. Open Profile → My cars.',
+      };
+    }
+    if (!verifiedDriver && !verifiedVehicle) {
+      return {
+        ok: false,
+        code: 'pending_driver',
+        reason: 'Driver and vehicle are pending verification. Post car unlocks after admin verifies both.',
+      };
+    }
+    if (!verifiedDriver) {
+      return {
+        ok: false,
+        code: 'pending_driver',
+        reason: 'Driver profile is pending verification. Post car unlocks after admin verifies a driver.',
+      };
+    }
+    if (!verifiedVehicle) {
+      return {
+        ok: false,
+        code: 'pending_vehicle',
+        reason: 'Vehicle is pending verification. Post car unlocks after admin verifies a car.',
+      };
+    }
+    return { ok: true };
+  }, [currentUser, partnerCars]);
+
+  const canPostTour = useCallback((): {
+    ok: boolean;
+    reason?: string;
+    code?: 'incomplete' | 'unverified' | 'no_package' | 'no_agency';
+  } => {
+    const gate = canBook();
+    if (!gate.allowed) {
+      return { ok: false, reason: gate.reason, code: gate.code };
+    }
+    if (!currentUser?.agencyName?.trim()) {
+      return {
+        ok: false,
+        code: 'no_agency',
+        reason: 'Add a travel agency name in your profile before posting a tour.',
+      };
+    }
+    return { ok: true };
+  }, [canBook, currentUser]);
+
+  const saveDriverProfile = useCallback(
+    async (data: DriverProfile) => {
+      if (!currentUserId) return;
+      if (getToken()) {
+        await api('/me/driver', {
+          method: 'PUT',
+          json: {
+            name: data.name,
+            email: data.email,
+            phone: data.phone,
+            aadhaarDoc: data.aadhaarDoc,
+            selfieDoc: data.selfieDoc,
+            experienceYears: data.experienceYears,
+            experienceNote: data.experienceNote,
+          },
+        });
+        await hydrateMe();
+        return;
+      }
+      writeSharedAuth({
+        users: sharedAuth.users.map((u) =>
+          u.id === currentUserId
+            ? {
+                ...u,
+                driverProfile: { ...data, completed: true },
+                driverProfiles: [...(u.driverProfiles || []), { ...data, completed: true }],
+              }
+            : u
+        ),
+      });
+    },
+    [currentUserId, hydrateMe]
+  );
+
+  const saveBankDetails = useCallback(
+    async (data: BankDetails) => {
+      if (!currentUserId) return;
+      if (getToken()) {
+        await api('/me/bank', {
+          method: 'PUT',
+          json: {
+            accountHolderName: data.accountHolderName,
+            accountNumber: data.accountNumber,
+            ifsc: data.ifsc,
+            bankName: data.bankName,
+            branchName: data.branchName,
+            accountType: data.accountType,
+            upiId: data.upiId,
+          },
+        });
+        await hydrateMe();
+        return;
+      }
+      writeSharedAuth({
+        users: sharedAuth.users.map((u) =>
+          u.id === currentUserId ? { ...u, bankDetails: { ...data, completed: true } } : u
+        ),
+      });
+    },
+    [currentUserId, hydrateMe]
+  );
+
+  const isCarListingLive = (c: { status: string; availableTillDate?: string; availableTillTime?: string }) => {
+    if (c.status !== 'available') return false;
+    if (!c.availableTillDate) return true;
+    const till = new Date(`${c.availableTillDate}T${c.availableTillTime || '23:59'}`);
+    if (Number.isNaN(till.getTime())) return true;
+    return till.getTime() >= Date.now();
+  };
 
   const getFilteredCarListings = useCallback(
     (filter?: { fromCity?: string; toCity?: string }) => {
       const from = (filter?.fromCity || '').trim().toLowerCase();
       const to = (filter?.toCity || '').trim().toLowerCase();
-      if (!from && !to) return carListings.filter((c) => c.status === 'available');
+      const live = carListings.filter(isCarListingLive);
+      if (!from && !to) return live;
 
-      return carListings.filter((c) => {
-        if (c.status !== 'available') return false;
+      return live.filter((c) => {
         if (c.availability === 'citywide') {
-          if (from && !c.currentCity.toLowerCase().includes(from)) return false;
           return true;
         }
         if (from && !c.currentCity.toLowerCase().includes(from)) return false;
@@ -988,9 +1610,14 @@ export function useAppStore() {
 
   // 7. Post Agency Tour Trip (Strictly checks verification & active package)
   const postAgencyTrip = useCallback(
-    (tripData: {
+    async (tripData: {
       fromCity: string;
       toCity: string;
+      tripSide?: 'one_side' | 'two_side';
+      postedDate?: string;
+      postedTime?: string;
+      bookingDate?: string;
+      bookingTime?: string;
       passengers: number;
       duration: string;
       startDate: string;
@@ -1014,63 +1641,56 @@ export function useAppStore() {
       payoutMode?: string;
       desiredCar?: { name: string; specs: string[] };
     }) => {
-      const gateCheck = canAgencyPost(currentAgency.id);
-      if (!gateCheck.canPost) {
-        throw new Error(gateCheck.reason || 'Cannot post trip.');
+      const tourGate = canPostTour();
+      if (!tourGate.ok) {
+        throw new Error(tourGate.reason || 'Cannot post trip.');
+      }
+      if (!getToken()) {
+        throw new Error('Login required to post a tour.');
       }
 
-      const driverNet = Number(tripData.totalCustomerPrice) - Number(tripData.agencyCommission);
-      const cleanPhone = currentAgency.whatsappPhone || currentAgency.phone.replace(/[^0-9]/g, '');
+      const now = new Date();
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const defaultDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+      const defaultTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+      const bookingDate = tripData.bookingDate || tripData.startDate;
+      const bookingTime = tripData.bookingTime || tripData.pickupTime || defaultTime;
 
-      const newTrip: AgencyTripPost = {
-        ...tripData,
-        desiredCar: tripData.desiredCar,
-        id: `trip-agency-${Date.now()}`,
-        agencyId: currentAgency.id,
-        agencyName: currentAgency.agencyName,
-        agencyPhone: currentAgency.phone,
-        whatsappNumber: cleanPhone,
-        agencyCity: currentAgency.city,
-        agencyRating: currentAgency.rating || 4.9,
-        driverNetPayout: driverNet > 0 ? driverNet : 0,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-      };
-
-      updateAgencyTripPosts((prev) => [newTrip, ...prev]);
-
-      // Decrement agency posts remaining if not unlimited
-      updateAgencySubscriptions((prev) =>
-        prev.map((s) => {
-          if (s.agencyId === currentAgency.id && s.postsRemaining < 9000) {
-            return { ...s, postsRemaining: Math.max(0, s.postsRemaining - 1) };
-          }
-          return s;
-        })
-      );
-
-      // Increment agency total posts count
-      updateAgencies((prev) =>
-        prev.map((a) => (a.id === currentAgency.id ? { ...a, totalToursPosted: (a.totalToursPosted || 0) + 1 } : a))
-      );
-
-      updateNotifications((prev) => [
-        {
-          id: `notif-${Date.now()}`,
-          userId: currentAgency.id,
-          userRole: 'agency',
-          title: 'Tour Booking Live! 📍',
-          message: `Your booking for ${newTrip.fromCity} → ${newTrip.toCity} (${newTrip.passengers} Pax, ${newTrip.duration}) is now broadcast to drivers.`,
-          type: 'agency',
-          read: false,
-          time: 'Just now',
+      await api('/listings/tours', {
+        method: 'POST',
+        json: {
+          fromCity: tripData.fromCity,
+          toCity: tripData.toCity,
+          tripSide: tripData.tripSide || 'one_side',
+          postedDate: tripData.postedDate || defaultDate,
+          postedTime: tripData.postedTime || defaultTime,
+          bookingDate,
+          bookingTime,
+          passengers: Number(tripData.passengers),
+          duration: tripData.duration,
+          pickupLocation: tripData.pickupLocation,
+          dropLocation: tripData.dropLocation,
+          requiredVehicleType: tripData.requiredVehicleType,
+          desiredCarName: tripData.desiredCar?.name,
+          desiredCarSpecs: tripData.desiredCar?.specs || [],
+          totalCustomerPrice: Number(tripData.totalCustomerPrice),
+          agencyCommission: Number(tripData.agencyCommission || 0),
+          tripDetails: tripData.tripDetails,
+          tourType: tripData.tourType,
+          routeHighlights: tripData.routeHighlights || [],
+          tollTaxOption: tripData.tollTaxOption,
+          parkingOption: tripData.parkingOption,
+          driverNightAllowance: tripData.driverNightAllowance,
+          kmLimit: tripData.kmLimit,
+          luggageCapacity: tripData.luggageCapacity,
+          driverPreferences: tripData.driverPreferences,
+          paymentTerms: tripData.paymentTerms,
+          payoutMode: tripData.payoutMode,
         },
-        ...prev,
-      ]);
-
-      return newTrip;
+      });
+      await Promise.all([refreshListings(), hydrateMe()]);
     },
-    [currentAgency, canAgencyPost, updateAgencyTripPosts, updateAgencySubscriptions, updateAgencies, updateNotifications]
+    [canPostTour, refreshListings, hydrateMe]
   );
 
   const claimAgencyTrip = useCallback(
@@ -1096,13 +1716,42 @@ export function useAppStore() {
     [currentDriver, updateAgencyTripPosts]
   );
 
-  const updateAgencyTripStatus = useCallback(
-    (tripId: string, status: AgencyTripStatus) => {
-      updateAgencyTripPosts((prev) =>
-        prev.map((t) => (t.id === tripId ? { ...t, status } : t))
-      );
+  const deleteAgencyTrip = useCallback(
+    async (tripId: string) => {
+      if (getToken()) {
+        await api(`/listings/tours/${tripId}`, { method: 'DELETE' });
+        await refreshListings();
+        await refreshDeals();
+        return;
+      }
+      updateAgencyTripPosts((prev) => prev.filter((t) => t.id !== tripId));
     },
-    [updateAgencyTripPosts]
+    [updateAgencyTripPosts, refreshListings, refreshDeals]
+  );
+
+  const updateAgencyTripStatus = useCallback(
+    async (tripId: string, status: AgencyTripStatus) => {
+      const serverStatus = status === 'active' ? 'active' : status === 'cancelled' ? 'cancelled' : 'closed';
+      if (getToken()) {
+        await api(`/listings/tours/${tripId}`, { method: 'PATCH', json: { status: serverStatus } });
+        await refreshListings();
+        return;
+      }
+      updateAgencyTripPosts((prev) => prev.map((t) => (t.id === tripId ? { ...t, status } : t)));
+    },
+    [updateAgencyTripPosts, refreshListings]
+  );
+
+  const updateCarListingStatus = useCallback(
+    async (listingId: string, status: 'available' | 'inactive') => {
+      if (getToken()) {
+        await api(`/listings/cars/${listingId}`, { method: 'PATCH', json: { status } });
+        await refreshListings();
+        return;
+      }
+      updateCarListings((prev) => prev.map((c) => (c.id === listingId ? { ...c, status } : c)));
+    },
+    [updateCarListings, refreshListings]
   );
 
   const saveAgencyPackage = useCallback(
@@ -1135,27 +1784,42 @@ export function useAppStore() {
   );
 
   const addPartnerCar = useCallback(
-    (car: Vehicle) => {
+    async (car: Vehicle) => {
       const withId: Vehicle = {
         ...car,
         id: car.id || `car-${Date.now()}`,
       };
-      updateDrivers((prev) =>
-        prev.map((d) => {
-          if (d.id === 'drv-current' || d.id === currentDriver.id) {
-            const currentList = d.vehicles?.length ? d.vehicles : d.vehicle ? [d.vehicle] : [];
-            return {
-              ...d,
-              vehicles: [...currentList, withId],
-              vehicle: d.vehicle || withId,
-            };
-          }
-          return d;
-        })
-      );
+      if (!currentUserId) return withId;
+      if (getToken()) {
+        await api('/me/vehicles', {
+          method: 'POST',
+          json: {
+            make: car.make,
+            model: car.model,
+            year: car.year,
+            color: car.color,
+            plate: car.plate,
+            seats: car.seats,
+            fuelType: car.fuelType,
+            rcNumber: car.rcNumber,
+            rcDocument: car.rcDocument,
+            insuranceDocument: car.insuranceDocument,
+            currentCity: car.currentCity,
+            availability: car.availability || 'citywide',
+            toCity: car.toCity,
+          },
+        });
+        await hydrateMe();
+        return withId;
+      }
+      writeSharedAuth({
+        users: sharedAuth.users.map((u) =>
+          u.id === currentUserId ? { ...u, vehicles: [...(u.vehicles || []), withId] } : u
+        ),
+      });
       return withId;
     },
-    [currentDriver.id, updateDrivers]
+    [currentUserId, hydrateMe]
   );
 
   const updatePartnerCar = useCallback(
@@ -1175,66 +1839,75 @@ export function useAppStore() {
   );
 
   const postCarListing = useCallback(
-    (data: {
+    async (data: {
       carId: string;
+      driverId: string;
       fullCarPrice: number;
       availability: 'citywide' | 'route';
       currentCity: string;
       toCity?: string;
+      bookingDate?: string;
+      bookingTime?: string;
+      availableTillDate?: string;
+      availableTillTime?: string;
       notes?: string;
     }) => {
-      const gateCheck = canAgencyPost(currentAgency.id);
+      const gateCheck = canAgencyPost();
       if (!gateCheck.canPost) {
         throw new Error(gateCheck.reason || 'Buy a posting package first.');
       }
-      const car = partnerCars.find((c) => (c.id || c.plate) === data.carId) || currentDriver.vehicle;
-      const phone = currentDriver.phone || currentAgency.phone;
-      const listing: CarListing = {
-        id: `car-list-${Date.now()}`,
-        partnerId: currentDriver.id,
-        partnerName: currentAgency.agencyName || currentDriver.name,
-        partnerPhone: phone,
-        partnerWhatsapp: (currentAgency.whatsappPhone || phone).replace(/[^0-9]/g, ''),
-        partnerCity: currentDriver.city,
-        partnerRating: currentDriver.rating,
-        carId: data.carId,
-        carName: `${car.make} ${car.model}`.trim(),
-        carImage: car.image,
-        plate: car.plate,
-        seats: car.seats || 5,
-        fuelType: car.fuelType,
-        fullCarPrice: data.fullCarPrice,
-        availability: data.availability,
-        currentCity: data.currentCity,
-        toCity: data.toCity,
-        notes: data.notes,
-        status: 'available',
-        createdAt: new Date().toISOString().split('T')[0],
-      };
-      updateCarListings((prev) => [listing, ...prev]);
-      return listing;
+      const driverGate = canPostCar();
+      if (!driverGate.ok) {
+        throw new Error(driverGate.reason || 'Add driver profile and vehicle details first.');
+      }
+      if (!getToken()) {
+        throw new Error('Login required to post a car.');
+      }
+      if (!/^[0-9a-f-]{36}$/i.test(data.carId)) {
+        throw new Error('Choose a verified car from My cars.');
+      }
+      if (!/^[0-9a-f-]{36}$/i.test(data.driverId)) {
+        throw new Error('Choose a verified driver from My drivers.');
+      }
+
+      await api('/listings/cars', {
+        method: 'POST',
+        json: {
+          vehicleId: data.carId,
+          driverId: data.driverId,
+          fullCarPrice: Number(data.fullCarPrice),
+          availability: data.availability,
+          currentCity: data.currentCity,
+          toCity: data.toCity,
+          bookingDate: data.bookingDate,
+          bookingTime: data.bookingTime,
+          availableTillDate: data.availableTillDate,
+          availableTillTime: data.availableTillTime,
+          notes: data.notes,
+        },
+      });
+      await Promise.all([refreshListings(), hydrateMe()]);
     },
-    [partnerCars, currentDriver, currentAgency, updateCarListings, canAgencyPost]
+    [canAgencyPost, canPostCar, refreshListings, hydrateMe]
   );
 
   const logInquiry = useCallback(
     (payload: Omit<Inquiry, 'id' | 'createdAt' | 'riderId' | 'riderName'> & { riderId?: string; riderName?: string }) => {
-      const asPartner = isPartnerLoggedIn;
-      const partnerLabel = currentAgency.agencyName || currentDriver.name;
-      const partnerPhone = currentAgency.phone || currentDriver.phone;
+      const label = currentUser?.agencyName || currentUser?.name || currentAgency.agencyName || currentRider.name;
+      const phone = currentUser?.phone || currentAgency.phone || currentRider.phone;
       const inquiry: Inquiry = {
         ...payload,
         id: `inq-${Date.now()}`,
-        riderId: payload.riderId || (asPartner ? currentDriver.id : currentRider.id),
-        riderName: payload.riderName || (asPartner ? partnerLabel : currentRider.name),
-        inquirerRole: payload.inquirerRole || (asPartner ? 'partner' : 'customer'),
-        inquirerPhone: payload.inquirerPhone || (asPartner ? partnerPhone : currentRider.phone),
+        riderId: payload.riderId || currentUser?.id || currentRider.id,
+        riderName: payload.riderName || label,
+        inquirerRole: payload.inquirerRole || 'customer',
+        inquirerPhone: payload.inquirerPhone || phone,
         createdAt: new Date().toISOString(),
       };
       updateInquiries((prev) => [inquiry, ...prev]);
       return inquiry;
     },
-    [isPartnerLoggedIn, currentAgency, currentDriver, currentRider, updateInquiries]
+    [currentUser, currentAgency, currentRider, updateInquiries]
   );
 
   // 8. Driver Accept / Reject Booking Request
@@ -1316,8 +1989,11 @@ export function useAppStore() {
   const sendChatMessage = useCallback(
     (text: string, bookingId?: string, rideId?: string) => {
       const senderRole = role === 'driver' ? 'driver' : role === 'agency' ? 'agency' : 'rider';
-      const senderId = role === 'driver' ? currentDriver.id : role === 'agency' ? currentAgency.id : currentRider.id;
-      const senderName = role === 'driver' ? currentDriver.name : role === 'agency' ? currentAgency.agencyName : currentRider.name;
+      const senderId = currentUser?.id || (role === 'driver' ? currentDriver.id : role === 'agency' ? currentAgency.id : currentRider.id);
+      const senderName =
+        currentUser?.agencyName ||
+        currentUser?.name ||
+        (role === 'driver' ? currentDriver.name : role === 'agency' ? currentAgency.agencyName : currentRider.name);
 
       const newMsg: ChatMessage = {
         id: `msg-${Date.now()}`,
@@ -1332,7 +2008,7 @@ export function useAppStore() {
       updateChats((prev) => [...prev, newMsg]);
       return newMsg;
     },
-    [role, currentDriver, currentAgency, currentRider, updateChats]
+    [role, currentUser, currentDriver, currentAgency, currentRider, updateChats]
   );
 
   // 12. Update Rider Profile
@@ -1393,6 +2069,7 @@ export function useAppStore() {
     setIsDriverLoggedInState(false);
     setIsAgencyLoggedInState(false);
     setIsPartnerLoggedInState(false);
+    writeSharedAuth({ isLoggedIn: false, currentUserId: null, users: [] });
     setDriversState(INITIAL_DRIVERS);
     setRidesState(INITIAL_RIDES);
     setPackagesState(INITIAL_PACKAGES);
@@ -1405,8 +2082,8 @@ export function useAppStore() {
     setAgenciesState(INITIAL_AGENCIES);
     setAgencyPackagesState(INITIAL_AGENCY_PACKAGES);
     setAgencySubscriptionsState(INITIAL_AGENCY_SUBSCRIPTIONS);
-    setAgencyTripPostsState(INITIAL_AGENCY_TRIPS);
-    setCarListingsState(INITIAL_CAR_LISTINGS);
+    writeSharedListings({ cars: [], tours: [], loading: false, error: '' });
+    writeSharedDeals({ deals: [], threads: [] });
     setInquiriesState(INITIAL_INQUIRIES);
     notifyListeners();
     window.location.reload();
@@ -1452,6 +2129,29 @@ export function useAppStore() {
     logoutAgency,
     loginPartner,
     logoutPartner,
+    isLoggedIn,
+    currentUser,
+    users,
+    accountId,
+    loginUser,
+    logoutUser,
+    hydrateMe,
+    refreshListings,
+    refreshDeals,
+    openDeal,
+    sendThreadMessage,
+    deals,
+    chatThreads,
+    listingsLoading,
+    listingsError,
+    applyServerUser,
+    submitUserProfile,
+    adminVerifyUser,
+    canBook,
+    canPostCar,
+    canPostTour,
+    saveDriverProfile,
+    saveBankDetails,
 
     // Role & Entity State
     role,
@@ -1519,6 +2219,8 @@ export function useAppStore() {
     postAgencyTrip,
     claimAgencyTrip,
     updateAgencyTripStatus,
+    deleteAgencyTrip,
+    updateCarListingStatus,
     saveAgencyPackage,
     deleteAgencyPackage,
     updateCurrentAgency,

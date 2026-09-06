@@ -102,3 +102,14 @@
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
 }
+
+.skeleton-bone {
+  background: linear-gradient(90deg, #efe8da 0%, #f7f2e8 45%, #efe8da 100%);
+  background-size: 220% 100%;
+  animation: skeleton-shimmer 1.15s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}

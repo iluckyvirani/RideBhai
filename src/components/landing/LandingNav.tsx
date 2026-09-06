@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from '../common/Logo';
-import { Menu, X, Car, ChevronRight } from 'lucide-react';
+import { Menu, X, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 
 interface LandingNavProps {
@@ -12,16 +12,16 @@ interface LandingNavProps {
 
 export const LandingNav: React.FC<LandingNavProps> = ({
   onOpenRiderApp,
-  onOpenDriverApp,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isRiderLoggedIn, isPartnerLoggedIn, isDriverLoggedIn, isAgencyLoggedIn } = useAppStore();
-  const partnerIn = isPartnerLoggedIn || isDriverLoggedIn || isAgencyLoggedIn;
+  const { isLoggedIn, currentUser } = useAppStore();
 
   const scrollTo = (id: string) => {
     setMobileMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const cta = isLoggedIn && currentUser?.profileCompleted ? 'Open app' : 'Login';
 
   return (
     <header className="sticky top-0 z-50 bg-[#FAF6EE]/90 backdrop-blur-md border-b border-[#EBE5D8]">
@@ -39,7 +39,7 @@ export const LandingNav: React.FC<LandingNavProps> = ({
               Cars & tours
             </button>
             <button onClick={() => scrollTo('for-partners')} className="text-xs font-extrabold text-[#6B6B6B] hover:text-[#F15A24]">
-              For partners
+              For users
             </button>
             <button onClick={() => scrollTo('partner-packages')} className="text-xs font-extrabold text-[#6B6B6B] hover:text-[#F15A24]">
               Posting plans
@@ -51,24 +51,17 @@ export const LandingNav: React.FC<LandingNavProps> = ({
 
           <div className="hidden lg:flex items-center gap-2.5">
             <button
-              onClick={onOpenDriverApp}
-              className="px-3.5 py-2 rounded-2xl text-xs font-extrabold bg-white hover:bg-[#FFF5F0] text-[#1C1C1C] border border-[#EBE5D8] hover:border-[#F15A24] flex items-center gap-1.5 active-press"
-            >
-              <Car className="w-3.5 h-3.5 text-[#F15A24]" />
-              <span>{partnerIn ? 'Partner dashboard' : 'Become a Partner'}</span>
-            </button>
-            <button
               onClick={onOpenRiderApp}
               className="px-4 py-2 rounded-2xl text-xs font-extrabold text-white bg-gradient-to-r from-[#F15A24] to-[#FF7A45] shadow-md flex items-center gap-1.5 active-press"
             >
-              <span>{isRiderLoggedIn ? 'Browse cars' : 'Find a car'}</span>
+              <span>{cta}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           <div className="flex md:hidden items-center gap-2">
             <button onClick={onOpenRiderApp} className="px-3 py-1.5 rounded-xl text-[11px] font-extrabold text-white bg-[#F15A24]">
-              Find
+              {cta}
             </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -85,7 +78,7 @@ export const LandingNav: React.FC<LandingNavProps> = ({
           {[
             ['how-it-works', 'How it works'],
             ['browse-india', 'Cars & tours'],
-            ['for-partners', 'For partners'],
+            ['for-partners', 'For users'],
             ['partner-packages', 'Posting plans'],
             ['safety-trust', 'Safety'],
           ].map(([id, label]) => (
@@ -101,17 +94,7 @@ export const LandingNav: React.FC<LandingNavProps> = ({
               }}
               className="w-full py-3 bg-[#F15A24] text-white text-xs font-extrabold rounded-2xl"
             >
-              Find a car
-            </button>
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenDriverApp();
-              }}
-              className="w-full py-3 bg-[#FAF6EE] text-[#1C1C1C] border border-[#EBE5D8] text-xs font-extrabold rounded-2xl flex items-center justify-center gap-2"
-            >
-              <Car className="w-4 h-4 text-[#F15A24]" />
-              {partnerIn ? 'Partner dashboard' : 'Become a Partner'}
+              {cta}
             </button>
           </div>
         </div>

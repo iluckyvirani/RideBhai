@@ -88,7 +88,7 @@ export const AdminAnalyticsView: React.FC = () => {
             <Users className="w-4 h-4 text-[#2E9E5B]" />
           </div>
           <p className="text-xl font-extrabold text-[#1C1C1C]">{inquiries.length}</p>
-          <span className="text-[10px] text-[#2E9E5B] font-bold">Call / WhatsApp only</span>
+          <span className="text-[10px] text-[#2E9E5B] font-bold">Chat · Deal with Ride Bhai</span>
         </div>
       </div>
 

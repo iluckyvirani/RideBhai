@@ -1,54 +1,105 @@
 import React, { useState } from 'react';
-import { Car, Plus, MapPin, Navigation } from 'lucide-react';
-import { POPULAR_CITIES } from '../../data/cities';
+import { Car, Plus, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { Vehicle } from '../../types';
+import { FilePick } from '../common/FilePick';
+import { isPreviewableImage } from '../../lib/upload';
+import { VehicleDetailsView } from './VehicleDetailsView';
 
 export const PartnerCarsView: React.FC = () => {
-  const { partnerCars, addPartnerCar } = useAppStore();
+  const { partnerCars, addPartnerCar, currentUser } = useAppStore();
   const [open, setOpen] = useState(false);
-  const [make, setMake] = useState('Toyota');
-  const [model, setModel] = useState('Innova Crysta');
-  const [year, setYear] = useState(2023);
-  const [color, setColor] = useState('Pearl White');
-  const [plate, setPlate] = useState('');
-  const [seats, setSeats] = useState(7);
-  const [currentCity, setCurrentCity] = useState('Jaipur');
-  const [availability, setAvailability] = useState<'citywide' | 'route'>('citywide');
-  const [toCity, setToCity] = useState('Delhi NCR');
 
-  const handleAdd = (e: React.FormEvent) => {
+  const [make, setMake] = useState('');
+  const [model, setModel] = useState('');
+  const [year, setYear] = useState('');
+  const [color, setColor] = useState('');
+  const [plate, setPlate] = useState('');
+  const [seats, setSeats] = useState('');
+  const [fuelType, setFuelType] = useState('');
+  const [rcNumber, setRcNumber] = useState('');
+  const [rcDocument, setRcDocument] = useState('');
+  const [insuranceDocument, setInsuranceDocument] = useState('');
+  const [carError, setCarError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [detailsId, setDetailsId] = useState<string | null>(null);
+  const detailsCar = partnerCars.find((c) => (c.id || c.plate) === detailsId);
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!plate.trim()) return;
+    if (saving) return;
+    if (!plate.trim() || !make.trim() || !model.trim()) {
+      setCarError('Make, model and number plate are required.');
+      return;
+    }
+    if (!rcDocument) {
+      setCarError('Upload the vehicle RC document.');
+      return;
+    }
     const car: Vehicle = {
       id: `car-${Date.now()}`,
       make,
       model,
-      year: Number(year),
+      year: year ? Number(year) : 0,
       color,
       plate,
-      seats: Number(seats),
-      currentCity,
-      availability,
-      toCity: availability === 'route' ? toCity : undefined,
+      seats: seats ? Number(seats) : 0,
+      fuelType: fuelType as Vehicle['fuelType'],
+      rcNumber,
+      rcDocument,
+      insuranceDocument,
       isPrimary: partnerCars.length === 0,
     };
-    addPartnerCar(car);
-    setOpen(false);
-    setPlate('');
+    try {
+      setSaving(true);
+      setCarError('');
+      setSuccess('');
+      await addPartnerCar(car);
+      setOpen(false);
+      setMake('');
+      setModel('');
+      setYear('');
+      setColor('');
+      setPlate('');
+      setSeats('');
+      setFuelType('');
+      setRcNumber('');
+      setRcDocument('');
+      setInsuranceDocument('');
+      setSuccess('Vehicle added successfully. Pending verification.');
+    } catch (err: any) {
+      setCarError(err?.message || 'Could not save vehicle.');
+    } finally {
+      setSaving(false);
+    }
   };
 
+  if (detailsCar) {
+    return <VehicleDetailsView car={detailsCar} onBack={() => setDetailsId(null)} />;
+  }
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#1C1C1C]">My cars</h3>
+        <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#1C1C1C]">Vehicle details</h3>
         <button
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            setOpen((v) => !v);
+            setSuccess('');
+          }}
           className="flex items-center gap-1 text-[11px] font-extrabold text-[#F15A24]"
         >
-          <Plus className="w-3.5 h-3.5" /> Add car
+          <Plus className="w-3.5 h-3.5" /> Add vehicle
         </button>
       </div>
+
+      {success && (
+        <p className="text-[11px] font-extrabold text-[#1B6B3A] bg-[#E8F6EE] border border-[#B8E0C6] rounded-2xl p-2.5 flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          {success}
+        </p>
+      )}
 
       {open && (
         <form onSubmit={handleAdd} className="p-4 rounded-3xl bg-[#FAF6EE] border border-[#EBE5D8] space-y-2.5">
@@ -56,18 +107,18 @@ export const PartnerCarsView: React.FC = () => {
             <input
               value={make}
               onChange={(e) => setMake(e.target.value)}
-              placeholder="Make"
+              placeholder="Make *"
               className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
             />
             <input
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder="Model / car name"
+              placeholder="Model *"
               className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
             />
             <input
               value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
+              onChange={(e) => setYear(e.target.value)}
               type="number"
               placeholder="Year"
               className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
@@ -81,93 +132,112 @@ export const PartnerCarsView: React.FC = () => {
             <input
               value={plate}
               onChange={(e) => setPlate(e.target.value)}
-              placeholder="Number plate"
+              placeholder="Number plate *"
               required
               className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
             />
             <input
               value={seats}
-              onChange={(e) => setSeats(Number(e.target.value))}
+              onChange={(e) => setSeats(e.target.value)}
               type="number"
               placeholder="Seats"
               className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
             />
-          </div>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setAvailability('citywide')}
-              className={`flex-1 py-2 rounded-xl text-[11px] font-extrabold ${
-                availability === 'citywide' ? 'bg-[#F15A24] text-white' : 'bg-white border border-[#EBE5D8]'
-              }`}
-            >
-              Currently in city
-            </button>
-            <button
-              type="button"
-              onClick={() => setAvailability('route')}
-              className={`flex-1 py-2 rounded-xl text-[11px] font-extrabold ${
-                availability === 'route' ? 'bg-[#F15A24] text-white' : 'bg-white border border-[#EBE5D8]'
-              }`}
-            >
-              X city to Y city
-            </button>
-          </div>
-          <input
-            value={currentCity}
-            onChange={(e) => setCurrentCity(e.target.value)}
-            list="rb-car-cities"
-            placeholder={availability === 'citywide' ? 'Current city' : 'From city'}
-            className="w-full px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
-          />
-          {availability === 'route' && (
             <input
-              value={toCity}
-              onChange={(e) => setToCity(e.target.value)}
-              list="rb-car-cities"
-              placeholder="To city"
-              className="w-full px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
+              value={fuelType}
+              onChange={(e) => setFuelType(e.target.value)}
+              placeholder="Fuel type"
+              className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
             />
+            <input
+              value={rcNumber}
+              onChange={(e) => setRcNumber(e.target.value)}
+              placeholder="RC number"
+              className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
+            />
+          </div>
+          <FilePick label="RC document *" value={rcDocument} onChange={(url) => setRcDocument(url)} />
+          <FilePick
+            label="Insurance document"
+            value={insuranceDocument}
+            onChange={(url) => setInsuranceDocument(url)}
+          />
+          {carError && (
+            <p className="text-[11px] font-bold text-red-600 bg-red-50 p-2 rounded-xl">{carError}</p>
           )}
-          <datalist id="rb-car-cities">
-            {POPULAR_CITIES.map((c) => (
-              <option key={c.name} value={c.name} />
-            ))}
-          </datalist>
-          <button type="submit" className="w-full py-2.5 rounded-2xl brand-gradient text-white text-xs font-extrabold">
-            Save car
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full py-2.5 rounded-2xl brand-gradient text-white text-xs font-extrabold disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Saving vehicle…
+              </>
+            ) : (
+              'Save vehicle'
+            )}
           </button>
         </form>
       )}
 
       {partnerCars.length === 0 && (
-        <p className="text-[11px] text-[#6B6B6B]">Add your first car to post it for full-car hire.</p>
+        <p className="text-[11px] text-[#6B6B6B]">Add one vehicle with RC to unlock Post car.</p>
       )}
 
-      {partnerCars.map((car) => (
-        <div key={car.id || car.plate} className="p-3 rounded-2xl bg-white border border-[#EBE5D8]">
-          <p className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1.5">
-            <Car className="w-3.5 h-3.5 text-[#F15A24]" />
-            {car.make} {car.model}
-          </p>
-          <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-            {car.plate} · {car.color} · {car.seats} seats
-          </p>
-          <p className="text-[11px] font-bold text-[#1C1C1C] mt-1 flex items-center gap-1">
-            {car.availability === 'route' ? (
-              <>
-                <MapPin className="w-3 h-3 text-[#F15A24]" />
-                {car.currentCity} → {car.toCity}
-              </>
-            ) : (
-              <>
-                <Navigation className="w-3 h-3 text-[#F15A24]" />
-                Currently in {car.currentCity} · all India
-              </>
+      {partnerCars.map((car) => {
+        const status = car.verificationStatus || 'pending_verification';
+        return (
+          <button
+            key={car.id || car.plate}
+            type="button"
+            onClick={() => setDetailsId(car.id || car.plate)}
+            className="w-full text-left p-3 rounded-2xl bg-white border border-[#EBE5D8] active-press"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1.5">
+                <Car className="w-3.5 h-3.5 text-[#F15A24]" />
+                {car.make} {car.model}
+              </p>
+              <span
+                className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
+                  status === 'verified'
+                    ? 'bg-[#EBF7EE] text-[#00A86B] border-[#BDE8C7]'
+                    : status === 'rejected'
+                      ? 'bg-red-50 text-red-600 border-red-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                }`}
+              >
+                {status === 'verified' ? 'Verified' : status === 'rejected' ? 'Rejected' : 'Pending verification'}
+              </span>
+            </div>
+            <p className="text-[11px] text-[#6B6B6B] mt-0.5">
+              {car.plate} · {car.color} · {car.seats} seats
+            </p>
+            {(car.rcDocument || car.insuranceDocument) && (
+              <div className="flex gap-2 mt-2">
+                {car.rcDocument &&
+                  (isPreviewableImage(car.rcDocument) ? (
+                    <img src={car.rcDocument} alt="RC" className="w-16 h-16 rounded-xl object-cover border border-[#EBE5D8]" />
+                  ) : (
+                    <span className="text-[10px] font-extrabold text-[#00A86B]">RC attached</span>
+                  ))}
+                {car.insuranceDocument &&
+                  (isPreviewableImage(car.insuranceDocument) ? (
+                    <img
+                      src={car.insuranceDocument}
+                      alt="Insurance"
+                      className="w-16 h-16 rounded-xl object-cover border border-[#EBE5D8]"
+                    />
+                  ) : (
+                    <span className="text-[10px] font-extrabold text-[#00A86B]">Insurance attached</span>
+                  ))}
+              </div>
             )}
-          </p>
-        </div>
-      ))}
+            <p className="text-[11px] font-extrabold text-[#F15A24] mt-2">View details</p>
+          </button>
+        );
+      })}
     </div>
   );
 };

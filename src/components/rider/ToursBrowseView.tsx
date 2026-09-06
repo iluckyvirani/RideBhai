@@ -1,23 +1,34 @@
 import React, { useMemo, useState } from 'react';
-import { Sparkles, MapPin, Filter, X, IndianRupee, Car } from 'lucide-react';
+import { Sparkles, MapPin, Filter, X, IndianRupee, Car, Calendar, Clock, ChevronRight } from 'lucide-react';
 import { POPULAR_CITIES } from '../../data/cities';
 import { useAppStore } from '../../store/useAppStore';
-import { ContactActions } from '../common/ContactActions';
+import { AgencyTripPost } from '../../types';
+import { DealChoiceActions } from '../common/ContactActions';
+import { ListSkeleton } from '../common/SkeletonLoader';
+
+function formatTourStamp(date?: string, time?: string) {
+  if (!date && !time) return '';
+  const pretty = date ? date.split('-').reverse().join('/') : '';
+  return [pretty, time].filter(Boolean).join(' · ');
+}
 
 interface ToursBrowseViewProps {
   initialFrom?: string;
   initialTo?: string;
-  canPost?: boolean;
-  onPostTour?: () => void;
+  onNeedUnlock?: (code?: 'incomplete' | 'unverified' | 'no_package') => void;
+  onDealWithRideBhai?: (listingId: string) => void;
+  onOpenDetails?: (tour: AgencyTripPost) => void;
 }
 
 export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
   initialFrom = '',
   initialTo = '',
-  canPost,
-  onPostTour,
+  onNeedUnlock,
+  onDealWithRideBhai,
+  onOpenDetails,
 }) => {
-  const { getFilteredTours, logInquiry, isPartnerLoggedIn, currentDriver, currentAgency } = useAppStore();
+  const { getFilteredTours, openDeal, currentUser, listingsLoading, listingsError } =
+    useAppStore();
   const [fromCity, setFromCity] = useState(initialFrom);
   const [toCity, setToCity] = useState(initialTo);
   const [applied, setApplied] = useState({ from: initialFrom, to: initialTo });
@@ -40,8 +51,8 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
   };
 
   const isFiltered = Boolean(applied.from || applied.to);
-  const myIds = [currentDriver.id, currentAgency.id];
-  const myName = currentAgency.agencyName || currentDriver.name;
+  const myId = currentUser?.id;
+  const myName = currentUser?.agencyName || currentUser?.name || 'Ride Bhai user';
 
   return (
     <div className="space-y-3 pb-24 animate-fade-in">
@@ -52,14 +63,6 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
             : 'All India · filter a route'}
         </p>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {canPost && (
-            <button
-              onClick={onPostTour}
-              className="px-3 py-2 rounded-2xl brand-gradient text-white text-[11px] font-extrabold whitespace-nowrap"
-            >
-              Post tour
-            </button>
-          )}
           <button
             onClick={() => setShowFilter((v) => !v)}
             className="p-2 rounded-2xl bg-white border border-[#EBE5D8] text-[#F15A24]"
@@ -119,7 +122,12 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
         </button>
       )}
 
-      {tours.length === 0 && (
+      {listingsError && (
+        <p className="text-xs font-bold text-red-600 bg-red-50 border border-red-100 p-3 rounded-2xl">{listingsError}</p>
+      )}
+      {listingsLoading && tours.length === 0 && <ListSkeleton count={3} />}
+
+      {tours.length === 0 && !listingsLoading && (
         <div className="p-8 text-center rounded-3xl bg-white border border-[#EBE5D8]">
           <Sparkles className="w-8 h-8 mx-auto text-[#EBE5D8] mb-2" />
           <p className="text-sm font-bold text-[#6B6B6B]">No tour packages in this filter.</p>
@@ -128,7 +136,11 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
 
       {tours.map((tour) => (
         <article key={tour.id} className="bg-white rounded-3xl border border-[#EBE5D8] p-4 space-y-3 shadow-card">
-          <div>
+          <button
+            type="button"
+            onClick={() => onOpenDetails?.(tour)}
+            className="w-full text-left"
+          >
             {tour.tourType ? (
               <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#F15A24]">
                 {tour.tourType}
@@ -136,14 +148,37 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
             ) : null}
             <h3 className="text-sm font-extrabold text-[#1C1C1C] flex items-center gap-1 mt-0.5">
               <MapPin className="w-3.5 h-3.5 text-[#F15A24] flex-shrink-0" />
-              {tour.fromCity} → {tour.toCity}
+              {tour.fromCity} {tour.tripSide === 'two_side' ? '⇄' : '→'} {tour.toCity}
             </h3>
             <p className="text-[11px] text-[#6B6B6B] mt-0.5">
               {tour.agencyName} · {tour.duration} · {tour.passengers} pax
             </p>
-          </div>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              <span className="px-2 py-0.5 rounded-full bg-[#FFF0EB] text-[#F15A24] text-[10px] font-extrabold">
+                {tour.tripSide === 'two_side' ? 'Two side' : 'One side'}
+              </span>
+            </div>
+            <div className="mt-2 space-y-0.5 text-[11px] text-[#6B6B6B]">
+              {(tour.postedDate || tour.postedTime) && (
+                <p className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  Posted {formatTourStamp(tour.postedDate, tour.postedTime)}
+                </p>
+              )}
+              {(tour.bookingDate || tour.startDate || tour.bookingTime || tour.pickupTime) && (
+                <p className="flex items-center gap-1 font-bold text-[#1C1C1C]">
+                  <Calendar className="w-3 h-3 text-[#F15A24]" />
+                  Booking {formatTourStamp(tour.bookingDate || tour.startDate, tour.bookingTime || tour.pickupTime)}
+                </p>
+              )}
+            </div>
+          </button>
 
-          <div className="grid grid-cols-3 gap-1.5">
+          <div
+            className="grid grid-cols-3 gap-1.5 cursor-pointer"
+            onClick={() => onOpenDetails?.(tour)}
+            role="presentation"
+          >
             <div className="p-2.5 rounded-2xl bg-[#FFF0EB] border border-[#FFD8CB]">
               <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#F15A24]">Total tour</p>
               <p className="text-sm font-extrabold text-[#1C1C1C] flex items-center mt-0.5">
@@ -168,7 +203,11 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
           </div>
 
           {tour.desiredCar && (
-            <div className="p-3 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8]">
+            <div
+              className="p-3 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] cursor-pointer"
+              onClick={() => onOpenDetails?.(tour)}
+              role="presentation"
+            >
               <p className="text-[10px] font-extrabold uppercase text-[#6B6B6B] flex items-center gap-1">
                 <Car className="w-3 h-3" /> Desired car
               </p>
@@ -187,48 +226,40 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
           )}
 
           {tour.tripDetails && (
-            <p className="text-[11px] text-[#6B6B6B] leading-relaxed line-clamp-3">{tour.tripDetails}</p>
+            <p
+              className="text-[11px] text-[#6B6B6B] leading-relaxed line-clamp-2 cursor-pointer"
+              onClick={() => onOpenDetails?.(tour)}
+            >
+              {tour.tripDetails}
+            </p>
           )}
 
-          {isPartnerLoggedIn && myIds.includes(tour.agencyId) ? (
+          <button
+            type="button"
+            onClick={() => onOpenDetails?.(tour)}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] text-[11px] font-extrabold text-[#F15A24]"
+          >
+            View details
+            <ChevronRight className="w-4 h-4" />
+          </button>
+
+          {myId && tour.agencyId === myId ? (
             <p className="text-[11px] font-extrabold text-center py-2.5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8]">
               Your listing
             </p>
           ) : (
-          <ContactActions
+          <DealChoiceActions
+            onNeedUnlock={onNeedUnlock}
             phone={tour.agencyPhone}
             whatsapp={tour.whatsappNumber}
-            message={
-              isPartnerLoggedIn
-                ? `Hi ${tour.agencyName}, I’m ${myName}, a Ride Bhai partner. I can help with your ${tour.fromCity} to ${tour.toCity} package${tour.desiredCar?.name ? ` (desired car: ${tour.desiredCar.name})` : ''} listed at ₹${tour.totalCustomerPrice}.`
-                : `Hi ${tour.agencyName}, I am interested in your ${tour.fromCity} to ${tour.toCity} package (₹${tour.totalCustomerPrice}) on Ride Bhai.`
-            }
-            onCall={() =>
-              logInquiry({
-                listingType: 'tour',
-                listingId: tour.id,
-                partnerId: tour.agencyId,
-                partnerName: tour.agencyName,
-                channel: 'call',
-                title: `${tour.fromCity} → ${tour.toCity}`,
-                price: tour.totalCustomerPrice,
-                fromCity: tour.fromCity,
-                toCity: tour.toCity,
-              })
-            }
-            onWhatsApp={() =>
-              logInquiry({
-                listingType: 'tour',
-                listingId: tour.id,
-                partnerId: tour.agencyId,
-                partnerName: tour.agencyName,
-                channel: 'whatsapp',
-                title: `${tour.fromCity} → ${tour.toCity}`,
-                price: tour.totalCustomerPrice,
-                fromCity: tour.fromCity,
-                toCity: tour.toCity,
-              })
-            }
+            message={`Hi ${tour.agencyName}, I’m ${myName}. I am interested in your ${tour.fromCity} to ${tour.toCity} package (₹${tour.totalCustomerPrice}) on Ride Bhai.`}
+            onDirect={async () => {
+              const result = await openDeal({ listingType: 'tour', listingId: tour.id, channel: 'direct' });
+              onDealWithRideBhai?.(result.thread.id);
+            }}
+            onRideBhai={async () => {
+              await openDeal({ listingType: 'tour', listingId: tour.id, channel: 'ridebhai' });
+            }}
           />
           )}
         </article>

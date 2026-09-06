@@ -68,15 +68,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     },
     {
       q: 'How do I pay for a car or tour?',
-      a: 'Customers do not pay in the app. You see the price, then Call or WhatsApp the partner and settle directly.',
+      a: 'Customers do not pay for the trip in the app. Message the partner directly or Deal with Ride Bhai, then settle as you agree.',
     },
     {
-      q: 'Who is a Partner?',
-      a: 'Driver and travel agency are one login. A partner can add cars in Profile, post full-car hires, and post tour packages with a desired car name and 2–3 specs. Partners can also Call / WhatsApp other partners’ cars and tours — for example to offer a car for someone’s tour.',
+      q: 'Is there a separate partner login?',
+      a: 'No. There is one user. Login with OTP, complete your profile, then browse. Chat and Deal with Ride Bhai unlock only after admin verifies you and you buy a plan.',
     },
     {
-      q: 'Why do partners pay in the app?',
-      a: 'Only partners pay — to buy a posting package. After the plan is active they can post cars and tours. That is the only in-app payment.',
+      q: 'What is required on the profile?',
+      a: 'Name, email, Aadhaar upload and selfie are required. GST number and travel agency name are optional.',
+    },
+    {
+      q: 'Why pay in the app?',
+      a: 'The only in-app payment is a posting plan. After your profile is verified and a plan is active, you can book cars and tours and post your own listings.',
     },
     {
       q: 'What does All India mean?',
@@ -100,7 +104,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white shadow-xs border border-[#FFD8CB]">
                 <Sparkles className="w-4 h-4 text-[#F15A24]" />
                 <span className="text-xs font-extrabold text-[#F15A24] uppercase tracking-wider">
-                  Full car hire · Tours · Direct Call & WhatsApp
+                  Full car hire · Tours · Chat & Deal with Ride Bhai
                 </span>
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display tracking-tight leading-[1.15]">
@@ -108,7 +112,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span className="text-gradient">Talk to the partner directly.</span>
               </h1>
               <p className="text-base sm:text-lg text-[#6B6B6B] max-w-2xl mx-auto leading-relaxed">
-                Browse cars and tour packages across India. See the price, then Call or WhatsApp. No seat sharing. No in-app checkout for customers.
+                Browse cars and tour packages across India. See the price, then Message direct or Deal with Ride Bhai. No seat sharing. No in-app trip checkout.
               </p>
             </div>
 
@@ -246,28 +250,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             </div>
 
-            <div className="max-w-4xl mx-auto mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="max-w-xl mx-auto mt-6">
               <button
                 type="button"
                 onClick={onOpenRiderPortal}
-                className="text-left p-5 bg-white rounded-3xl border border-[#EBE5D8] hover:border-[#F15A24] flex items-center justify-between"
+                className="w-full text-left p-5 bg-[#1C1C1C] text-white rounded-3xl border border-white/10 hover:border-[#F15A24] flex items-center justify-between"
               >
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase text-[#F15A24]">Customers</p>
-                  <h4 className="text-sm font-extrabold">Find a car or tour</h4>
-                  <p className="text-[11px] text-[#6B6B6B]">Price shown · Call / WhatsApp only</p>
-                </div>
-                <ChevronRight className="w-5 h-5 text-[#F15A24]" />
-              </button>
-              <button
-                type="button"
-                onClick={onOpenDriverPortal}
-                className="text-left p-5 bg-[#1C1C1C] text-white rounded-3xl border border-white/10 hover:border-[#F15A24] flex items-center justify-between"
-              >
-                <div>
-                  <p className="text-[10px] font-extrabold uppercase text-[#FF7A45]">Partners</p>
-                  <h4 className="text-sm font-extrabold">One login · cars + tours</h4>
-                  <p className="text-[11px] text-white/70">Pay in app only for a posting plan</p>
+                  <p className="text-[10px] font-extrabold uppercase text-[#FF7A45]">One login</p>
+                  <h4 className="text-sm font-extrabold">OTP · complete profile · browse</h4>
+                  <p className="text-[11px] text-white/70">Book only after verification + a plan</p>
                 </div>
                 <ChevronRight className="w-5 h-5 text-[#F15A24]" />
               </button>
@@ -283,9 +275,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
-                ['1', 'Browse all India', 'Open Cars or Tours. Everything shows until you apply a from / to filter.'],
-                ['2', 'See price', 'Full-car price or tour package price is on the card. Desired car name and 2–3 specs on tours.'],
-                ['3', 'Call or WhatsApp', 'Customers contact the partner. Partners can also Call / WhatsApp other partners’ cars and tours. Deal is offline.'],
+                ['1', 'Login + profile', 'OTP login, then name, email, Aadhaar and selfie. GST and agency name are optional.'],
+                ['2', 'Browse all India', 'After the profile is created you can open Cars and Tours. Filter a city or route when you want.'],
+                ['3', 'Book when unlocked', 'Chat and Deal with Ride Bhai unlock only after admin verifies you and you buy a posting plan.'],
               ].map(([n, t, d]) => (
                 <div key={n} className="bg-[#FAF6EE] rounded-3xl p-8 border border-[#EBE5D8] text-center space-y-3">
                   <div className="w-14 h-14 rounded-2xl bg-[#F15A24] text-white font-extrabold text-xl flex items-center justify-center mx-auto">
@@ -305,7 +297,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Car className="w-8 h-8 text-[#F15A24]" />
               <h3 className="text-xl font-extrabold">Cars</h3>
               <p className="text-sm text-[#6B6B6B]">
-                Full car hire. Currently in a city (can go all India) or an X → Y route. Call / WhatsApp to book.
+                Full car hire. All India or an X → Y route. Book with Message direct or Deal with Ride Bhai.
               </p>
               <button
                 type="button"
@@ -319,7 +311,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Sparkles className="w-8 h-8 text-[#F15A24]" />
               <h3 className="text-xl font-extrabold">Tour packages</h3>
               <p className="text-sm text-[#6B6B6B]">
-                Partner tours with price, desired car, and main specs. Same: Call or WhatsApp. Partner closes the listing after they confirm.
+                Partner tours with price, desired car, and main specs. Same chat and Deal with Ride Bhai. Partner closes the listing after they confirm.
               </p>
               <button
                 type="button"
@@ -336,19 +328,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-12">
               <h2 className="text-3xl sm:text-4xl font-extrabold font-display">
-                One partner login
+                One user account
               </h2>
               <p className="text-sm text-[#6B6B6B] mt-2">
-                Driver and travel agency are the same account. Add cars in Profile. Post cars and tours after you buy a plan. You can also Call / WhatsApp other partners’ cars and tours.
+                Everyone uses the same login. Complete profile to browse. Verified profile plus a plan unlocks booking and posting.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               {[
-                ['1', 'OTP login', 'Name, phone, optional firm name.'],
-                ['2', 'KYC', 'Licence, RC, Aadhaar, GST if you have a firm.'],
-                ['3', 'Pay for a plan', 'Only in-app payment. Unlocks posting.'],
-                ['4', 'Contact other partners', 'Browse Cars and Tours. Call / WhatsApp another partner to hire their car or offer yours for a tour.'],
-                ['5', 'Post & close', 'Post car or tour. After you confirm on a call, close it so it stops showing.'],
+                ['1', 'OTP login', 'Phone only. One account for everyone.'],
+                ['2', 'Profile', 'Name, email, Aadhaar, selfie. GST and agency name optional.'],
+                ['3', 'Browse', 'Full app after profile is created. Booking stays locked.'],
+                ['4', 'Admin verifies + plan', 'Then chat or Deal with Ride Bhai to book, and you can post cars and tours.'],
+                ['5', 'Post & close', 'Post a car or tour. After you confirm in chat, close it so it stops showing.'],
               ].map(([n, t, d]) => (
                 <div key={n} className="p-5 rounded-3xl bg-[#FAF6EE] border border-[#EBE5D8]">
                   <div className="w-8 h-8 rounded-xl bg-[#F15A24] text-white font-extrabold text-sm flex items-center justify-center mb-3">
@@ -365,7 +357,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 onClick={onOpenDriverPortal}
                 className="px-8 py-4 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-xs rounded-2xl inline-flex items-center gap-2"
               >
-                Become a Partner <ArrowRight className="w-4 h-4" />
+                Login with OTP <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -416,7 +408,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       pkg.popular ? 'bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white' : 'bg-white border border-[#EBE5D8]'
                     }`}
                   >
-                    Pay in partner app
+                    Login & buy plan
                   </button>
                 </div>
               ))}
@@ -461,11 +453,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <Logo size="md" showTagline={false} variant="light" />
               </div>
               <p className="text-xs text-white/60 leading-relaxed">
-                Full-car hires and tour packages across India. Customers Call or WhatsApp. Partners post after buying a plan.
+                Full-car hires and tour packages across India. One OTP login. Browse after your profile. Book after verification and a plan.
               </p>
             </div>
             <div>
-              <h4 className="text-xs font-extrabold uppercase tracking-wider mb-4">Customers</h4>
+              <h4 className="text-xs font-extrabold uppercase tracking-wider mb-4">Browse</h4>
               <ul className="space-y-2.5 text-xs text-white/60 font-bold">
                 <li>
                   <button onClick={() => goBrowse('cars')} className="hover:text-[#F15A24]">
@@ -478,21 +470,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </button>
                 </li>
                 <li className="flex items-center gap-1.5 text-white/80">
-                  <Phone className="w-3 h-3" /> Call · <MessageCircle className="w-3 h-3" /> WhatsApp
+                  <MessageCircle className="w-3 h-3" /> Chat · Deal with Ride Bhai
                 </li>
               </ul>
             </div>
             <div>
-              <h4 className="text-xs font-extrabold uppercase tracking-wider mb-4">Partners</h4>
+              <h4 className="text-xs font-extrabold uppercase tracking-wider mb-4">Account</h4>
               <ul className="space-y-2.5 text-xs text-white/60 font-bold">
                 <li>
                   <button onClick={onOpenDriverPortal} className="hover:text-[#F15A24]">
-                    Become a Partner
+                    Login with OTP
                   </button>
                 </li>
                 <li>
                   <button onClick={onOpenDriverPortal} className="hover:text-[#F15A24]">
-                    My Cars & tour posts
+                    Complete profile
                   </button>
                 </li>
                 <li>
@@ -520,7 +512,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <p>© {new Date().getFullYear()} Ride Bhai · Full car & tours</p>
             <div className="flex items-center gap-4">
               <button type="button" onClick={onOpenAdminPortal} className="hover:text-white">
-                Admin
+                Admin (this site, not :5174)
               </button>
               <button
                 type="button"
