@@ -49,6 +49,7 @@ import { refreshNotifications } from '../lib/notifications';
 import { mapDeal, mapThread, type ChatThread, type Deal } from '../lib/deals';
 import { mapCarListing, mapTourListing, mergeById } from '../lib/listings';
 import { mapServerUser, type ServerUser } from '../lib/session';
+import { desiredCarBody, listingCarBody } from '../data/indiaTaxiCars';
 
 const DEMO_VERSION = 'neon-listings-v1';
 const VERSION_KEY = 'ridebhai_demo_version';
@@ -872,6 +873,22 @@ export function useAppStore() {
     await refreshDeals();
   }, [refreshDeals]);
 
+  const confirmDeal = useCallback(
+    async (dealId: string) => {
+      await api(`/deals/${dealId}/confirm`, { method: 'PATCH' });
+      await refreshDeals();
+    },
+    [refreshDeals]
+  );
+
+  const rateDeal = useCallback(
+    async (dealId: string, stars: number) => {
+      await api(`/deals/${dealId}/rate`, { method: 'POST', json: { stars } });
+      await refreshDeals();
+    },
+    [refreshDeals]
+  );
+
   const updateInquiries = useCallback((updater: (prev: Inquiry[]) => Inquiry[]) => {
     setInquiriesState((prev) => {
       const next = updater(prev);
@@ -1078,6 +1095,8 @@ export function useAppStore() {
             phone: data.phone,
             aadhaarDoc: data.aadhaarDoc,
             selfieDoc: data.selfieDoc,
+            dlNumber: data.dlNumber,
+            dlDoc: data.dlDoc,
             experienceYears: data.experienceYears,
             experienceNote: data.experienceNote,
           },
@@ -1137,18 +1156,50 @@ export function useAppStore() {
   };
 
   const getFilteredCarListings = useCallback(
-    (filter?: { fromCity?: string; toCity?: string }) => {
+    (filter?: {
+      fromCity?: string;
+      toCity?: string;
+      bookingDate?: string;
+      availableTill?: string;
+      maxPrice?: number;
+      minSeats?: number;
+      fuelType?: string;
+      availability?: string;
+      carType?: string;
+    }) => {
       const from = (filter?.fromCity || '').trim().toLowerCase();
       const to = (filter?.toCity || '').trim().toLowerCase();
-      const live = carListings.filter(isCarListingLive);
-      if (!from && !to) return live;
+      const bookingDate = (filter?.bookingDate || '').trim();
+      const availableTill = (filter?.availableTill || '').trim();
+      const maxPrice = Number(filter?.maxPrice || 0);
+      const minSeats = Number(filter?.minSeats || 0);
+      const fuel = (filter?.fuelType || '').trim().toLowerCase();
+      const availability = (filter?.availability || '').trim();
+      const carType = (filter?.carType || '').trim().toLowerCase();
 
-      return live.filter((c) => {
-        if (c.availability === 'citywide') {
-          return true;
-        }
+      return carListings.filter(isCarListingLive).filter((c) => {
         if (from && !c.currentCity.toLowerCase().includes(from)) return false;
-        if (to && c.toCity && !c.toCity.toLowerCase().includes(to)) return false;
+        if (to) {
+          if (c.availability === 'citywide') return false;
+          if (!c.toCity?.toLowerCase().includes(to)) return false;
+        }
+        if (availability && c.availability !== availability) return false;
+        if (bookingDate) {
+          const start = c.bookingDate || '';
+          const till = c.availableTillDate || c.bookingDate || '';
+          if (start && till) {
+            if (bookingDate < start || bookingDate > till) return false;
+          } else if (start && start !== bookingDate) return false;
+          else if (!start) return false;
+        }
+        if (availableTill && (c.availableTillDate || '') < availableTill) return false;
+        if (maxPrice && c.fullCarPrice > maxPrice) return false;
+        if (minSeats && c.seats < minSeats) return false;
+        if (fuel && (c.fuelType || '').toLowerCase() !== fuel) return false;
+        if (carType) {
+          const body = listingCarBody(c.make, c.model, c.carName);
+          if (body !== carType) return false;
+        }
         return true;
       });
     },
@@ -1156,14 +1207,34 @@ export function useAppStore() {
   );
 
   const getFilteredTours = useCallback(
-    (filter?: { fromCity?: string; toCity?: string }) => {
+    (filter?: {
+      fromCity?: string;
+      toCity?: string;
+      bookingDate?: string;
+      maxPrice?: number;
+      minPax?: number;
+      tripSide?: string;
+      carType?: string;
+    }) => {
       const from = (filter?.fromCity || '').trim().toLowerCase();
       const to = (filter?.toCity || '').trim().toLowerCase();
-      const active = agencyTripPosts.filter((t) => t.status === 'active');
-      if (!from && !to) return active;
-      return active.filter((t) => {
+      const bookingDate = (filter?.bookingDate || '').trim();
+      const maxPrice = Number(filter?.maxPrice || 0);
+      const minPax = Number(filter?.minPax || 0);
+      const tripSide = (filter?.tripSide || '').trim();
+      const carType = (filter?.carType || '').trim().toLowerCase();
+
+      return agencyTripPosts.filter((t) => t.status === 'active').filter((t) => {
         if (from && !t.fromCity.toLowerCase().includes(from)) return false;
         if (to && !t.toCity.toLowerCase().includes(to)) return false;
+        if (bookingDate && (t.bookingDate || t.startDate) !== bookingDate) return false;
+        if (maxPrice && t.totalCustomerPrice > maxPrice) return false;
+        if (minPax && t.passengers < minPax) return false;
+        if (tripSide && (t.tripSide || 'one_side') !== tripSide) return false;
+        if (carType) {
+          const body = desiredCarBody(t.desiredCar?.name || t.requiredVehicleType);
+          if (body !== carType) return false;
+        }
         return true;
       });
     },
@@ -1651,7 +1722,6 @@ export function useAppStore() {
 
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, '0');
-      const defaultDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
       const defaultTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
       const bookingDate = tripData.bookingDate || tripData.startDate;
       const bookingTime = tripData.bookingTime || tripData.pickupTime || defaultTime;
@@ -1662,8 +1732,6 @@ export function useAppStore() {
           fromCity: tripData.fromCity,
           toCity: tripData.toCity,
           tripSide: tripData.tripSide || 'one_side',
-          postedDate: tripData.postedDate || defaultDate,
-          postedTime: tripData.postedTime || defaultTime,
           bookingDate,
           bookingTime,
           passengers: Number(tripData.passengers),
@@ -2140,6 +2208,8 @@ export function useAppStore() {
     refreshDeals,
     openDeal,
     sendThreadMessage,
+    confirmDeal,
+    rateDeal,
     deals,
     chatThreads,
     listingsLoading,

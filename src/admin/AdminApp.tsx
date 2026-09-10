@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, ShieldCheck, ArrowLeft, Lock, Car, MapPin, Phone } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, ArrowLeft, Lock, Car, MapPin, Phone, FileText } from 'lucide-react';
 import { AdminOpsHome } from '../components/admin/AdminOpsHome';
 import { AgencyTourPostsManager } from '../components/admin/AgencyTourPostsManager';
 import { AllCarListingsView } from '../components/admin/AllCarListingsView';
 import { RideBhaiDealsQueue } from '../components/admin/RideBhaiDealsQueue';
 import { UserKycQueue } from '../components/admin/UserKycQueue';
+import { LegalPagesView } from '../components/admin/LegalPagesView';
 
 interface AdminAppProps {
   onExitToWebsite: () => void;
 }
 
-type AdminTab = 'dashboard' | 'user-kyc' | 'deals' | 'cars' | 'tours';
+type AdminTab = 'dashboard' | 'user-kyc' | 'deals' | 'cars' | 'tours' | 'legal';
 
 function isAdminSession() {
   try {
@@ -30,6 +31,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
     { id: 'deals', label: 'Ride Bhai deals', icon: Phone },
     { id: 'cars', label: 'All cars', icon: Car },
     { id: 'tours', label: 'All tours', icon: MapPin },
+    { id: 'legal', label: 'Website', icon: FileText },
   ];
 
   return (
@@ -105,6 +107,7 @@ export const AdminApp: React.FC<AdminAppProps> = ({ onExitToWebsite }) => {
           {activeTab === 'deals' && <RideBhaiDealsQueue />}
           {activeTab === 'cars' && <AllCarListingsView />}
           {activeTab === 'tours' && <AgencyTourPostsManager />}
+          {activeTab === 'legal' && <LegalPagesView />}
         </div>
       </main>
     </div>

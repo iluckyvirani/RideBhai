@@ -10,7 +10,7 @@ interface MyBookingsPreviewProps {
 export const MyBookingsPreview: React.FC<MyBookingsPreviewProps> = ({ onShowAll }) => {
   const { deals, currentUser } = useAppStore();
   const mine = deals.filter(
-    (d) => d.channel === 'ridebhai' && currentUser?.id && (d.buyerId === currentUser.id || d.sellerId === currentUser.id)
+    (d) => currentUser?.id && (d.buyerId === currentUser.id || d.sellerId === currentUser.id)
   );
   const preview = mine.slice(0, 2);
 
@@ -20,7 +20,7 @@ export const MyBookingsPreview: React.FC<MyBookingsPreviewProps> = ({ onShowAll 
         <div>
           <h3 className="text-xs font-extrabold uppercase tracking-wider text-[#1C1C1C]">My bookings</h3>
           <p className="text-[10px] text-[#6B6B6B] mt-0.5">
-            Ride Bhai deals — pending / success / cancelled.
+            Open deals and closed history.
           </p>
         </div>
         <button type="button" onClick={onShowAll} className="text-[11px] font-extrabold text-[#F15A24] flex-shrink-0">
@@ -29,7 +29,7 @@ export const MyBookingsPreview: React.FC<MyBookingsPreviewProps> = ({ onShowAll 
       </div>
 
       {preview.length === 0 && (
-        <p className="text-[11px] text-[#6B6B6B]">No Ride Bhai deals yet. Use Deal with Ride Bhai on a listing.</p>
+        <p className="text-[11px] text-[#6B6B6B]">No deals yet. Close a chat deal to see it here.</p>
       )}
 
       {preview.map((deal) => (

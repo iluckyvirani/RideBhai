@@ -40,7 +40,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
           Ride<span className="text-[#1C1C1C]">bhai</span>
         </h1>
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#1C1C1C] mt-1 opacity-80">
-          Your Travel Buddy
+          Full car & tours
         </p>
 
         <div className="mt-8 flex items-center gap-1.5">
@@ -53,9 +53,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       {/* Bottom Footer Note */}
       <div className="text-center pb-4">
         <p className="text-[11px] font-medium text-[#6B6B6B]">
-          Smart Intercity Carpooling
+          Indian intercity marketplace
         </p>
-        <p className="text-[10px] text-[#9E9E9E] mt-0.5">Save money, reduce traffic & make friends</p>
+        <p className="text-[10px] text-[#9E9E9E] mt-0.5">Hire a full car or tour. Chat or Deal with Ride Bhai.</p>
       </div>
     </div>
   );

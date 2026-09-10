@@ -17,6 +17,7 @@ import {
 import { useAppStore } from '../../store/useAppStore';
 import { UserRole } from '../../types';
 import { CompleteProfileView } from '../auth/CompleteProfileView';
+import { isPreviewableImage } from '../../lib/upload';
 
 interface PartnerProfileViewProps {
   onSwitchRole: (role: UserRole) => void;
@@ -86,11 +87,11 @@ export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
     <div className="space-y-4 pb-24 animate-fade-in">
       <div className="p-5 rounded-3xl bg-white border border-[#EBE5D8] shadow-card space-y-3">
         <div className="flex items-center gap-3">
-          {currentUser?.selfieDoc?.startsWith('data:image') ? (
+          {isPreviewableImage(currentUser?.selfieDoc) ? (
             <img
-              src={currentUser.selfieDoc}
+              src={currentUser!.selfieDoc}
               alt=""
-              className="w-14 h-14 rounded-2xl object-cover"
+              className="w-14 h-14 rounded-2xl object-cover border border-[#EBE5D8]"
             />
           ) : (
             <div className="w-14 h-14 rounded-2xl brand-gradient flex items-center justify-center text-white font-black text-xl">
@@ -177,7 +178,7 @@ export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
           </p>
           <p className="text-[11px] text-[#6B6B6B] mt-1">
             {myCarPosts.length === 0
-              ? 'No car posts yet. Open to see listings you posted.'
+              ? 'No car posts yet. Open to see listings you posted with available from → to.'
               : `${myCarPosts.length} post${myCarPosts.length === 1 ? '' : 's'} · hide or show anytime`}
           </p>
         </div>

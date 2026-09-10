@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from './store/useAppStore';
-import { getToken } from './lib/api';
+import { api, getToken } from './lib/api';
+import { setTaxiCars, type TaxiCar } from './data/indiaTaxiCars';
 import { AppHeader } from './components/layout/AppHeader';
 import { BottomNav } from './components/layout/BottomNav';
 import { NotificationsModal } from './components/layout/NotificationsModal';
@@ -24,6 +25,14 @@ import { CreateListingSheet } from './components/common/CreateListingSheet';
 import { ChatInboxView } from './components/common/ChatInboxView';
 import { TourDetailsView } from './components/common/TourDetailsView';
 import { AgencyTripPost } from './types';
+import { RateLastBookingModal } from './components/common/RateLastBookingModal';
+import { LegalPageView, type LegalSlug } from './components/legal/LegalPageView';
+import type { Deal } from './lib/deals';
+
+function hashLegalSlug(): LegalSlug | null {
+  const h = window.location.hash.replace(/^#/, '');
+  return h === 'terms' || h === 'privacy' ? h : null;
+}
 
 export function App() {
   const {
@@ -40,19 +49,38 @@ export function App() {
     openDeal,
     chatThreads,
     canPostCar,
+    deals,
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState('tours');
   const [detailsTourId, setDetailsTourId] = useState<string | null>(null);
   const [detailsFrom, setDetailsFrom] = useState<'tours' | 'my-tours'>('tours');
   const [chatThreadId, setChatThreadId] = useState<string | null>(null);
-  const [filter, setFilter] = useState({ fromCity: '', toCity: '' });
+  const [filter, setFilter] = useState({ fromCity: '', toCity: '', bookingDate: '' });
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isPostCarOpen, setIsPostCarOpen] = useState(false);
   const [isPostTourOpen, setIsPostTourOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [pendingTab, setPendingTab] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [awaitRatePrompt, setAwaitRatePrompt] = useState(false);
+  const [ratePrompt, setRatePrompt] = useState<Deal | null>(null);
+  const [legalSlug, setLegalSlug] = useState<LegalSlug | null>(() =>
+    typeof window === 'undefined' ? null : hashLegalSlug()
+  );
+
+  const openLegal = (slug: LegalSlug) => {
+    setLegalSlug(slug);
+    window.location.hash = slug;
+    setAppView('landing');
+  };
+
+  const closeLegal = () => {
+    setLegalSlug(null);
+    if (hashLegalSlug()) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    }
+  };
 
   const openCarSetup = () => {
     const gate = canPostCar();
@@ -60,15 +88,61 @@ export function App() {
   };
 
   useEffect(() => {
+    const readHash = () => {
+      const slug = hashLegalSlug();
+      if (slug) {
+        setLegalSlug(slug);
+        setAppView('landing');
+      }
+    };
+    window.addEventListener('hashchange', readHash);
+    return () => window.removeEventListener('hashchange', readHash);
+  }, [setAppView]);
+
+  useEffect(() => {
     if (getToken()) {
       hydrateMe();
       refreshDeals();
     }
     refreshListings();
+    api<TaxiCar[]>('/listings/taxi-cars')
+      .then((rows) => {
+        const mapped = (rows || [])
+          .filter((row) => row.make && row.model && row.body)
+          .map((row) => ({
+            id: row.id,
+            make: row.make,
+            model: row.model,
+            body: row.body,
+            seats: Number(row.seats) || 5,
+          }));
+        if (mapped.length) setTaxiCars(mapped);
+      })
+      .catch(() => {
+        /* keep built-in fallback */
+      });
   }, [hydrateMe, refreshListings, refreshDeals]);
 
   const needsProfile =
     isLoggedIn && (!currentUser?.profileCompleted || currentUser.profileStatus === 'incomplete');
+
+  useEffect(() => {
+    if (!awaitRatePrompt || !isLoggedIn || !currentUser?.id || needsProfile) return;
+    const last = deals
+      .filter(
+        (d) =>
+          d.status === 'success' &&
+          !d.myRating &&
+          (d.buyerId === currentUser.id || d.sellerId === currentUser.id)
+      )
+      .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))[0];
+    const key = `ridebhai_rate_prompt:${currentUser.id}`;
+    if (last && localStorage.getItem(key) !== last.id) {
+      localStorage.setItem(key, last.id);
+      setRatePrompt(last);
+    }
+    setAwaitRatePrompt(false);
+  }, [awaitRatePrompt, isLoggedIn, currentUser?.id, needsProfile, deals]);
 
   const enterApp = (tab = 'tours') => {
     if (!isLoggedIn) {
@@ -86,7 +160,7 @@ export function App() {
     setPendingTab(null);
     setAppView('rider-app');
     refreshListings();
-    refreshDeals();
+    refreshDeals().finally(() => setAwaitRatePrompt(true));
   };
 
   const handleNeedUnlock = (code?: 'incomplete' | 'unverified' | 'no_package') => {
@@ -101,12 +175,16 @@ export function App() {
     seats: number;
     tab?: 'cars' | 'tours';
   }) => {
-    setFilter({ fromCity: params.fromCity, toCity: params.toCity });
-    enterApp(params.tab === 'tours' ? 'tours' : 'cars');
+    setFilter({ fromCity: params.fromCity, toCity: params.toCity, bookingDate: params.date || '' });
+    enterApp(params.tab === 'cars' ? 'cars' : 'tours');
   };
 
   if (appView === 'admin-portal') {
     return <AdminApp onExitToWebsite={() => setAppView('landing')} />;
+  }
+
+  if (legalSlug) {
+    return <LegalPageView slug={legalSlug} onBack={closeLegal} onOpen={openLegal} />;
   }
 
   if (needsProfile) {
@@ -122,16 +200,17 @@ export function App() {
       <>
         <LandingPage
           onSearchInitiated={handleLandingSearch}
-          onOpenDriverPortal={() => enterApp('cars')}
-          onOpenRiderPortal={() => enterApp('cars')}
-          onOpenAgencyPortal={() => enterApp('cars')}
+          onOpenDriverPortal={() => enterApp('tours')}
+          onOpenRiderPortal={() => enterApp('tours')}
+          onOpenAgencyPortal={() => enterApp('tours')}
           onOpenAdminPortal={() => setAppView('admin-portal')}
+          onOpenLegal={openLegal}
         />
         <AuthModal
           isOpen={authOpen}
           onClose={() => setAuthOpen(false)}
           title="Login with OTP"
-          subtitle="One account for cars, tours, bookings and posting."
+          subtitle="One account for cars, tours, bookings and posting. Plan unlocks chat, booking and posting."
           onSuccess={handleAuthSuccess}
         />
       </>
@@ -143,14 +222,17 @@ export function App() {
       <>
         <LandingPage
           onSearchInitiated={handleLandingSearch}
-          onOpenDriverPortal={() => enterApp('cars')}
-          onOpenRiderPortal={() => enterApp('cars')}
-          onOpenAgencyPortal={() => enterApp('cars')}
+          onOpenDriverPortal={() => enterApp('tours')}
+          onOpenRiderPortal={() => enterApp('tours')}
+          onOpenAgencyPortal={() => enterApp('tours')}
           onOpenAdminPortal={() => setAppView('admin-portal')}
+          onOpenLegal={openLegal}
         />
         <AuthModal
           isOpen
           onClose={() => setAppView('landing')}
+          title="Login with OTP"
+          subtitle="One account for cars, tours, bookings and posting. Plan unlocks chat, booking and posting."
           onSuccess={handleAuthSuccess}
         />
       </>
@@ -171,24 +253,6 @@ export function App() {
   const detailsTour = agencyTripPosts.find((t) => t.id === detailsTourId);
   const chatThreadOpen = activeTab === 'chat' && Boolean(chatThreadId);
 
-  const getHeaderTitle = () => {
-    if (activeTab === 'tour-details') return 'Tour details';
-    if (activeTab === 'chat' && chatThreadId) return 'Chat';
-    if (activeTab === 'bookings') return 'Bookings';
-    if (activeTab === 'cars') return 'Cars · All India';
-    if (activeTab === 'tours') return 'Tours';
-    if (activeTab === 'profile') return 'Profile';
-    if (activeTab === 'my-cars') return 'My cars';
-    if (activeTab === 'my-car-posts') return 'My post car history';
-    if (activeTab === 'my-drivers') return 'My drivers';
-    if (activeTab === 'my-tours') return 'My tour packages';
-    if (activeTab === 'my-bookings') return 'My bookings';
-    if (activeTab === 'bank-details') return 'Bank details';
-    if (activeTab === 'packages') return 'Posting plans';
-    if (activeTab === 'chat') return 'Chat';
-    return 'Ride Bhai';
-  };
-
   return (
     <div className="min-h-screen bg-[#141414] flex items-center justify-center p-0 sm:p-4 selection:bg-[#F15A24] selection:text-white">
       <div
@@ -196,7 +260,6 @@ export function App() {
         className="w-full max-w-[430px] h-screen sm:h-[880px] bg-[#FAF6EE] text-[#1C1C1C] flex flex-col relative sm:rounded-[40px] shadow-2xl overflow-hidden border-0 sm:border-8 sm:border-[#222222]"
       >
         <AppHeader
-          title={getHeaderTitle()}
           showBack={
             chatThreadOpen ||
             activeTab === 'tour-details' ||
@@ -213,6 +276,7 @@ export function App() {
             else setActiveTab('profile');
           }}
           onExitToLanding={() => setAppView('landing')}
+          onLogoClick={() => setActiveTab('tours')}
           onOpenNotifications={() => setIsNotificationsOpen(true)}
         />
 
@@ -241,6 +305,7 @@ export function App() {
             <CarsBrowseView
               initialFrom={filter.fromCity}
               initialTo={filter.toCity}
+              initialNeedOn={filter.bookingDate}
               onNeedUnlock={handleNeedUnlock}
               onDealWithRideBhai={(threadId) => {
                 setChatThreadId(threadId);
@@ -253,6 +318,7 @@ export function App() {
             <ToursBrowseView
               initialFrom={filter.fromCity}
               initialTo={filter.toCity}
+              initialNeedOn={filter.bookingDate}
               onNeedUnlock={handleNeedUnlock}
               onOpenDetails={(tour) => openTourDetails(tour, 'tours')}
               onDealWithRideBhai={(threadId) => {
@@ -410,6 +476,20 @@ export function App() {
           }}
           onTripCreated={() => setActiveTab('tours')}
         />
+
+        {ratePrompt && currentUser && (
+          <RateLastBookingModal
+            deal={ratePrompt}
+            otherName={
+              currentUser.id === ratePrompt.buyerId ? ratePrompt.sellerName : ratePrompt.buyerName
+            }
+            onClose={() => setRatePrompt(null)}
+            onGoBookings={() => {
+              setRatePrompt(null);
+              setActiveTab('my-bookings');
+            }}
+          />
+        )}
       </div>
     </div>
   );

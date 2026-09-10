@@ -69,10 +69,6 @@ export const PartnerToursView: React.FC<PartnerToursViewProps> = ({ onOpenDetail
                 <p className="text-[11px] text-[#6B6B6B] mt-0.5">
                   {tour.tripSide === 'two_side' ? 'Two side' : 'One side'} · {tour.duration} · {tour.passengers} pax
                 </p>
-                <p className="text-[10px] text-[#6B6B6B] mt-0.5">
-                  Posted {(tour.postedDate || '').split('-').reverse().join('/')}
-                  {tour.postedTime ? ` · ${tour.postedTime}` : ''}
-                </p>
                 <p className="text-[10px] font-bold text-[#1C1C1C]">
                   Booking {(tour.bookingDate || tour.startDate || '').split('-').reverse().join('/')}
                   {tour.bookingTime || tour.pickupTime ? ` · ${tour.bookingTime || tour.pickupTime}` : ''}

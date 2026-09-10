@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { LandingNav } from './LandingNav';
 import { EarningsCalculator } from './EarningsCalculator';
 import { SafetySection } from './SafetySection';
@@ -6,12 +6,9 @@ import { POPULAR_CITIES } from '../../data/cities';
 import { useAppStore } from '../../store/useAppStore';
 import {
   MapPin,
-  Search,
   ArrowRightLeft,
   Sparkles,
   Car,
-  ShieldCheck,
-  Phone,
   CheckCircle2,
   ChevronRight,
   HelpCircle,
@@ -20,6 +17,25 @@ import {
   Package,
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
+import { api } from '../../lib/api';
+
+type SiteSettings = {
+  supportPhone: string;
+  supportEmail: string;
+  emergencyPhone: string;
+};
+
+type SiteFaq = {
+  id?: string;
+  question: string;
+  answer: string;
+};
+
+const FALLBACK_SETTINGS: SiteSettings = {
+  supportPhone: '1800-RIDE-BHAI',
+  supportEmail: 'support@ridebhai.com',
+  emergencyPhone: '112',
+};
 
 export interface LandingSearchParams {
   fromCity: string;
@@ -35,6 +51,7 @@ interface LandingPageProps {
   onOpenRiderPortal: () => void;
   onOpenAgencyPortal?: () => void;
   onOpenAdminPortal: () => void;
+  onOpenLegal?: (slug: 'terms' | 'privacy') => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -43,50 +60,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenRiderPortal,
   onOpenAgencyPortal,
   onOpenAdminPortal,
+  onOpenLegal,
 }) => {
-  const { agencyPackages, resetDemoData } = useAppStore();
+  const { agencyPackages } = useAppStore();
   const [fromCity, setFromCity] = useState('');
   const [toCity, setToCity] = useState('');
+  const [needOn, setNeedOn] = useState('');
   const [showFromSuggest, setShowFromSuggest] = useState(false);
   const [showToSuggest, setShowToSuggest] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [support, setSupport] = useState<SiteSettings>(FALLBACK_SETTINGS);
+  const [faqs, setFaqs] = useState<SiteFaq[]>([]);
 
   const goBrowse = (tab: 'cars' | 'tours', from = fromCity, to = toCity) => {
     onSearchInitiated({
       fromCity: from,
       toCity: to,
-      date: new Date().toISOString().split('T')[0],
+      date: needOn,
       seats: 1,
       tab,
     });
   };
 
-  const faqs = [
-    {
-      q: 'Do I book a seat or the full car?',
-      a: 'Full car only. One listing is the whole vehicle. There is no per-seat booking.',
-    },
-    {
-      q: 'How do I pay for a car or tour?',
-      a: 'Customers do not pay for the trip in the app. Message the partner directly or Deal with Ride Bhai, then settle as you agree.',
-    },
-    {
-      q: 'Is there a separate partner login?',
-      a: 'No. There is one user. Login with OTP, complete your profile, then browse. Chat and Deal with Ride Bhai unlock only after admin verifies you and you buy a plan.',
-    },
-    {
-      q: 'What is required on the profile?',
-      a: 'Name, email, Aadhaar upload and selfie are required. GST number and travel agency name are optional.',
-    },
-    {
-      q: 'Why pay in the app?',
-      a: 'The only in-app payment is a posting plan. After your profile is verified and a plan is active, you can book cars and tours and post your own listings.',
-    },
-    {
-      q: 'What does All India mean?',
-      a: 'Cars and tours show across India first. Apply a from / to filter to see a city or route. A car marked “currently in Jaipur” can travel anywhere once booked.',
-    },
-  ];
+  useEffect(() => {
+    api<{ settings: SiteSettings; faqs: SiteFaq[] }>('/site')
+      .then((data) => {
+        if (data?.settings) setSupport(data.settings);
+        if (Array.isArray(data?.faqs)) {
+          setFaqs(
+            data.faqs.map((faq: any) => ({
+              id: faq.id,
+              question: faq.question || faq.q,
+              answer: faq.answer || faq.a,
+            }))
+          );
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FAF6EE] text-[#1C1C1C] flex flex-col font-sans selection:bg-[#F15A24] selection:text-white">
@@ -103,7 +114,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="text-center max-w-4xl mx-auto space-y-5 mb-12">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white shadow-xs border border-[#FFD8CB]">
                 <Sparkles className="w-4 h-4 text-[#F15A24]" />
-                <span className="text-xs font-extrabold text-[#F15A24] uppercase tracking-wider">
+                <span className="text-xs sm:text-sm font-extrabold text-[#F15A24] uppercase tracking-wider">
                   Full car hire · Tours · Chat & Deal with Ride Bhai
                 </span>
               </div>
@@ -112,7 +123,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span className="text-gradient">Talk to the partner directly.</span>
               </h1>
               <p className="text-base sm:text-lg text-[#6B6B6B] max-w-2xl mx-auto leading-relaxed">
-                Browse cars and tour packages across India. See the price, then Message direct or Deal with Ride Bhai. No seat sharing. No in-app trip checkout.
+                Browse hatchback, sedan, SUV and MUV cars plus tour packages across India. Cars show when they are available, from start to end. See the price, then Message direct or Deal with Ride Bhai. No seat sharing. No in-app trip checkout.
               </p>
             </div>
 
@@ -214,20 +225,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 </div>
               </div>
 
+              <div className="mt-3">
+                <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1.5">
+                  Need on (optional)
+                </label>
+                <input
+                  type="date"
+                  value={needOn}
+                  onChange={(e) => setNeedOn(e.target.value)}
+                  className="w-full text-sm font-bold bg-[#FAF6EE] px-3.5 py-3 rounded-2xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24]"
+                />
+                <p className="text-[11px] text-[#6B6B6B] mt-1.5">
+                  Cars must be available on this date (inside their from → to window).
+                </p>
+              </div>
+
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => goBrowse('cars')}
-                  className="py-3.5 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-xs rounded-2xl shadow-lg flex items-center justify-center gap-2"
+                  className="py-4 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-sm rounded-2xl shadow-lg flex items-center justify-center gap-2"
                 >
-                  <Car className="w-4 h-4" /> Search cars
+                  <Car className="w-5 h-5" /> Search cars
                 </button>
                 <button
                   type="button"
                   onClick={() => goBrowse('tours')}
-                  className="py-3.5 bg-[#1C1C1C] text-white font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2"
+                  className="py-4 bg-[#1C1C1C] text-white font-extrabold text-sm rounded-2xl flex items-center justify-center gap-2"
                 >
-                  <Sparkles className="w-4 h-4" /> Browse tours
+                  <Sparkles className="w-5 h-5" /> Browse tours
                 </button>
               </div>
 
@@ -250,18 +276,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             </div>
 
-            <div className="max-w-xl mx-auto mt-6">
+            <div className="max-w-xl mx-auto mt-8">
               <button
                 type="button"
                 onClick={onOpenRiderPortal}
-                className="w-full text-left p-5 bg-[#1C1C1C] text-white rounded-3xl border border-white/10 hover:border-[#F15A24] flex items-center justify-between"
+                className="w-full text-left p-6 sm:p-7 bg-[#1C1C1C] text-white rounded-3xl border border-white/10 hover:border-[#F15A24] flex items-center justify-between gap-4 shadow-xl"
               >
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase text-[#FF7A45]">One login</p>
-                  <h4 className="text-sm font-extrabold">OTP · complete profile · browse</h4>
-                  <p className="text-[11px] text-white/70">Book only after verification + a plan</p>
+                  <p className="text-xs font-extrabold uppercase text-[#FF7A45]">One login</p>
+                  <h4 className="text-lg sm:text-xl font-extrabold mt-0.5">Login with OTP</h4>
+                  <p className="text-sm text-white/75 mt-1">Complete profile to browse. Book and post after KYC + a plan.</p>
                 </div>
-                <ChevronRight className="w-5 h-5 text-[#F15A24]" />
+                <span className="shrink-0 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-r from-[#F15A24] to-[#FF7A45]">
+                  <ChevronRight className="w-7 h-7 text-white" />
+                </span>
               </button>
             </div>
           </div>
@@ -271,13 +299,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-14">
               <h2 className="text-3xl sm:text-4xl font-extrabold font-display">How Ride Bhai works</h2>
-              <p className="text-sm text-[#6B6B6B] mt-2">All India first. Filter when you want a city or route.</p>
+              <p className="text-sm text-[#6B6B6B] mt-2">
+                All India first. Filter by city, route, car type, or a Need on date inside the car’s available window.
+              </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
-                ['1', 'Login + profile', 'OTP login, then name, email, Aadhaar and selfie. GST and agency name are optional.'],
-                ['2', 'Browse all India', 'After the profile is created you can open Cars and Tours. Filter a city or route when you want.'],
-                ['3', 'Book when unlocked', 'Chat and Deal with Ride Bhai unlock only after admin verifies you and you buy a posting plan.'],
+                ['1', 'Login + profile', 'OTP login, then name, email, city, Aadhaar and selfie. GST and agency name are optional.'],
+                ['2', 'Browse all India', 'After the profile is created you can open Cars and Tours. Cars show available from → available to. Posted time is admin only.'],
+                ['3', 'Book when unlocked', 'Chat and Deal with Ride Bhai unlock after admin verifies you and you buy a plan. Both sides close the deal, then rate.'],
               ].map(([n, t, d]) => (
                 <div key={n} className="bg-[#FAF6EE] rounded-3xl p-8 border border-[#EBE5D8] text-center space-y-3">
                   <div className="w-14 h-14 rounded-2xl bg-[#F15A24] text-white font-extrabold text-xl flex items-center justify-center mx-auto">
@@ -297,7 +327,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Car className="w-8 h-8 text-[#F15A24]" />
               <h3 className="text-xl font-extrabold">Cars</h3>
               <p className="text-sm text-[#6B6B6B]">
-                Full car hire. All India or an X → Y route. Book with Message direct or Deal with Ride Bhai.
+                Full car hire — hatchback, sedan, SUV or MUV. All India or an X → Y route. Each card shows available from this date/time to this date/time. Book with Message direct or Deal with Ride Bhai.
               </p>
               <button
                 type="button"
@@ -311,7 +341,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Sparkles className="w-8 h-8 text-[#F15A24]" />
               <h3 className="text-xl font-extrabold">Tour packages</h3>
               <p className="text-sm text-[#6B6B6B]">
-                Partner tours with price, desired car, and main specs. Same chat and Deal with Ride Bhai. Partner closes the listing after they confirm.
+                Partner tours with price, desired car type, and main specs. Same chat and Deal with Ride Bhai. Both sides tap Close deal, then rate. Posting a tour needs an agency name on your profile.
               </p>
               <button
                 type="button"
@@ -331,16 +361,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 One user account
               </h2>
               <p className="text-sm text-[#6B6B6B] mt-2">
-                Everyone uses the same login. Complete profile to browse. Verified profile plus a plan unlocks booking and posting.
+                Everyone uses the same login. Complete profile to browse. Verified profile plus a plan unlocks booking, chat and posting.
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               {[
                 ['1', 'OTP login', 'Phone only. One account for everyone.'],
-                ['2', 'Profile', 'Name, email, Aadhaar, selfie. GST and agency name optional.'],
-                ['3', 'Browse', 'Full app after profile is created. Booking stays locked.'],
-                ['4', 'Admin verifies + plan', 'Then chat or Deal with Ride Bhai to book, and you can post cars and tours.'],
-                ['5', 'Post & close', 'Post a car or tour. After you confirm in chat, close it so it stops showing.'],
+                ['2', 'Profile', 'Name, email, city, Aadhaar, selfie. GST optional. Agency name needed to post tours.'],
+                ['3', 'Browse', 'Full app after profile is created. Booking stays locked until KYC + plan.'],
+                ['4', 'Admin verifies + plan', 'Then chat or Deal with Ride Bhai. Post a car only with a verified driver and RC vehicle.'],
+                ['5', 'Close & rate', 'Both sides tap Close deal. Rate each other. A car post is available from → to, not a posted stamp.'],
               ].map(([n, t, d]) => (
                 <div key={n} className="p-5 rounded-3xl bg-[#FAF6EE] border border-[#EBE5D8]">
                   <div className="w-8 h-8 rounded-xl bg-[#F15A24] text-white font-extrabold text-sm flex items-center justify-center mb-3">
@@ -355,9 +385,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <button
                 type="button"
                 onClick={onOpenDriverPortal}
-                className="px-8 py-4 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-xs rounded-2xl inline-flex items-center gap-2"
+                className="px-10 py-4 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-base rounded-2xl inline-flex items-center gap-2 shadow-lg"
               >
-                Login with OTP <ArrowRight className="w-4 h-4" />
+                Login with OTP <ArrowRight className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -370,11 +400,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="text-center max-w-3xl mx-auto mb-12">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FFF0EB] border border-[#FFD8CB] mb-3">
                 <Package className="w-3.5 h-3.5 text-[#F15A24]" />
-                <span className="text-[11px] font-extrabold text-[#F15A24] uppercase">Partner only · in-app pay</span>
+                <span className="text-[11px] font-extrabold text-[#F15A24] uppercase">Only in-app payment</span>
               </div>
-              <h2 className="text-3xl font-extrabold font-display">Posting plans</h2>
+              <h2 className="text-3xl font-extrabold font-display">Plans</h2>
               <p className="text-sm text-[#6B6B6B] mt-2">
-                Buy a plan in the app, then post cars and tours. Customers never pay here.
+                After admin verifies your KYC, buy a plan to unlock booking, chat and posting. Customers never pay for the trip here.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
@@ -404,7 +434,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   <button
                     type="button"
                     onClick={onOpenDriverPortal}
-                    className={`w-full mt-6 py-3 rounded-2xl text-xs font-extrabold ${
+                    className={`w-full mt-6 py-4 rounded-2xl text-sm font-extrabold ${
                       pkg.popular ? 'bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white' : 'bg-white border border-[#EBE5D8]'
                     }`}
                   >
@@ -416,7 +446,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </section>
 
-        <SafetySection />
+        <SafetySection
+          supportPhone={support.supportPhone}
+          supportEmail={support.supportEmail}
+          emergencyPhone={support.emergencyPhone}
+        />
 
         <section id="faq" className="py-20 bg-[#FAF6EE] border-t border-[#EBE5D8]">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -425,18 +459,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <h2 className="text-3xl font-extrabold font-display">Questions</h2>
             </div>
             <div className="space-y-3">
+              {faqs.length === 0 && (
+                <p className="text-sm font-bold text-[#6B6B6B] text-center">FAQs will show here once admin adds them.</p>
+              )}
               {faqs.map((faq, idx) => (
-                <div key={faq.q} className="bg-white rounded-2xl border border-[#EBE5D8]">
+                <div key={faq.id || faq.question} className="bg-white rounded-2xl border border-[#EBE5D8]">
                   <button
                     type="button"
                     onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
                     className="w-full p-5 text-left flex items-center justify-between font-extrabold text-sm"
                   >
-                    {faq.q}
+                    {faq.question}
                     <ChevronRight className={`w-4 h-4 text-[#F15A24] ${activeFaq === idx ? 'rotate-90' : ''}`} />
                   </button>
                   {activeFaq === idx && (
-                    <p className="px-5 pb-5 text-xs text-[#6B6B6B] leading-relaxed">{faq.a}</p>
+                    <p className="px-5 pb-5 text-xs text-[#6B6B6B] leading-relaxed">{faq.answer}</p>
                   )}
                 </div>
               ))}
@@ -453,7 +490,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <Logo size="md" showTagline={false} variant="light" />
               </div>
               <p className="text-xs text-white/60 leading-relaxed">
-                Full-car hires and tour packages across India. One OTP login. Browse after your profile. Book after verification and a plan.
+                Full-car hires and tour packages across India. One OTP login. Browse after your profile. Book, chat and post after verification and a plan.
               </p>
             </div>
             <div>
@@ -497,12 +534,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div>
               <h4 className="text-xs font-extrabold uppercase tracking-wider mb-4">Support</h4>
               <ul className="space-y-2.5 text-xs text-white/60 font-bold">
-                <li className="text-white/80">1800-RIDE-BHAI</li>
-                <li className="text-white/80">support@ridebhai.com</li>
-                <li className="text-white/40">Emergency: 112</li>
+                {support.supportPhone && (
+                  <li>
+                    <a href={`tel:${support.supportPhone.replace(/\s/g, '')}`} className="text-white/80 hover:text-[#F15A24]">
+                      {support.supportPhone}
+                    </a>
+                  </li>
+                )}
+                {support.supportEmail && (
+                  <li>
+                    <a href={`mailto:${support.supportEmail}`} className="text-white/80 hover:text-[#F15A24]">
+                      {support.supportEmail}
+                    </a>
+                  </li>
+                )}
+                {support.emergencyPhone && (
+                  <li className="text-white/40">Emergency: {support.emergencyPhone}</li>
+                )}
                 <li>
                   <button onClick={() => scrollToSafety()} className="hover:text-[#F15A24]">
                     Safety
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => onOpenLegal?.('terms')} className="hover:text-[#F15A24]">
+                    Terms and conditions
+                  </button>
+                </li>
+                <li>
+                  <button onClick={() => onOpenLegal?.('privacy')} className="hover:text-[#F15A24]">
+                    Privacy policy
                   </button>
                 </li>
               </ul>
@@ -510,18 +571,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
           <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/50">
             <p>© {new Date().getFullYear()} Ride Bhai · Full car & tours</p>
-            <div className="flex items-center gap-4">
-              <button type="button" onClick={onOpenAdminPortal} className="hover:text-white">
-                Admin (this site, not :5174)
+            <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-end">
+              <button type="button" onClick={() => onOpenLegal?.('terms')} className="hover:text-white">
+                Terms
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (confirm('Reset all demo data and reload?')) resetDemoData();
-                }}
-                className="text-white/70 hover:text-white font-extrabold underline underline-offset-2"
-              >
-                Reset demo data
+              <button type="button" onClick={() => onOpenLegal?.('privacy')} className="hover:text-white">
+                Privacy
               </button>
             </div>
           </div>

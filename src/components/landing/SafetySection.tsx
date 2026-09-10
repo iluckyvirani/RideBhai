@@ -9,27 +9,35 @@ import {
   Car,
 } from 'lucide-react';
 
-export const SafetySection: React.FC = () => {
+export const SafetySection: React.FC<{
+  supportPhone?: string;
+  supportEmail?: string;
+  emergencyPhone?: string;
+}> = ({
+  supportPhone = '1800-RIDE-BHAI',
+  supportEmail = 'support@ridebhai.com',
+  emergencyPhone = '112',
+}) => {
   const safetyFeatures = [
     {
       icon: <FileCheck2 className="w-6 h-6 text-[#00A86B]" />,
       bg: 'bg-emerald-50 border-emerald-100',
-      title: 'Partner KYC before posting',
-      desc: 'Partners upload licence, RC, Aadhaar, and business papers. Admin verifies before cars or tours go live.',
-      badge: 'Verified partners',
+      title: 'KYC before booking or posting',
+      desc: 'Everyone uploads Aadhaar and a selfie. Admin verifies before you can book, chat or post. Posting a car also needs a verified driver (DL) and vehicle RC.',
+      badge: 'Verified users',
     },
     {
       icon: <Car className="w-6 h-6 text-[#F15A24]" />,
       bg: 'bg-orange-50 border-orange-100',
       title: 'Full car only',
-      desc: 'You hire the whole car — no shared seat booking. See the car name, price, and city or route before you message.',
+      desc: 'You hire the whole car — no shared seat booking. See type (hatchback, sedan, SUV, MUV), price, route, and available from → to before you message.',
       badge: 'Private hire',
     },
     {
       icon: <MessageCircle className="w-6 h-6 text-[#F15A24]" />,
       bg: 'bg-orange-50 border-orange-100',
       title: 'Message direct',
-      desc: 'Chat with the partner in Ride Bhai. Confirm the trip in-app, then hide the post when it is booked.',
+      desc: 'Chat with the partner in Ride Bhai. Both sides tap Close deal when the trip is confirmed, then rate each other.',
       badge: 'In-app chat',
     },
     {
@@ -42,15 +50,15 @@ export const SafetySection: React.FC = () => {
     {
       icon: <Star className="w-6 h-6 text-amber-500" />,
       bg: 'bg-amber-50 border-amber-100',
-      title: 'Rated partners',
-      desc: 'Listings show partner rating and city. Low-trust accounts stay off the all-India feed.',
+      title: 'Rated after every deal',
+      desc: 'Listings show the poster’s photo, name and rating. After a successful deal both sides can rate. One rating popup appears after login if you have a pending review.',
       badge: 'Community trust',
     },
     {
       icon: <HeartHandshake className="w-6 h-6 text-rose-500" />,
       bg: 'bg-rose-50 border-rose-100',
       title: '24/7 support',
-      desc: 'Need help with a listing or a partner? Ride Bhai support is on call. Emergency: 112.',
+      desc: `Need help with a listing or a partner? Call ${supportPhone} or email ${supportEmail}. Emergency: ${emergencyPhone}.`,
       badge: 'Always on',
     },
   ];
@@ -69,7 +77,7 @@ export const SafetySection: React.FC = () => {
             Direct contact. <span className="text-gradient">Verified partners.</span>
           </h2>
           <p className="text-sm text-[#6B6B6B]">
-            Customers never pay for the trip in the app. You see the price, then Message direct or Deal with Ride Bhai. Partners pay only to unlock posting.
+            Customers never pay for the trip in the app. You see the price, then Message direct or Deal with Ride Bhai. The only in-app payment is a plan that unlocks booking, chat and posting.
           </p>
         </div>
 

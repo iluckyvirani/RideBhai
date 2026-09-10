@@ -29,6 +29,8 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { FuelType, Vehicle, DriverDocuments } from '../../types';
+import { CarMakeModelSelect } from '../common/CarMakeModelSelect';
+import { findTaxiCar, type CarBodyType } from '../../data/indiaTaxiCars';
 
 export const DriverVerificationView: React.FC = () => {
   const {
@@ -102,8 +104,9 @@ export const DriverVerificationView: React.FC = () => {
 
   // Form states for adding another vehicle
   const [fuelType, setFuelType] = useState<FuelType>('electric');
+  const [bodyType, setBodyType] = useState<CarBodyType | ''>('suv');
   const [make, setMake] = useState('Tata');
-  const [model, setModel] = useState('Nexon EV');
+  const [model, setModel] = useState('Nexon');
   const [year, setYear] = useState(2024);
   const [color, setColor] = useState('Signature Teal');
   const [plate, setPlate] = useState('DL 08 EV 9900');
@@ -145,6 +148,10 @@ export const DriverVerificationView: React.FC = () => {
 
   // Add another vehicle to the list
   const handleAddNewVehicle = () => {
+    if (!bodyType || !make.trim() || !model.trim()) {
+      setStep2Error('Select car type, make and model.');
+      return;
+    }
     if (!plate.trim()) {
       setStep2Error('Please enter the vehicle registration plate number');
       return;
@@ -175,8 +182,9 @@ export const DriverVerificationView: React.FC = () => {
     setStep2Error('');
 
     // Reset vehicle form for next vehicle
+    setBodyType('suv');
     setMake('Hyundai');
-    setModel('Creta SX');
+    setModel('Creta');
     setPlate('DL 03 BC 4545');
     setFuelType('petrol');
     setColor('Polar White');
@@ -939,45 +947,18 @@ export const DriverVerificationView: React.FC = () => {
                 </div>
               </div>
 
-              {/* 2. Vehicle Make & Model */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1">
-                    Vehicle Brand / Make
-                  </label>
-                  <select
-                    value={make}
-                    onChange={(e) => setMake(e.target.value)}
-                    className="w-full text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE] px-3.5 py-3 rounded-2xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24]"
-                  >
-                    <option value="Maruti Suzuki">Maruti Suzuki</option>
-                    <option value="Hyundai">Hyundai</option>
-                    <option value="Tata">Tata Motors</option>
-                    <option value="Honda">Honda</option>
-                    <option value="Mahindra">Mahindra</option>
-                    <option value="Toyota">Toyota</option>
-                    <option value="Kia">Kia</option>
-                    <option value="Volkswagen">Volkswagen</option>
-                    <option value="MG">MG Motors</option>
-                    <option value="Skoda">Skoda</option>
-                    <option value="Other">Other Brand</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1">
-                    Vehicle Model
-                  </label>
-                  <input
-                    type="text"
-                    value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    placeholder="e.g. Dzire ZXi, Creta SX, Nexon EV"
-                    className="w-full text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE] px-3.5 py-3 rounded-2xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24]"
-                    required
-                  />
-                </div>
-              </div>
+              <CarMakeModelSelect
+                bodyType={bodyType}
+                make={make}
+                model={model}
+                onBodyType={setBodyType}
+                onMake={setMake}
+                onModel={(next) => {
+                  setModel(next);
+                  const match = findTaxiCar(make, next);
+                  if (match) setSeats(match.seats);
+                }}
+              />
 
               {/* 3. Number Plate, Year, Color, Seats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

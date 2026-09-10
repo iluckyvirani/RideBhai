@@ -14,7 +14,7 @@ export const MyCarPostsView: React.FC = () => {
       <div className="p-8 text-center rounded-3xl bg-white border border-[#EBE5D8]">
         <Car className="w-8 h-8 mx-auto text-[#EBE5D8] mb-2" />
         <p className="text-sm font-bold text-[#6B6B6B]">No car posts yet.</p>
-        <p className="text-[11px] text-[#6B6B6B] mt-1">Posts you create with Post car will show here.</p>
+        <p className="text-[11px] text-[#6B6B6B] mt-1">Posts you create with Post car will show here with available from → to.</p>
       </div>
     );
   }
@@ -38,10 +38,13 @@ export const MyCarPostsView: React.FC = () => {
                   {' · '}₹{listing.fullCarPrice.toLocaleString('en-IN')}
                   {listing.driverName ? ` · ${listing.driverName}` : ''}
                 </p>
-                {(listing.postedDate || listing.createdAt) && (
-                  <p className="text-[10px] text-[#8A8478] mt-0.5">
-                    Posted {listing.postedDate || listing.createdAt.slice(0, 10)}
-                    {listing.postedTime ? ` · ${listing.postedTime}` : ''}
+                {(listing.bookingDate || listing.availableTillDate) && (
+                  <p className="text-[11px] font-bold text-[#1C1C1C] mt-0.5">
+                    Available {(listing.bookingDate || '').split('-').reverse().join('/')}
+                    {listing.bookingTime ? ` ${listing.bookingTime}` : ''}
+                    {' → '}
+                    {(listing.availableTillDate || '').split('-').reverse().join('/')}
+                    {listing.availableTillTime ? ` ${listing.availableTillTime}` : ''}
                   </p>
                 )}
               </div>

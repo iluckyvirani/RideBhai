@@ -47,7 +47,10 @@ export interface CarListing {
   partnerPhone: string;
   partnerWhatsapp: string;
   partnerCity: string;
+  partnerPersonName?: string;
+  partnerSelfie?: string;
   partnerRating: number;
+  partnerRatingCount?: number;
   carId: string;
   carName: string;
   carImage?: string;
@@ -62,11 +65,11 @@ export interface CarListing {
   availability: CarAvailability;
   currentCity: string;
   toCity?: string;
-  postedDate?: string;
+  postedDate?: string; // YYYY-MM-DD — when listing was posted (admin only)
   postedTime?: string;
-  bookingDate?: string;
+  bookingDate?: string; // YYYY-MM-DD — available from
   bookingTime?: string;
-  availableTillDate?: string;
+  availableTillDate?: string; // YYYY-MM-DD — available to
   availableTillTime?: string;
   notes?: string;
   driverId?: string;
@@ -209,7 +212,10 @@ export interface AgencyTripPost {
   agencyPhone: string;
   whatsappNumber: string;
   agencyCity: string;
+  posterName?: string;
+  posterSelfie?: string;
   agencyRating: number;
+  agencyRatingCount?: number;
   fromCity: string;
   toCity: string;
   tripSide?: TourTripSide;
@@ -411,6 +417,8 @@ export interface DriverProfile {
   phone: string;
   aadhaarDoc?: string;
   selfieDoc?: string;
+  dlNumber?: string;
+  dlDoc?: string;
   experienceYears: number;
   experienceNote?: string;
   completed: boolean;

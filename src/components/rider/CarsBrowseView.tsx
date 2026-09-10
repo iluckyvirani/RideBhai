@@ -1,10 +1,21 @@
 import React, { useMemo, useState } from 'react';
-import { Car, MapPin, Filter, X, IndianRupee, Navigation, Calendar, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Car, MapPin, X, IndianRupee, Navigation, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import type { CarListing } from '../../types';
-import { POPULAR_CITIES } from '../../data/cities';
 import { useAppStore } from '../../store/useAppStore';
 import { DealChoiceActions } from '../common/ContactActions';
+import { PosterCard } from '../common/PosterCard';
 import { ListSkeleton } from '../common/SkeletonLoader';
+import {
+  BrowseFilters,
+  browseFilterActive,
+  EMPTY_BROWSE_FILTERS,
+  type BrowseFilterValues,
+} from '../common/BrowseFilters';
+import { CAR_BODY_TYPES, listingCarBody } from '../../data/indiaTaxiCars';
+
+function carTypeLabel(car: CarListing) {
+  return CAR_BODY_TYPES.find((t) => t.id === listingCarBody(car.make, car.model, car.carName))?.label;
+}
 
 function formatCarStamp(date?: string, time?: string) {
   if (!date && !time) return '';
@@ -40,13 +51,20 @@ function publicCarRows(car: CarListing): [string, string][] {
   const make = car.make || nameParts[0] || '';
   const model = car.model || nameParts.slice(1).join(' ') || '';
   const rows: [string, string][] = [];
+  const body = listingCarBody(make, model, car.carName);
+  const typeLabel = CAR_BODY_TYPES.find((t) => t.id === body)?.label;
   if (make) rows.push(['Make', make]);
   if (model) rows.push(['Model', model]);
+  if (typeLabel) rows.push(['Type', typeLabel]);
   if (car.year) rows.push(['Year', String(car.year)]);
   if (car.color) rows.push(['Color', car.color]);
   if (car.plate) rows.push(['Number plate', car.plate]);
   rows.push(['Seats', `${car.seats} seater`]);
   if (car.fuelType) rows.push(['Fuel', car.fuelType]);
+  const from = formatCarStamp(car.bookingDate, car.bookingTime);
+  const to = formatCarStamp(car.availableTillDate, car.availableTillTime);
+  if (from) rows.push(['Available from', from]);
+  if (to) rows.push(['Available to', to]);
   return rows;
 }
 
@@ -63,6 +81,7 @@ function publicDriverRows(car: CarListing): [string, string][] {
 interface CarsBrowseViewProps {
   initialFrom?: string;
   initialTo?: string;
+  initialNeedOn?: string;
   onNeedUnlock?: (code?: 'incomplete' | 'unverified' | 'no_package') => void;
   onDealWithRideBhai?: (listingId: string) => void;
 }
@@ -70,103 +89,74 @@ interface CarsBrowseViewProps {
 export const CarsBrowseView: React.FC<CarsBrowseViewProps> = ({
   initialFrom = '',
   initialTo = '',
+  initialNeedOn = '',
   onNeedUnlock,
   onDealWithRideBhai,
 }) => {
   const { getFilteredCarListings, openDeal, currentUser, listingsLoading, listingsError } =
     useAppStore();
-  const [fromCity, setFromCity] = useState(initialFrom);
-  const [toCity, setToCity] = useState(initialTo);
-  const [applied, setApplied] = useState({ from: initialFrom, to: initialTo });
-  const [showFilter, setShowFilter] = useState(false);
+  const [draft, setDraft] = useState<BrowseFilterValues>({
+    ...EMPTY_BROWSE_FILTERS,
+    fromCity: initialFrom,
+    toCity: initialTo,
+    bookingDate: initialNeedOn,
+  });
+  const [applied, setApplied] = useState<BrowseFilterValues>({
+    ...EMPTY_BROWSE_FILTERS,
+    fromCity: initialFrom,
+    toCity: initialTo,
+    bookingDate: initialNeedOn,
+  });
+  const [moreOpen, setMoreOpen] = useState(false);
   const [openDetailsId, setOpenDetailsId] = useState<string | null>(null);
 
   const listings = useMemo(
-    () => getFilteredCarListings({ fromCity: applied.from, toCity: applied.to }),
+    () =>
+      getFilteredCarListings({
+        fromCity: applied.fromCity,
+        toCity: applied.toCity,
+        bookingDate: applied.bookingDate,
+        availableTill: applied.availableTill,
+        maxPrice: Number(applied.maxPrice || 0) || undefined,
+        minSeats: Number(applied.minSeats || 0) || undefined,
+        fuelType: applied.fuelType,
+        availability: applied.availability,
+        carType: applied.carType,
+      }),
     [getFilteredCarListings, applied]
   );
 
-  const applyFilter = () => {
-    setApplied({ from: fromCity, to: toCity });
-    setShowFilter(false);
-  };
+  const applyFilter = () => setApplied(draft);
 
   const clearFilter = () => {
-    setFromCity('');
-    setToCity('');
-    setApplied({ from: '', to: '' });
+    setDraft(EMPTY_BROWSE_FILTERS);
+    setApplied(EMPTY_BROWSE_FILTERS);
   };
 
-  const isFiltered = Boolean(applied.from || applied.to);
+  const isFiltered = browseFilterActive(applied);
   const myId = currentUser?.id;
   const myName = currentUser?.agencyName || currentUser?.name || 'Ride Bhai user';
 
   return (
     <div className="space-y-3 pb-24 animate-fade-in">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-extrabold text-[#1C1C1C]">Cars</h2>
-          <p className="text-[11px] text-[#6B6B6B]">
-            {isFiltered
-              ? `Showing ${applied.from || 'any city'}${applied.to ? ` → ${applied.to}` : ' · all-India from this city'}`
-              : 'All India · filter a city or route. Booking needs verified profile + plan.'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowFilter((v) => !v)}
-            className="p-2 rounded-2xl bg-white border border-[#EBE5D8] text-[#F15A24]"
-          >
-            <Filter className="w-4 h-4" />
-          </button>
-        </div>
+      <div>
+        <h2 className="text-lg font-extrabold text-[#1C1C1C]">Cars</h2>
+        <p className="text-[11px] text-[#6B6B6B]">
+          {isFiltered
+            ? `Showing ${applied.fromCity || 'any city'}${applied.toCity ? ` → ${applied.toCity}` : ''}${applied.carType ? ` · ${CAR_BODY_TYPES.find((t) => t.id === applied.carType)?.label || applied.carType}` : ''}${applied.bookingDate ? ` · ${applied.bookingDate.split('-').reverse().join('/')}` : ''}`
+            : 'All India · filter by type (hatchback, sedan, SUV, MUV). Open More for fuel, seats and price.'}
+        </p>
       </div>
 
-      {showFilter && (
-        <div className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="text-[10px] font-extrabold uppercase text-[#6B6B6B]">
-              From / current city
-              <input
-                value={fromCity}
-                onChange={(e) => setFromCity(e.target.value)}
-                list="rb-cities"
-                className="mt-1 w-full px-3 py-2 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-xs font-bold"
-                placeholder="All India"
-              />
-            </label>
-            <label className="text-[10px] font-extrabold uppercase text-[#6B6B6B]">
-              To city
-              <input
-                value={toCity}
-                onChange={(e) => setToCity(e.target.value)}
-                list="rb-cities"
-                className="mt-1 w-full px-3 py-2 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-xs font-bold"
-                placeholder="Optional"
-              />
-            </label>
-          </div>
-          <datalist id="rb-cities">
-            {POPULAR_CITIES.map((c) => (
-              <option key={c.name} value={c.name} />
-            ))}
-          </datalist>
-          <div className="flex gap-2">
-            <button
-              onClick={applyFilter}
-              className="flex-1 py-2.5 rounded-2xl brand-gradient text-white text-xs font-extrabold"
-            >
-              Apply filter
-            </button>
-            <button
-              onClick={clearFilter}
-              className="px-3 py-2.5 rounded-2xl bg-[#FAF6EE] text-xs font-bold"
-            >
-              All India
-            </button>
-          </div>
-        </div>
-      )}
+      <BrowseFilters
+        kind="car"
+        value={draft}
+        moreOpen={moreOpen}
+        onChange={setDraft}
+        onToggleMore={() => setMoreOpen((v) => !v)}
+        onApply={applyFilter}
+        onClear={clearFilter}
+      />
 
       {isFiltered && (
         <button
@@ -201,7 +191,9 @@ export const CarsBrowseView: React.FC<CarsBrowseViewProps> = ({
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h3 className="text-sm font-extrabold text-[#1C1C1C]">{car.carName}</h3>
-                <p className="text-[11px] text-[#6B6B6B]">{car.partnerName} · {car.seats} seater</p>
+                <p className="text-[11px] text-[#6B6B6B]">
+                  {[carTypeLabel(car), `${car.seats} seater`, car.partnerName].filter(Boolean).join(' · ')}
+                </p>
               </div>
               <div className="text-right">
                 <p className="text-sm font-extrabold text-[#F15A24] flex items-center justify-end">
@@ -226,25 +218,14 @@ export const CarsBrowseView: React.FC<CarsBrowseViewProps> = ({
               )}
             </div>
 
-            <div className="space-y-0.5 text-[11px] text-[#6B6B6B]">
-              {(car.postedDate || car.postedTime) && (
-                <p className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  Posted {formatCarStamp(car.postedDate, car.postedTime)}
-                </p>
-              )}
-              {(car.bookingDate || car.bookingTime) && (
-                <p className="flex items-center gap-1 font-bold text-[#1C1C1C]">
-                  <Calendar className="w-3 h-3 text-[#F15A24]" />
-                  Booking {formatCarStamp(car.bookingDate, car.bookingTime)}
-                </p>
-              )}
-              {(car.availableTillDate || car.availableTillTime) && (
-                <p className="flex items-center gap-1 font-bold text-[#00A86B]">
-                  Available till {formatCarStamp(car.availableTillDate, car.availableTillTime)}
-                </p>
-              )}
-            </div>
+            {(car.bookingDate || car.bookingTime || car.availableTillDate || car.availableTillTime) && (
+              <p className="flex items-center gap-1 text-[11px] font-bold text-[#1C1C1C]">
+                <Calendar className="w-3 h-3 text-[#F15A24]" />
+                Available {formatCarStamp(car.bookingDate, car.bookingTime) || '—'}
+                {' → '}
+                {formatCarStamp(car.availableTillDate, car.availableTillTime) || '—'}
+              </p>
+            )}
 
             {car.driverName && (
               <p className="text-[11px] font-bold text-[#1C1C1C]">Driver {car.driverName}</p>
@@ -272,6 +253,15 @@ export const CarsBrowseView: React.FC<CarsBrowseViewProps> = ({
                 <DetailTable title="Driver details" rows={publicDriverRows(car)} />
               </div>
             )}
+
+            <PosterCard
+              compact
+              selfie={car.partnerSelfie}
+              agencyName={car.partnerName}
+              personName={car.partnerPersonName}
+              rating={car.partnerRating}
+              ratingCount={car.partnerRatingCount}
+            />
 
             {myId && car.partnerId === myId ? (
               <p className="text-[11px] font-extrabold text-center py-2.5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8]">

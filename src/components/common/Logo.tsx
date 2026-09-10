@@ -100,7 +100,7 @@ export const Logo: React.FC<LogoProps> = ({
         </div>
         {showTagline && (
           <span className={`font-semibold opacity-80 uppercase ${taglineSizes[size]} ${isDarkBg ? 'text-white/80' : 'text-[#1C1C1C]'}`}>
-            Your Travel Buddy
+            Full car & tours
           </span>
         )}
       </div>

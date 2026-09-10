@@ -1,10 +1,21 @@
 import React, { useMemo, useState } from 'react';
-import { Sparkles, MapPin, Filter, X, IndianRupee, Car, Calendar, Clock, ChevronRight } from 'lucide-react';
-import { POPULAR_CITIES } from '../../data/cities';
+import { Sparkles, MapPin, X, IndianRupee, Car, Calendar, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { AgencyTripPost } from '../../types';
 import { DealChoiceActions } from '../common/ContactActions';
+import { PosterCard } from '../common/PosterCard';
 import { ListSkeleton } from '../common/SkeletonLoader';
+import {
+  BrowseFilters,
+  browseFilterActive,
+  EMPTY_BROWSE_FILTERS,
+  type BrowseFilterValues,
+} from '../common/BrowseFilters';
+import { CAR_BODY_TYPES, desiredCarBody } from '../../data/indiaTaxiCars';
+
+function tourCarTypeLabel(name?: string) {
+  return CAR_BODY_TYPES.find((t) => t.id === desiredCarBody(name))?.label;
+}
 
 function formatTourStamp(date?: string, time?: string) {
   if (!date && !time) return '';
@@ -15,6 +26,7 @@ function formatTourStamp(date?: string, time?: string) {
 interface ToursBrowseViewProps {
   initialFrom?: string;
   initialTo?: string;
+  initialNeedOn?: string;
   onNeedUnlock?: (code?: 'incomplete' | 'unverified' | 'no_package') => void;
   onDealWithRideBhai?: (listingId: string) => void;
   onOpenDetails?: (tour: AgencyTripPost) => void;
@@ -23,98 +35,69 @@ interface ToursBrowseViewProps {
 export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
   initialFrom = '',
   initialTo = '',
+  initialNeedOn = '',
   onNeedUnlock,
   onDealWithRideBhai,
   onOpenDetails,
 }) => {
   const { getFilteredTours, openDeal, currentUser, listingsLoading, listingsError } =
     useAppStore();
-  const [fromCity, setFromCity] = useState(initialFrom);
-  const [toCity, setToCity] = useState(initialTo);
-  const [applied, setApplied] = useState({ from: initialFrom, to: initialTo });
-  const [showFilter, setShowFilter] = useState(false);
+  const [draft, setDraft] = useState<BrowseFilterValues>({
+    ...EMPTY_BROWSE_FILTERS,
+    fromCity: initialFrom,
+    toCity: initialTo,
+    bookingDate: initialNeedOn,
+  });
+  const [applied, setApplied] = useState<BrowseFilterValues>({
+    ...EMPTY_BROWSE_FILTERS,
+    fromCity: initialFrom,
+    toCity: initialTo,
+    bookingDate: initialNeedOn,
+  });
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const tours = useMemo(
-    () => getFilteredTours({ fromCity: applied.from, toCity: applied.to }),
+    () =>
+      getFilteredTours({
+        fromCity: applied.fromCity,
+        toCity: applied.toCity,
+        bookingDate: applied.bookingDate,
+        maxPrice: Number(applied.maxPrice || 0) || undefined,
+        minPax: Number(applied.minPax || 0) || undefined,
+        tripSide: applied.tripSide,
+        carType: applied.carType,
+      }),
     [getFilteredTours, applied]
   );
 
-  const applyFilter = () => {
-    setApplied({ from: fromCity, to: toCity });
-    setShowFilter(false);
-  };
+  const applyFilter = () => setApplied(draft);
 
   const clearFilter = () => {
-    setFromCity('');
-    setToCity('');
-    setApplied({ from: '', to: '' });
+    setDraft(EMPTY_BROWSE_FILTERS);
+    setApplied(EMPTY_BROWSE_FILTERS);
   };
 
-  const isFiltered = Boolean(applied.from || applied.to);
+  const isFiltered = browseFilterActive(applied);
   const myId = currentUser?.id;
   const myName = currentUser?.agencyName || currentUser?.name || 'Ride Bhai user';
 
   return (
     <div className="space-y-3 pb-24 animate-fade-in">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-[11px] text-[#6B6B6B] leading-snug pr-2">
-          {isFiltered
-            ? `${applied.from || 'Any'} → ${applied.to || 'any'}`
-            : 'All India · filter a route'}
-        </p>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => setShowFilter((v) => !v)}
-            className="p-2 rounded-2xl bg-white border border-[#EBE5D8] text-[#F15A24]"
-            aria-label="Filter tours"
-          >
-            <Filter className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      <p className="text-[11px] text-[#6B6B6B] leading-snug">
+        {isFiltered
+          ? `${applied.fromCity || 'Any'} → ${applied.toCity || 'any'}${applied.carType ? ` · ${CAR_BODY_TYPES.find((t) => t.id === applied.carType)?.label || applied.carType}` : ''}${applied.bookingDate ? ` · ${applied.bookingDate.split('-').reverse().join('/')}` : ''}`
+          : 'All India · filter by car type. Open More for extra options.'}
+      </p>
 
-      {showFilter && (
-        <div className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <label className="text-[10px] font-extrabold uppercase text-[#6B6B6B]">
-              From
-              <input
-                value={fromCity}
-                onChange={(e) => setFromCity(e.target.value)}
-                list="rb-tour-cities"
-                className="mt-1 w-full px-3 py-2 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-xs font-bold"
-                placeholder="All India"
-              />
-            </label>
-            <label className="text-[10px] font-extrabold uppercase text-[#6B6B6B]">
-              To
-              <input
-                value={toCity}
-                onChange={(e) => setToCity(e.target.value)}
-                list="rb-tour-cities"
-                className="mt-1 w-full px-3 py-2 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-xs font-bold"
-                placeholder="All India"
-              />
-            </label>
-          </div>
-          <datalist id="rb-tour-cities">
-            {POPULAR_CITIES.map((c) => (
-              <option key={c.name} value={c.name} />
-            ))}
-          </datalist>
-          <div className="flex gap-2">
-            <button
-              onClick={applyFilter}
-              className="flex-1 py-2.5 rounded-2xl brand-gradient text-white text-xs font-extrabold"
-            >
-              Apply filter
-            </button>
-            <button onClick={clearFilter} className="px-3 py-2.5 rounded-2xl bg-[#FAF6EE] text-xs font-bold">
-              All India
-            </button>
-          </div>
-        </div>
-      )}
+      <BrowseFilters
+        kind="tour"
+        value={draft}
+        moreOpen={moreOpen}
+        onChange={setDraft}
+        onToggleMore={() => setMoreOpen((v) => !v)}
+        onApply={applyFilter}
+        onClear={clearFilter}
+      />
 
       {isFiltered && (
         <button onClick={clearFilter} className="inline-flex items-center gap-1 text-[11px] font-bold text-[#F15A24]">
@@ -159,12 +142,6 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
               </span>
             </div>
             <div className="mt-2 space-y-0.5 text-[11px] text-[#6B6B6B]">
-              {(tour.postedDate || tour.postedTime) && (
-                <p className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  Posted {formatTourStamp(tour.postedDate, tour.postedTime)}
-                </p>
-              )}
               {(tour.bookingDate || tour.startDate || tour.bookingTime || tour.pickupTime) && (
                 <p className="flex items-center gap-1 font-bold text-[#1C1C1C]">
                   <Calendar className="w-3 h-3 text-[#F15A24]" />
@@ -211,7 +188,11 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
               <p className="text-[10px] font-extrabold uppercase text-[#6B6B6B] flex items-center gap-1">
                 <Car className="w-3 h-3" /> Desired car
               </p>
-              <p className="text-xs font-extrabold text-[#1C1C1C] mt-0.5">{tour.desiredCar.name}</p>
+              <p className="text-xs font-extrabold text-[#1C1C1C] mt-0.5">
+                {[tour.desiredCar.name, tourCarTypeLabel(tour.desiredCar.name || tour.requiredVehicleType)]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
               <div className="flex flex-wrap gap-1.5 mt-1.5">
                 {tour.desiredCar.specs.filter(Boolean).map((spec) => (
                   <span
@@ -233,6 +214,15 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
               {tour.tripDetails}
             </p>
           )}
+
+          <PosterCard
+            compact
+            selfie={tour.posterSelfie}
+            agencyName={tour.agencyName}
+            personName={tour.posterName}
+            rating={tour.agencyRating}
+            ratingCount={tour.agencyRatingCount}
+          />
 
           <button
             type="button"

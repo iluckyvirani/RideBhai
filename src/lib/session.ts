@@ -54,6 +54,8 @@ export function mapDriver(row: any): DriverProfile | undefined {
     phone: row.phone,
     aadhaarDoc: row.aadhaar_doc,
     selfieDoc: row.selfie_doc,
+    dlNumber: row.dl_number || undefined,
+    dlDoc: row.dl_doc || undefined,
     experienceYears: row.experience_years ?? 0,
     experienceNote: row.experience_note,
     completed: Boolean(row.completed),

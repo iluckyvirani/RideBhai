@@ -69,7 +69,7 @@ export const CreateListingSheet: React.FC<CreateListingSheetProps> = ({
             <span className="block text-xs font-extrabold text-[#1C1C1C]">Post car</span>
             <span className="block text-[11px] text-[#6B6B6B]">
               {carGate.ok
-                ? 'Full-car hire for all India or a route'
+                ? 'Set available from → to. Full-car hire for all India or a route'
                 : carGate.code === 'pending_driver' || carGate.code === 'pending_vehicle'
                   ? 'Disabled until driver and vehicle are verified'
                   : 'Disabled until driver + vehicle are added'}

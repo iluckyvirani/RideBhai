@@ -100,17 +100,17 @@ export const PostCarModal: React.FC<PostCarModalProps> = ({
       return;
     }
     if (!bookingDate || !bookingTime) {
-      setError('Enter booking date and time.');
+      setError('Enter available from date and time.');
       return;
     }
     if (!availableTillDate || !availableTillTime) {
-      setError('Enter available till date and time.');
+      setError('Enter available to date and time.');
       return;
     }
     const bookingAt = new Date(`${bookingDate}T${bookingTime}`);
     const tillAt = new Date(`${availableTillDate}T${availableTillTime}`);
     if (tillAt.getTime() < bookingAt.getTime()) {
-      setError('Available till must be on or after the booking date and time.');
+      setError('Available to must be after available from.');
       return;
     }
     try {
@@ -151,8 +151,7 @@ export const PostCarModal: React.FC<PostCarModalProps> = ({
         </div>
         <form onSubmit={handleSubmit} className="p-5 space-y-3 overflow-y-auto">
           <p className="text-[11px] text-[#6B6B6B]">
-            Customers book in the app with Message direct or Deal with Ride Bhai.
-            You pay only for a posting package. Posted date and time are saved automatically.
+            Set when the car is available, from start date/time to end date/time.
           </p>
           {!driverGate.ok && (
             <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 space-y-2">
@@ -294,7 +293,7 @@ export const PostCarModal: React.FC<PostCarModalProps> = ({
 
           <div className="grid grid-cols-2 gap-2">
             <label className="block text-[10px] font-extrabold uppercase text-[#6B6B6B]">
-              Booking date *
+              Available from date *
               <input
                 type="date"
                 value={bookingDate}
@@ -303,7 +302,7 @@ export const PostCarModal: React.FC<PostCarModalProps> = ({
               />
             </label>
             <label className="block text-[10px] font-extrabold uppercase text-[#6B6B6B]">
-              Booking time *
+              Available from time *
               <input
                 type="time"
                 value={bookingTime}
@@ -312,7 +311,7 @@ export const PostCarModal: React.FC<PostCarModalProps> = ({
               />
             </label>
             <label className="block text-[10px] font-extrabold uppercase text-[#6B6B6B]">
-              Available till date *
+              Available to date *
               <input
                 type="date"
                 value={availableTillDate}
@@ -321,7 +320,7 @@ export const PostCarModal: React.FC<PostCarModalProps> = ({
               />
             </label>
             <label className="block text-[10px] font-extrabold uppercase text-[#6B6B6B]">
-              Available till time *
+              Available to time *
               <input
                 type="time"
                 value={availableTillTime}

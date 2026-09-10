@@ -107,6 +107,21 @@ export const AllCarListingsView: React.FC = () => {
                 </>
               )}
             </p>
+            {(c.bookingDate || c.availableTillDate) && (
+              <p className="text-[11px] font-bold text-[#1C1C1C]">
+                Available {(c.bookingDate || '').split('-').reverse().join('/')}
+                {c.bookingTime ? ` ${c.bookingTime}` : ''}
+                {' → '}
+                {(c.availableTillDate || '').split('-').reverse().join('/')}
+                {c.availableTillTime ? ` ${c.availableTillTime}` : ''}
+              </p>
+            )}
+            {(c.postedDate || c.postedTime) && (
+              <p className="text-[11px] text-[#8A8478]">
+                Posted {(c.postedDate || '').split('-').reverse().join('/')}
+                {c.postedTime ? ` · ${c.postedTime}` : ''}
+              </p>
+            )}
             <p className="text-[11px] text-[#6B6B6B] flex items-center gap-1">
               <Phone className="w-3 h-3" /> {c.partnerPhone}
             </p>

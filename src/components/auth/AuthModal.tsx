@@ -184,7 +184,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {title || 'Login with OTP'}
               </h3>
               <p className="text-xs text-[#6B6B6B]">
-                {subtitle || 'One account. After OTP, complete your profile to enter the app.'}
+                {subtitle || 'One account. After OTP, complete your profile to browse. Book and post after KYC + a plan.'}
               </p>
             </div>
           </div>
@@ -202,7 +202,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             <form onSubmit={handleSendOtp} className="space-y-4">
               <div>
                 <label className="text-[11px] font-bold text-[#6B6B6B] uppercase tracking-wider block mb-1.5">
-                  10-Digit Mobile Number (WhatsApp Connected) *
+                  10-digit mobile number *
                 </label>
                 <div className="relative flex items-center">
                   <div className="absolute left-3.5 flex items-center gap-1 text-xs font-bold text-[#1C1C1C] border-r border-[#EBE5D8] pr-2.5">
@@ -215,7 +215,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
                     placeholder="98765 43210"
-                    className="w-full text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE] pl-20 pr-3.5 py-3 rounded-2xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24] tracking-wider"
+                    className="w-full text-base font-bold text-[#1C1C1C] bg-[#FAF6EE] pl-20 pr-3.5 py-4 rounded-2xl border border-[#EBE5D8] focus:outline-none focus:border-[#F15A24] tracking-wider"
                     required
                     autoFocus
                   />
@@ -231,10 +231,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full py-3.5 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-xs rounded-2xl shadow-lg hover:shadow-xl active-press flex items-center justify-center gap-2"
+                  className="w-full py-4 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-base rounded-2xl shadow-lg hover:shadow-xl active-press flex items-center justify-center gap-2"
                 >
-                  <span>Get 4-Digit OTP</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>Get 4-digit OTP</span>
+                  <ArrowRight className="w-5 h-5" />
                 </button>
               </div>
 
@@ -286,7 +286,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <button
                   type="submit"
                   disabled={isVerifying}
-                  className="w-full py-3.5 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-xs rounded-2xl shadow-lg hover:shadow-xl active-press flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-4 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-base rounded-2xl shadow-lg hover:shadow-xl active-press flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isVerifying ? (
                     <>

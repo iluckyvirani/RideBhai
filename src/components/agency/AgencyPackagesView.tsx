@@ -104,7 +104,7 @@ export const AgencyPackagesView: React.FC = () => {
   return (
     <div className="space-y-4 pb-24 animate-fade-in">
       <div>
-        <h2 className="text-lg font-extrabold text-[#1C1C1C]">Posting plans</h2>
+        <h2 className="text-lg font-extrabold text-[#1C1C1C]">Plans</h2>
         <p className="text-[11px] text-[#6B6B6B]">
           After admin verifies your profile, buy a plan to book, chat, and post. This is the only in-app payment.
         </p>

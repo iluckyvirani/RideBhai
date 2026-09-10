@@ -1,8 +1,9 @@
 import React from 'react';
-import { MapPin, Calendar, Clock, Car, IndianRupee } from 'lucide-react';
+import { MapPin, Calendar, Car, IndianRupee } from 'lucide-react';
 import { AgencyTripPost } from '../../types';
 import { DealChoiceActions } from './ContactActions';
 import { TourPostedExtras } from './TourPostedExtras';
+import { PosterCard } from './PosterCard';
 
 function formatStamp(date?: string, time?: string) {
   if (!date && !time) return '';
@@ -48,12 +49,6 @@ export const TourDetailsView: React.FC<TourDetailsViewProps> = ({
       </div>
 
       <div className="space-y-1 text-[11px] text-[#6B6B6B] px-1">
-        {(tour.postedDate || tour.postedTime) && (
-          <p className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            Posted {formatStamp(tour.postedDate, tour.postedTime)}
-          </p>
-        )}
         {(tour.bookingDate || tour.startDate || tour.bookingTime || tour.pickupTime) && (
           <p className="flex items-center gap-1 font-bold text-[#1C1C1C]">
             <Calendar className="w-3 h-3 text-[#F15A24]" />
@@ -125,6 +120,14 @@ export const TourDetailsView: React.FC<TourDetailsViewProps> = ({
       )}
 
       <TourPostedExtras tour={tour} />
+
+      <PosterCard
+        selfie={tour.posterSelfie}
+        agencyName={tour.agencyName}
+        personName={tour.posterName}
+        rating={tour.agencyRating}
+        ratingCount={tour.agencyRatingCount}
+      />
 
       <div className="sticky bottom-0 -mx-4 px-4 pt-3 pb-1 bg-[#FAF6EE]">
         {isOwn ? (

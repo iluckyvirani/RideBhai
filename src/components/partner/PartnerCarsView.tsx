@@ -5,11 +5,14 @@ import { Vehicle } from '../../types';
 import { FilePick } from '../common/FilePick';
 import { isPreviewableImage } from '../../lib/upload';
 import { VehicleDetailsView } from './VehicleDetailsView';
+import { CarMakeModelSelect } from '../common/CarMakeModelSelect';
+import { findTaxiCar, type CarBodyType } from '../../data/indiaTaxiCars';
 
 export const PartnerCarsView: React.FC = () => {
   const { partnerCars, addPartnerCar, currentUser } = useAppStore();
   const [open, setOpen] = useState(false);
 
+  const [bodyType, setBodyType] = useState<CarBodyType | ''>('');
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
   const [year, setYear] = useState('');
@@ -29,8 +32,8 @@ export const PartnerCarsView: React.FC = () => {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
-    if (!plate.trim() || !make.trim() || !model.trim()) {
-      setCarError('Make, model and number plate are required.');
+    if (!plate.trim() || !make.trim() || !model.trim() || !bodyType) {
+      setCarError('Select car type, make, model and number plate.');
       return;
     }
     if (!rcDocument) {
@@ -57,6 +60,7 @@ export const PartnerCarsView: React.FC = () => {
       setSuccess('');
       await addPartnerCar(car);
       setOpen(false);
+      setBodyType('');
       setMake('');
       setModel('');
       setYear('');
@@ -103,19 +107,19 @@ export const PartnerCarsView: React.FC = () => {
 
       {open && (
         <form onSubmit={handleAdd} className="p-4 rounded-3xl bg-[#FAF6EE] border border-[#EBE5D8] space-y-2.5">
+          <CarMakeModelSelect
+            bodyType={bodyType}
+            make={make}
+            model={model}
+            onBodyType={setBodyType}
+            onMake={setMake}
+            onModel={(next) => {
+              setModel(next);
+              const match = findTaxiCar(make, next);
+              if (match && !seats) setSeats(String(match.seats));
+            }}
+          />
           <div className="grid grid-cols-2 gap-2">
-            <input
-              value={make}
-              onChange={(e) => setMake(e.target.value)}
-              placeholder="Make *"
-              className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
-            />
-            <input
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder="Model *"
-              className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
-            />
             <input
               value={year}
               onChange={(e) => setYear(e.target.value)}
@@ -143,12 +147,18 @@ export const PartnerCarsView: React.FC = () => {
               placeholder="Seats"
               className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
             />
-            <input
+            <select
               value={fuelType}
               onChange={(e) => setFuelType(e.target.value)}
-              placeholder="Fuel type"
               className="px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
-            />
+            >
+              <option value="">Fuel type</option>
+              <option value="petrol">Petrol</option>
+              <option value="diesel">Diesel</option>
+              <option value="cng">CNG</option>
+              <option value="electric">Electric</option>
+              <option value="hybrid">Hybrid</option>
+            </select>
             <input
               value={rcNumber}
               onChange={(e) => setRcNumber(e.target.value)}

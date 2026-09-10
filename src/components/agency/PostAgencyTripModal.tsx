@@ -13,6 +13,8 @@ import {
   PackageCheck
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { CarMakeModelSelect } from '../common/CarMakeModelSelect';
+import { carDisplayName, type CarBodyType } from '../../data/indiaTaxiCars';
 
 interface PostAgencyTripModalProps {
   isOpen: boolean;
@@ -38,23 +40,18 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
     getAgencyActiveSubscription,
   } = useAppStore();
 
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const nowTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-
   const [fromCity, setFromCity] = useState('');
   const [toCity, setToCity] = useState('');
   const [tripSide, setTripSide] = useState<'one_side' | 'two_side'>('one_side');
-  const [postedDate, setPostedDate] = useState(today);
-  const [postedTime, setPostedTime] = useState(nowTime);
   const [passengers, setPassengers] = useState('');
   const [duration, setDuration] = useState('');
   const [startDate, setStartDate] = useState('');
   const [pickupTime, setPickupTime] = useState('');
   const [pickupLocation, setPickupLocation] = useState('');
   const [dropLocation, setDropLocation] = useState('');
-  const [desiredCarName, setDesiredCarName] = useState('');
+  const [desiredBodyType, setDesiredBodyType] = useState<CarBodyType | ''>('');
+  const [desiredMake, setDesiredMake] = useState('');
+  const [desiredModel, setDesiredModel] = useState('');
   const [desiredSpec1, setDesiredSpec1] = useState('');
   const [desiredSpec2, setDesiredSpec2] = useState('');
   const [desiredSpec3, setDesiredSpec3] = useState('');
@@ -93,10 +90,6 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
       setErrorMsg('Please enter both pickup and destination cities.');
       return;
     }
-    if (!postedDate || !postedTime) {
-      setErrorMsg('Please enter posting date and time.');
-      return;
-    }
     if (!startDate || !pickupTime) {
       setErrorMsg('Please enter actual booking date and time.');
       return;
@@ -105,10 +98,11 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
       setErrorMsg('Please select passengers.');
       return;
     }
-    if (!desiredCarName.trim()) {
-      setErrorMsg('Please type the required car.');
+    if (!desiredBodyType || !desiredMake.trim() || !desiredModel.trim()) {
+      setErrorMsg('Select required car type, make and model.');
       return;
     }
+    const desiredCarName = carDisplayName(desiredMake, desiredModel);
     if (Number(totalCustomerPrice) <= 0) {
       setErrorMsg('Please enter a valid total booking price.');
       return;
@@ -129,8 +123,6 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
         fromCity,
         toCity,
         tripSide,
-        postedDate,
-        postedTime,
         bookingDate: startDate,
         bookingTime: pickupTime,
         passengers: Number(passengers),
@@ -359,39 +351,6 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Posting date *
-                  </label>
-                  <div className="relative">
-                    <Calendar className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
-                    <input
-                      type="date"
-                      value={postedDate}
-                      onChange={(e) => setPostedDate(e.target.value)}
-                      required
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Posting time *
-                  </label>
-                  <div className="relative">
-                    <Clock className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
-                    <input
-                      type="time"
-                      value={postedTime}
-                      onChange={(e) => setPostedTime(e.target.value)}
-                      required
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* Passengers & Duration */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -472,33 +431,48 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 <label className="block text-[11px] font-extrabold text-[#1C1C1C]">
                   Required Vehicle *
                 </label>
-                <p className="text-[10px] text-[#6B6B6B]">Type the car name plus 2–3 main specifications.</p>
-                <input
-                  value={desiredCarName}
-                  onChange={(e) => setDesiredCarName(e.target.value)}
-                  placeholder="e.g. Innova Crysta"
-                  required
-                  className="w-full px-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold bg-white"
+                <p className="text-[10px] text-[#6B6B6B]">
+                  Select type, make and model. Optional extras below.
+                </p>
+                <CarMakeModelSelect
+                  bodyType={desiredBodyType}
+                  make={desiredMake}
+                  model={desiredModel}
+                  onBodyType={setDesiredBodyType}
+                  onMake={setDesiredMake}
+                  onModel={setDesiredModel}
                 />
                 <div className="grid grid-cols-3 gap-2">
-                  <input
+                  <select
                     value={desiredSpec1}
                     onChange={(e) => setDesiredSpec1(e.target.value)}
-                    placeholder="Spec 1"
                     className="px-2.5 py-2 rounded-xl border border-[#EBE5D8] text-[11px] font-bold bg-white"
-                  />
-                  <input
+                  >
+                    <option value="">Fuel</option>
+                    <option value="Petrol">Petrol</option>
+                    <option value="Diesel">Diesel</option>
+                    <option value="CNG">CNG</option>
+                    <option value="Electric">Electric</option>
+                    <option value="Hybrid">Hybrid</option>
+                  </select>
+                  <select
                     value={desiredSpec2}
                     onChange={(e) => setDesiredSpec2(e.target.value)}
-                    placeholder="Spec 2"
                     className="px-2.5 py-2 rounded-xl border border-[#EBE5D8] text-[11px] font-bold bg-white"
-                  />
-                  <input
+                  >
+                    <option value="">AC</option>
+                    <option value="AC">AC</option>
+                    <option value="Non-AC">Non-AC</option>
+                  </select>
+                  <select
                     value={desiredSpec3}
                     onChange={(e) => setDesiredSpec3(e.target.value)}
-                    placeholder="Spec 3"
                     className="px-2.5 py-2 rounded-xl border border-[#EBE5D8] text-[11px] font-bold bg-white"
-                  />
+                  >
+                    <option value="">Transmission</option>
+                    <option value="Manual">Manual</option>
+                    <option value="Automatic">Automatic</option>
+                  </select>
                 </div>
               </div>
 

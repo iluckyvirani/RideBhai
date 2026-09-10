@@ -19,6 +19,9 @@ export type Deal = {
   toCity?: string;
   threadId?: string;
   createdAt: string;
+  buyerConfirmedAt?: string;
+  sellerConfirmedAt?: string;
+  myRating?: number;
 };
 
 export type ChatThread = {
@@ -39,6 +42,9 @@ export type ChatThread = {
   buyerPhone?: string;
   sellerPhone?: string;
   price?: number;
+  buyerConfirmedAt?: string;
+  sellerConfirmedAt?: string;
+  myRating?: number;
 };
 
 export type ThreadMessage = {
@@ -69,6 +75,9 @@ export function mapDeal(row: any): Deal {
     toCity: row.to_city || undefined,
     threadId: row.thread_id || undefined,
     createdAt: row.created_at || new Date().toISOString(),
+    buyerConfirmedAt: row.buyer_confirmed_at || undefined,
+    sellerConfirmedAt: row.seller_confirmed_at || undefined,
+    myRating: row.my_rating != null ? Number(row.my_rating) : undefined,
   };
 }
 
@@ -91,6 +100,9 @@ export function mapThread(row: any): ChatThread {
     buyerPhone: row.buyer_phone || undefined,
     sellerPhone: row.seller_phone || undefined,
     price: row.price != null ? Number(row.price) : undefined,
+    buyerConfirmedAt: row.buyer_confirmed_at || undefined,
+    sellerConfirmedAt: row.seller_confirmed_at || undefined,
+    myRating: row.my_rating != null ? Number(row.my_rating) : undefined,
   };
 }
 

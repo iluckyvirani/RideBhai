@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MessageCircle, Send } from 'lucide-react';
+import { CheckCircle2, Handshake, MessageCircle, Send } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { api } from '../../lib/api';
 import { mapMessage, type ThreadMessage } from '../../lib/deals';
 import { chatClock, chatListTime, withDaySeparators } from '../../lib/chatTime';
 import { ChatListSkeleton, ChatThreadSkeleton } from './SkeletonLoader';
+import { RateStars } from './RateStars';
 
 export const ChatInboxView: React.FC<{
   onNeedUnlock?: (code?: 'incomplete' | 'unverified' | 'no_package') => void;
@@ -12,7 +13,8 @@ export const ChatInboxView: React.FC<{
   onCloseThread?: () => void;
   onOpenThread?: (id: string) => void;
 }> = ({ onNeedUnlock, initialThreadId, onCloseThread, onOpenThread }) => {
-  const { chatThreads, currentUser, canBook, sendThreadMessage, refreshDeals } = useAppStore();
+  const { chatThreads, currentUser, canBook, sendThreadMessage, refreshDeals, confirmDeal, rateDeal } =
+    useAppStore();
   const gate = canBook();
   const [activeId, setActiveId] = useState<string | null>(initialThreadId || null);
   const [text, setText] = useState('');
@@ -20,6 +22,8 @@ export const ChatInboxView: React.FC<{
   const [error, setError] = useState('');
   const [listLoading, setListLoading] = useState(true);
   const [threadLoading, setThreadLoading] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [ratingBusy, setRatingBusy] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -89,6 +93,41 @@ export const ChatInboxView: React.FC<{
     await sendBody(text);
   };
 
+  const iAmBuyer = Boolean(active && myId && active.buyerId === myId);
+  const iConfirmed = Boolean(
+    active && (iAmBuyer ? active.buyerConfirmedAt : active.sellerConfirmedAt)
+  );
+  const theyConfirmed = Boolean(
+    active && (iAmBuyer ? active.sellerConfirmedAt : active.buyerConfirmedAt)
+  );
+  const dealClosed = active?.dealStatus === 'success';
+  const dealCancelled = active?.dealStatus === 'cancelled';
+
+  const closeDeal = async () => {
+    if (!active?.dealId || closing || iConfirmed || dealClosed) return;
+    setClosing(true);
+    try {
+      await confirmDeal(active.dealId);
+      await loadMessages(active.id);
+    } catch (err: any) {
+      setError(err?.message || 'Could not close deal.');
+    } finally {
+      setClosing(false);
+    }
+  };
+
+  const pickRating = async (stars: number) => {
+    if (!active?.dealId || ratingBusy) return;
+    setRatingBusy(true);
+    try {
+      await rateDeal(active.dealId, stars);
+    } catch (err: any) {
+      setError(err?.message || 'Could not save rating.');
+    } finally {
+      setRatingBusy(false);
+    }
+  };
+
   const openThread = (id: string) => {
     setActiveId(id);
     onOpenThread?.(id);
@@ -99,13 +138,53 @@ export const ChatInboxView: React.FC<{
     return (
       <div className="flex flex-col h-full min-h-0 bg-[#FAF6EE]">
         <div className="px-3 pt-2 pb-2 flex-shrink-0">
-          <div className="p-3 rounded-2xl bg-white border border-[#EBE5D8]">
-            <p className="text-xs font-extrabold text-[#1C1C1C] leading-snug">{active?.title || 'Chat'}</p>
-            <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
-              {otherName}
-              {active?.channel === 'ridebhai' ? ' · Inquiry' : ' · Direct'}
-              {active?.dealStatus ? ` · ${active.dealStatus}` : ''}
-            </p>
+          <div className="p-3 rounded-2xl bg-white border border-[#EBE5D8] space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs font-extrabold text-[#1C1C1C] leading-snug">{active?.title || 'Chat'}</p>
+                <p className="text-[11px] text-[#6B6B6B] mt-0.5 truncate">
+                  {otherName}
+                  {active?.channel === 'ridebhai' ? ' · Inquiry' : ' · Direct'}
+                  {dealClosed ? ' · Closed' : dealCancelled ? ' · Cancelled' : active?.dealStatus ? ` · ${active.dealStatus}` : ''}
+                </p>
+              </div>
+              {active?.dealId && !dealCancelled && !dealClosed && (
+                <button
+                  type="button"
+                  onClick={closeDeal}
+                  disabled={closing || iConfirmed || !gate.allowed}
+                  className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#F15A24] text-white text-[10px] font-extrabold disabled:opacity-50"
+                >
+                  <Handshake className="w-3.5 h-3.5" />
+                  {closing ? 'Closing…' : iConfirmed ? 'Waiting' : 'Close deal'}
+                </button>
+              )}
+            </div>
+            {iConfirmed && !dealClosed && !dealCancelled && (
+              <p className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-2 py-1">
+                You closed. Waiting for {otherName} to confirm.
+              </p>
+            )}
+            {theyConfirmed && !iConfirmed && !dealClosed && (
+              <p className="text-[10px] font-bold text-[#F15A24] bg-[#FFF0EB] border border-[#FFD8CB] rounded-xl px-2 py-1">
+                {otherName} tapped Close deal. Confirm to finish.
+              </p>
+            )}
+            {dealClosed && (
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#F2ECE1]">
+                <p className="text-[10px] font-extrabold text-[#00A86B] inline-flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Deal closed
+                </p>
+                {active?.myRating ? (
+                  <RateStars value={active.myRating} disabled size="sm" />
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-[#6B6B6B]">Rate {otherName}</span>
+                    <RateStars onPick={pickRating} disabled={ratingBusy} size="sm" />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -237,6 +316,7 @@ export const ChatInboxView: React.FC<{
               </div>
               <p className="text-[10px] font-bold text-[#8A8478] truncate">
                 {isRideBhai ? `Ride Bhai · ${thread.title}` : thread.title}
+                {thread.dealStatus === 'success' ? ' · Closed' : ''}
               </p>
               <div className="flex items-center justify-between gap-2 mt-0.5">
                 <p

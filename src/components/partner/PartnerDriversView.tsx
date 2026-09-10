@@ -20,6 +20,8 @@ export const PartnerDriversView: React.FC = () => {
   const [dPhone, setDPhone] = useState('');
   const [dAadhaar, setDAadhaar] = useState('');
   const [dSelfie, setDSelfie] = useState('');
+  const [dDlNumber, setDDlNumber] = useState('');
+  const [dDlDoc, setDDlDoc] = useState('');
   const [dExp, setDExp] = useState('');
   const [dNote, setDNote] = useState('');
 
@@ -29,6 +31,8 @@ export const PartnerDriversView: React.FC = () => {
     setDPhone('');
     setDAadhaar('');
     setDSelfie('');
+    setDDlNumber('');
+    setDDlDoc('');
     setDExp('');
     setDNote('');
     setDriverError('');
@@ -37,8 +41,20 @@ export const PartnerDriversView: React.FC = () => {
   const saveDriver = async (e: React.FormEvent) => {
     e.preventDefault();
     if (saving) return;
-    if (!dName.trim() || !dEmail.trim() || !dPhone.trim()) {
-      setDriverError('Driver name, email and number are required.');
+    if (!dName.trim() || !dPhone.trim()) {
+      setDriverError('Driver name and number are required.');
+      return;
+    }
+    if (dEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dEmail.trim())) {
+      setDriverError('Enter a valid email or leave it blank.');
+      return;
+    }
+    if (!dDlNumber.replace(/\s+/g, '').trim() || dDlNumber.replace(/\s+/g, '').length < 8) {
+      setDriverError('Enter a valid driving licence number.');
+      return;
+    }
+    if (!dDlDoc) {
+      setDriverError('Upload the driving licence.');
       return;
     }
     if (!dAadhaar || !dSelfie) {
@@ -59,6 +75,8 @@ export const PartnerDriversView: React.FC = () => {
         phone: dPhone.trim(),
         aadhaarDoc: dAadhaar,
         selfieDoc: dSelfie,
+        dlNumber: dDlNumber.replace(/\s+/g, '').toUpperCase(),
+        dlDoc: dDlDoc,
         experienceYears: Number(dExp),
         experienceNote: dNote.trim() || undefined,
         completed: true,
@@ -111,7 +129,7 @@ export const PartnerDriversView: React.FC = () => {
             type="email"
             value={dEmail}
             onChange={(e) => setDEmail(e.target.value)}
-            placeholder="Driver email *"
+            placeholder="Driver email"
             className="w-full px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
           />
           <input
@@ -134,6 +152,13 @@ export const PartnerDriversView: React.FC = () => {
             placeholder="Experience note (optional)"
             className="w-full px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold"
           />
+          <input
+            value={dDlNumber}
+            onChange={(e) => setDDlNumber(e.target.value.toUpperCase())}
+            placeholder="DL number *"
+            className="w-full px-3 py-2 rounded-xl bg-white border border-[#EBE5D8] text-xs font-bold tracking-wide"
+          />
+          <FilePick label="Driving licence *" value={dDlDoc} capture="environment" onChange={(url) => setDDlDoc(url)} />
           <FilePick label="Driver Aadhaar *" value={dAadhaar} capture="environment" onChange={(url) => setDAadhaar(url)} />
           <FilePick label="Driver selfie *" value={dSelfie} capture="user" onChange={(url) => setDSelfie(url)} />
           {driverError && (
@@ -186,13 +211,23 @@ export const PartnerDriversView: React.FC = () => {
             </span>
           </div>
           <p className="text-[11px] text-[#6B6B6B]">
-            +91 {driver.phone} · {driver.email}
+            +91 {driver.phone}
+            {driver.email ? ` · ${driver.email}` : ''}
           </p>
           <p className="text-[11px] font-bold text-[#1C1C1C]">
             {driver.experienceYears} year{driver.experienceYears === 1 ? '' : 's'} experience
           </p>
-          {(driver.aadhaarDoc || driver.selfieDoc) && (
+          {driver.dlNumber && (
+            <p className="text-[11px] font-bold text-[#1C1C1C]">DL {driver.dlNumber}</p>
+          )}
+          {(driver.aadhaarDoc || driver.selfieDoc || driver.dlDoc) && (
             <div className="flex gap-2">
+              {driver.dlDoc &&
+                (isPreviewableImage(driver.dlDoc) ? (
+                  <img src={driver.dlDoc} alt="DL" className="w-16 h-16 rounded-xl object-cover border border-[#EBE5D8]" />
+                ) : (
+                  <span className="text-[10px] font-extrabold text-[#00A86B]">DL attached</span>
+                ))}
               {driver.aadhaarDoc &&
                 (isPreviewableImage(driver.aadhaarDoc) ? (
                   <img src={driver.aadhaarDoc} alt="Aadhaar" className="w-16 h-16 rounded-xl object-cover border border-[#EBE5D8]" />

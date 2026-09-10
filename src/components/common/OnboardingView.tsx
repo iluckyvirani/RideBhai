@@ -12,21 +12,21 @@ export const OnboardingView: React.FC<OnboardingViewProps> = ({ onComplete }) =>
   const slides = [
     {
       icon: <Car className="w-12 h-12 text-[#F15A24]" />,
-      title: 'Share Rides, Split Costs',
-      subtitle: 'Travel between cities comfortably at 70% cheaper than trains or taxis with verified co-travelers.',
-      badge: 'Smart Mobility',
+      title: 'Full car hire, not seats',
+      subtitle: 'Browse hatchback, sedan, SUV and MUV cars across India. Each car shows when it is available, from start date/time to end.',
+      badge: 'Full car',
     },
     {
       icon: <Shield className="w-12 h-12 text-[#2E9E5B]" />,
-      title: 'Verified & Safe Travel',
-      subtitle: 'Govt ID-verified drivers and riders, SOS emergency contacts, and live boarding OTP verification.',
-      badge: '100% Safe',
+      title: 'Verified, then you book',
+      subtitle: 'OTP login, then name, email, city, Aadhaar and selfie. Browse after profile. Chat and deals unlock after admin KYC plus a plan.',
+      badge: 'One login',
     },
     {
       icon: <Sparkles className="w-12 h-12 text-[#FF8A00]" />,
-      title: 'Driver Boost Packages',
-      subtitle: 'Drivers get instant top ranking and direct rider inquiries with our premier boost subscriptions.',
-      badge: 'Driver Pro',
+      title: 'Chat or Deal with Ride Bhai',
+      subtitle: 'Customers never pay the trip in-app. Message direct or Deal with Ride Bhai. Close together, then rate. Plans are the only in-app payment.',
+      badge: 'Marketplace',
     },
   ];
 

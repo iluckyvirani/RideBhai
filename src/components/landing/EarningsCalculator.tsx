@@ -38,7 +38,7 @@ export const EarningsCalculator: React.FC<EarningsCalculatorProps> = ({ onRegist
             What a <span className="text-gradient">full-car hire</span> can earn
           </h2>
           <p className="text-sm text-[#6B6B6B]">
-            Customers book in chat or Deal with Ride Bhai. You only pay Ride Bhai for a posting package.
+            Customers book in chat or Deal with Ride Bhai. You only pay Ride Bhai for a plan — that unlocks booking, chat and posting.
           </p>
         </div>
 
@@ -115,10 +115,10 @@ export const EarningsCalculator: React.FC<EarningsCalculatorProps> = ({ onRegist
             <button
               type="button"
               onClick={onRegisterDriver}
-              className="w-full mt-6 py-4 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-xs rounded-2xl flex items-center justify-center gap-2"
+              className="w-full mt-6 py-4 bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white font-extrabold text-base rounded-2xl flex items-center justify-center gap-2 shadow-lg"
             >
               Login with OTP
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-5 h-5" />
             </button>
           </div>
         </div>
