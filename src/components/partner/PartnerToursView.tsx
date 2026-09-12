@@ -1,13 +1,14 @@
-import React from 'react';
-import { MapPin, Car, EyeOff, RotateCcw, Trash2, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, Car, EyeOff, RotateCcw, Trash2, Share2 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { AgencyTripPost } from '../../types';
+import { shareTourListing } from '../../lib/share';
 
 interface PartnerToursViewProps {
   onOpenDetails?: (tour: AgencyTripPost) => void;
 }
 
-export const PartnerToursView: React.FC<PartnerToursViewProps> = ({ onOpenDetails }) => {
+export const PartnerToursView: React.FC<PartnerToursViewProps> = () => {
   const { agencyTripPosts, currentUser, updateAgencyTripStatus, deleteAgencyTrip } = useAppStore();
   const myTours = agencyTripPosts.filter((t) => t.agencyId === currentUser?.id);
 
@@ -41,6 +42,12 @@ export const PartnerToursView: React.FC<PartnerToursViewProps> = ({ onOpenDetail
     }
   };
 
+  const [expandedTourIds, setExpandedTourIds] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (tourId: string) => {
+    setExpandedTourIds((prev) => ({ ...prev, [tourId]: !prev[tourId] }));
+  };
+
   return (
     <div className="space-y-3">
       <div>
@@ -59,7 +66,7 @@ export const PartnerToursView: React.FC<PartnerToursViewProps> = ({ onOpenDetail
       {myTours.map((tour) => {
         const isLive = tour.status === 'active';
         return (
-          <div key={tour.id} className="p-3 rounded-2xl bg-white border border-[#EBE5D8] space-y-2">
+          <div key={tour.id} className="p-3 rounded-2xl bg-white border border-[#EBE5D8] space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1">
@@ -73,22 +80,65 @@ export const PartnerToursView: React.FC<PartnerToursViewProps> = ({ onOpenDetail
                   Booking {(tour.bookingDate || tour.startDate || '').split('-').reverse().join('/')}
                   {tour.bookingTime || tour.pickupTime ? ` · ${tour.bookingTime || tour.pickupTime}` : ''}
                 </p>
-                <p className="text-[11px] font-bold text-[#1C1C1C] mt-1">
-                  Total ₹{tour.totalCustomerPrice.toLocaleString('en-IN')} · Agency ₹
-                  {tour.agencyCommission.toLocaleString('en-IN')} · Car ₹
-                  {tour.driverNetPayout.toLocaleString('en-IN')}
-                </p>
+                {tour.totalCustomerPrice > 0 ? (
+                  <p className="text-[11px] font-bold text-[#1C1C1C] mt-1">
+                    Total ₹{tour.totalCustomerPrice.toLocaleString('en-IN')} · Agency ₹
+                    {tour.agencyCommission.toLocaleString('en-IN')} · Car ₹
+                    {tour.driverNetPayout.toLocaleString('en-IN')}
+                  </p>
+                ) : (
+                  <p className="text-[11px] font-extrabold text-[#F15A24] mt-1 flex items-center gap-1">
+                    <span>💬 Quotation Mode</span>
+                    <span className="text-[10px] text-[#6B6B6B] font-semibold">· Open for driver quotations</span>
+                  </p>
+                )}
               </div>
-              <span
-                className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                  isLive
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-[#FAF6EE] text-[#6B6B6B] border border-[#EBE5D8]'
-                }`}
-              >
-                {isLive ? 'Showing' : 'Closed'}
-              </span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => shareTourListing(tour)}
+                  className="p-1.5 rounded-lg bg-[#FAF6EE] hover:bg-[#F15A24]/10 text-[#6B6B6B] hover:text-[#F15A24] border border-[#EBE5D8] transition-colors flex items-center gap-1 text-[10px] font-bold active-press"
+                  title="Share Booking"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-[#F15A24]" />
+                  <span>Share</span>
+                </button>
+                <span
+                  className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                    isLive
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-[#FAF6EE] text-[#6B6B6B] border border-[#EBE5D8]'
+                  }`}
+                >
+                  {isLive ? 'Showing' : 'Closed'}
+                </span>
+              </div>
             </div>
+
+            {/* Full Travel Details & Itinerary - Above Desired Car */}
+            {tour.tripDetails && (
+              <div className="p-2.5 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8]">
+                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#8A8478]">
+                  Full Travel Details & Itinerary
+                </p>
+                <p
+                  className={`text-xs font-semibold text-[#1C1C1C] mt-1 whitespace-pre-line leading-relaxed ${
+                    expandedTourIds[tour.id] ? '' : 'line-clamp-2'
+                  }`}
+                >
+                  {tour.tripDetails}
+                </p>
+                {tour.tripDetails.length > 80 && (
+                  <button
+                    type="button"
+                    onClick={() => toggleExpand(tour.id)}
+                    className="mt-1 text-[11px] font-extrabold text-[#F15A24] hover:underline"
+                  >
+                    {expandedTourIds[tour.id] ? 'View less' : 'View more'}
+                  </button>
+                )}
+              </div>
+            )}
 
             {tour.desiredCar?.name && (
               <p className="text-[11px] font-bold text-[#1C1C1C] flex items-center gap-1">
@@ -97,15 +147,6 @@ export const PartnerToursView: React.FC<PartnerToursViewProps> = ({ onOpenDetail
                 {tour.desiredCar.specs?.length ? ` · ${tour.desiredCar.specs.filter(Boolean).join(', ')}` : ''}
               </p>
             )}
-
-            <button
-              type="button"
-              onClick={() => onOpenDetails?.(tour)}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-[11px] font-extrabold text-[#F15A24]"
-            >
-              View details
-              <ChevronRight className="w-4 h-4" />
-            </button>
 
             <div className="flex gap-2">
             {isLive ? (

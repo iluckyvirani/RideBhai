@@ -18,10 +18,12 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  FileText
+  FileText,
+  Share2
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { AgencyTripPost } from '../../types';
+import { shareTourListing } from '../../lib/share';
 
 export const AgencyToursFeed: React.FC = () => {
   const {
@@ -48,7 +50,10 @@ export const AgencyToursFeed: React.FC = () => {
 
   const handleWhatsAppContact = (post: AgencyTripPost) => {
     const vehicleText = currentDriver.vehicle ? `${currentDriver.vehicle.make} ${currentDriver.vehicle.model} (${currentDriver.vehicle.plate})` : 'Commercial Sedan';
-    const message = `Namaste ${post.agencyName}, I am ${currentDriver.name}, a verified driver on Ride Bhai (${vehicleText}).\n\nI want to take your Tour Booking Lead:\n📍 Route: ${post.fromCity} to ${post.toCity}\n👥 Members: ${post.passengers} Pax\n⏱️ Duration: ${post.duration}\n📅 Date: ${post.startDate}\n💰 Net Driver Payout: ₹${post.driverNetPayout}\n\nPlease confirm pickup location and customer details.`;
+    const isQuote = Number(post.totalCustomerPrice || 0) <= 0;
+    const message = isQuote
+      ? `Namaste ${post.agencyName}, I am ${currentDriver.name}, a verified driver on Ride Bhai (${vehicleText}).\n\nI am sending my quotation for your Tour Booking Lead:\n📍 Route: ${post.fromCity} to ${post.toCity}\n👥 Members: ${post.passengers} Pax\n⏱️ Duration: ${post.duration || '—'}\n📅 Date: ${post.startDate || post.bookingDate}\n\nPlease share your required details so I can confirm my best rate.`
+      : `Namaste ${post.agencyName}, I am ${currentDriver.name}, a verified driver on Ride Bhai (${vehicleText}).\n\nI want to take your Tour Booking Lead:\n📍 Route: ${post.fromCity} to ${post.toCity}\n👥 Members: ${post.passengers} Pax\n⏱️ Duration: ${post.duration}\n📅 Date: ${post.startDate}\n💰 Net Driver Payout: ₹${post.driverNetPayout}\n\nPlease confirm pickup location and customer details.`;
 
     const cleanNumber = post.whatsappNumber || post.agencyPhone.replace(/[^0-9]/g, '');
     const waUrl = `https://api.whatsapp.com/send?phone=${cleanNumber}&text=${encodeURIComponent(message)}`;
@@ -215,21 +220,6 @@ export const AgencyToursFeed: React.FC = () => {
                       </span>
                     </div>
                   </div>
-
-                  {/* Highlights pills */}
-                  {post.routeHighlights && post.routeHighlights.length > 0 && (
-                    <div className="flex items-center gap-1.5 flex-wrap mt-2 pt-2 border-t border-[#EBE5D8]/60 text-[10px] text-[#6B6B6B]">
-                      <span className="font-bold text-[#1C1C1C]">Sightseeing:</span>
-                      {post.routeHighlights.map((hl, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-white px-2 py-0.5 rounded-md border border-[#EBE5D8] font-medium"
-                        >
-                          {hl}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 {/* Trip Specs (Pax, Vehicle, Date) */}
@@ -259,23 +249,44 @@ export const AgencyToursFeed: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Pricing & Earnings Highlight (Total Price - Commission = Driver Net) */}
-                <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-emerald-50/50 to-teal-50 border border-emerald-200 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-emerald-800 block">
-                      Client Total: ₹{post.totalCustomerPrice} • Comm: ₹{post.agencyCommission}
-                    </span>
-                    <span className="text-xs font-bold text-[#1C1C1C]">
-                      Your Net Driver Earning:
-                    </span>
-                  </div>
+                {/* Pricing & Earnings Highlight / Quotation Mode */}
+                {post.totalCustomerPrice > 0 ? (
+                  <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-emerald-50/50 to-teal-50 border border-emerald-200 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-emerald-800 block">
+                        Client Total: ₹{post.totalCustomerPrice} • Comm: ₹{post.agencyCommission}
+                      </span>
+                      <span className="text-xs font-bold text-[#1C1C1C]">
+                        Your Net Driver Earning:
+                      </span>
+                    </div>
 
-                  <div className="text-right">
-                    <span className="text-base font-black text-[#00A86B]">
-                      ₹{post.driverNetPayout.toLocaleString()}
+                    <div className="text-right">
+                      <span className="text-base font-black text-[#00A86B]">
+                        ₹{post.driverNetPayout.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#F15A24] to-[#FF7A45] flex items-center justify-center text-white text-xs shadow-xs">
+                        💬
+                      </span>
+                      <div>
+                        <span className="text-[9px] font-extrabold uppercase text-[#F15A24] block">
+                          Quotation Invited
+                        </span>
+                        <span className="text-xs font-bold text-[#1C1C1C]">
+                          Send your best quote to agency
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#F15A24] border border-orange-200">
+                      Open for Quotes
                     </span>
                   </div>
-                </div>
+                )}
 
                 {/* Itinerary & Full Details Expandable Section */}
                 <div
@@ -313,14 +324,8 @@ export const AgencyToursFeed: React.FC = () => {
                   </p>
 
                   {/* Extended Points when Expanded */}
-                  {expandedPostId === post.id && (
+                  {expandedPostId === post.id && (post.pickupLocation || post.dropLocation) && (
                     <div className="pt-2.5 mt-2 border-t border-zinc-200/60 space-y-2.5 text-[11px] animate-fade-in">
-                      {post.tourType && (
-                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#FFF0EB] text-[#F15A24] font-bold text-[10px] border border-[#FFD8CB]">
-                          <span>🏷️ {post.tourType}</span>
-                        </div>
-                      )}
-
                       {post.pickupLocation && (
                         <div className="flex items-start gap-1.5 text-[#6B6B6B]">
                           <MapPin className="w-3.5 h-3.5 text-[#F15A24] flex-shrink-0 mt-0.5" />
@@ -336,67 +341,6 @@ export const AgencyToursFeed: React.FC = () => {
                           <span>
                             <strong>Drop Point:</strong> {post.dropLocation}
                           </span>
-                        </div>
-                      )}
-
-                      {/* Specs Grid */}
-                      <div className="grid grid-cols-2 gap-2 pt-1 text-[10px]">
-                        {post.tollTaxOption && (
-                          <div className="p-2 rounded-xl bg-white border border-[#EBE5D8]">
-                            <span className="text-[#6B6B6B] block">Tolls & Taxes</span>
-                            <strong className="text-[#1C1C1C]">{post.tollTaxOption}</strong>
-                          </div>
-                        )}
-
-                        {post.kmLimit && (
-                          <div className="p-2 rounded-xl bg-white border border-[#EBE5D8]">
-                            <span className="text-[#6B6B6B] block">Km Package</span>
-                            <strong className="text-[#1C1C1C]">{post.kmLimit}</strong>
-                          </div>
-                        )}
-
-                        {post.driverNightAllowance && (
-                          <div className="p-2 rounded-xl bg-white border border-[#EBE5D8]">
-                            <span className="text-[#6B6B6B] block">Night Stay Allowance</span>
-                            <strong className="text-[#00A86B]">{post.driverNightAllowance}</strong>
-                          </div>
-                        )}
-
-                        {post.luggageCapacity && (
-                          <div className="p-2 rounded-xl bg-white border border-[#EBE5D8]">
-                            <span className="text-[#6B6B6B] block">Luggage</span>
-                            <strong className="text-[#1C1C1C]">{post.luggageCapacity}</strong>
-                          </div>
-                        )}
-                      </div>
-
-                      {post.driverPreferences && (
-                        <div className="p-2 rounded-xl bg-amber-50/60 border border-amber-200/60 text-amber-900 text-[10px]">
-                          <strong>Driver Rules:</strong> {post.driverPreferences}
-                        </div>
-                      )}
-
-                      {post.paymentTerms && (
-                        <div className="p-2 rounded-xl bg-emerald-50/60 border border-emerald-200/60 text-emerald-900 text-[10px]">
-                          <strong>Payment Terms:</strong> {post.paymentTerms}
-                        </div>
-                      )}
-
-                      {post.routeHighlights && post.routeHighlights.length > 0 && (
-                        <div className="pt-1">
-                          <span className="text-[10px] font-bold text-[#1C1C1C] block mb-1">
-                            Tour Stops & Sightseeing:
-                          </span>
-                          <div className="flex flex-wrap gap-1">
-                            {post.routeHighlights.map((hl, i) => (
-                              <span
-                                key={i}
-                                className="px-2 py-0.5 bg-white border border-[#EBE5D8] rounded-md text-[10px] font-semibold text-[#1C1C1C]"
-                              >
-                                {hl}
-                              </span>
-                            ))}
-                          </div>
                         </div>
                       )}
                     </div>
@@ -420,6 +364,14 @@ export const AgencyToursFeed: React.FC = () => {
                     <Phone className="w-3.5 h-3.5 text-[#F15A24]" />
                     <span>Call</span>
                   </a>
+
+                  <button
+                    onClick={() => shareTourListing(post)}
+                    className="p-2.5 rounded-xl bg-white border border-[#EBE5D8] hover:border-[#25D366] hover:bg-emerald-50 text-zinc-700 hover:text-[#25D366] flex items-center justify-center transition-all active-press"
+                    title="Share on WhatsApp / Mobile"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
 
                   {post.status === 'active' && (
                     <button

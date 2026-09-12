@@ -138,8 +138,8 @@ export const PostCarModal: React.FC<PostCarModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-3 bg-black/75 backdrop-blur-xs max-w-[430px] mx-auto">
+      <div className="w-full bg-white rounded-t-[32px] sm:rounded-3xl overflow-hidden max-h-[90vh] sm:max-h-[820px] flex flex-col border-t sm:border border-[#EBE5D8] shadow-2xl">
         <div className="px-5 py-4 bg-[#1C1C1C] text-white flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Car className="w-4 h-4 text-[#F15A24]" />
@@ -149,7 +149,7 @@ export const PostCarModal: React.FC<PostCarModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className="p-5 space-y-3 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-5 space-y-3 overflow-y-auto flex-1 no-scrollbar">
           <p className="text-[11px] text-[#6B6B6B]">
             Set when the car is available, from start date/time to end date/time.
           </p>

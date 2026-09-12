@@ -24,9 +24,11 @@ import { AgencyPackagesView } from './components/agency/AgencyPackagesView';
 import { CreateListingSheet } from './components/common/CreateListingSheet';
 import { ChatInboxView } from './components/common/ChatInboxView';
 import { TourDetailsView } from './components/common/TourDetailsView';
+import { SupportTicketsView } from './components/common/SupportTicketsView';
 import { AgencyTripPost } from './types';
 import { RateLastBookingModal } from './components/common/RateLastBookingModal';
 import { LegalPageView, type LegalSlug } from './components/legal/LegalPageView';
+import { ShieldAlert } from 'lucide-react';
 import type { Deal } from './lib/deals';
 
 function hashLegalSlug(): LegalSlug | null {
@@ -217,6 +219,37 @@ export function App() {
     );
   }
 
+  if (currentUser?.isBlocked) {
+    return (
+      <div className="min-h-screen bg-[#FAF6EE] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl p-6 border border-red-200 shadow-xl text-center space-y-4">
+          <div className="w-16 h-16 rounded-3xl bg-red-50 text-red-600 flex items-center justify-center mx-auto border border-red-200">
+            <ShieldAlert className="w-8 h-8" />
+          </div>
+          <div>
+            <h2 className="text-lg font-black text-[#1C1C1C]">Account Blocked</h2>
+            <p className="text-xs text-red-600 font-bold mt-1">
+              {currentUser.blockedReason || 'Your account has been suspended by the platform administrator.'}
+            </p>
+            <p className="text-[11px] text-[#6B6B6B] mt-2">
+              If you believe this is an error or need assistance, please contact support or log in with another account.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              logoutUser();
+              setAppView('landing');
+            }}
+            className="w-full py-3 rounded-2xl bg-[#1C1C1C] text-white text-xs font-extrabold"
+          >
+            Log Out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!isLoggedIn) {
     return (
       <>
@@ -371,11 +404,16 @@ export function App() {
               onOpenMyTours={() => setActiveTab('my-tours')}
               onOpenMyBookings={() => setActiveTab('my-bookings')}
               onOpenBankDetails={() => setActiveTab('bank-details')}
+              onOpenSupportTickets={() => setActiveTab('support-tickets')}
               onLogout={() => {
                 logoutUser();
                 setAppView('landing');
               }}
             />
+          )}
+
+          {activeTab === 'support-tickets' && (
+            <SupportTicketsView onBack={() => setActiveTab('profile')} />
           )}
 
           {activeTab === 'my-cars' && (

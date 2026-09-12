@@ -107,12 +107,14 @@ interface DealChoiceActionsProps {
   phone: string;
   whatsapp?: string;
   message?: string;
+  directLabel?: string;
   onDirect?: () => void | Promise<unknown>;
   onRideBhai?: () => void | Promise<unknown>;
   onNeedUnlock?: (code?: 'incomplete' | 'unverified' | 'no_package') => void;
 }
 
 export const DealChoiceActions: React.FC<DealChoiceActionsProps> = ({
+  directLabel = 'Message direct',
   onDirect,
   onRideBhai,
   onNeedUnlock,
@@ -151,7 +153,7 @@ export const DealChoiceActions: React.FC<DealChoiceActionsProps> = ({
           }`}
         >
           {locked ? <Lock className="w-3.5 h-3.5" /> : <MessageCircle className="w-4 h-4" />}
-          Message direct
+          {directLabel}
         </button>
         <button
           type="button"

@@ -55,8 +55,8 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up border border-[#EBE5D8] max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in max-w-[430px] mx-auto">
+      <div className="w-full bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up border border-[#EBE5D8] max-h-[92vh] flex flex-col">
         {/* Header */}
         <div className="bg-[#FAF6EE] px-5 py-4 border-b border-[#EBE5D8] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-5 overflow-y-auto flex-1">
+        <div className="p-5 overflow-y-auto flex-1 no-scrollbar">
           {isSuccess ? (
             <div className="py-10 text-center flex flex-col items-center justify-center animate-scale-in">
               <div className="w-16 h-16 rounded-full bg-[#EBF7F0] flex items-center justify-center text-[#2E9E5B] mb-3">

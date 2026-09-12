@@ -38,7 +38,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-xs p-4 pt-12 animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-xs p-4 pt-12 animate-fade-in max-w-[430px] mx-auto">
       <div className="w-full max-w-sm bg-white rounded-3xl shadow-2xl border border-[#EBE5D8] overflow-hidden animate-slide-up flex flex-col max-h-[80vh]">
         <div className="px-4 py-3.5 bg-[#FAF6EE] border-b border-[#EBE5D8] flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -64,7 +64,7 @@ export const NotificationsModal: React.FC<NotificationsModalProps> = ({ isOpen, 
           </div>
         </div>
 
-        <div className="p-3 overflow-y-auto space-y-2 bg-[#FAF6EE]">
+        <div className="p-3 overflow-y-auto space-y-2 bg-[#FAF6EE] no-scrollbar">
           {items.length === 0 ? (
             <div className="py-10 text-center text-xs font-bold text-[#6B6B6B]">
               No notifications yet. KYC, inquiries, chats, posts and plans will show here.

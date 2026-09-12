@@ -376,14 +376,8 @@ export const AgencyDashboard: React.FC<AgencyDashboardProps> = ({
                     </p>
 
                     {/* Extended Details when Expanded */}
-                    {expandedPostId === post.id && (
+                    {expandedPostId === post.id && (post.pickupLocation || post.dropLocation) && (
                       <div className="pt-2.5 mt-2 border-t border-zinc-200/60 space-y-2.5 text-[11px] animate-fade-in">
-                        {post.tourType && (
-                          <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-[#FFF0EB] text-[#F15A24] font-bold text-[10px] border border-[#FFD8CB]">
-                            <span>🏷️ {post.tourType}</span>
-                          </div>
-                        )}
-
                         {post.pickupLocation && (
                           <div className="flex items-start gap-1.5 text-[#6B6B6B]">
                             <MapPin className="w-3.5 h-3.5 text-[#F15A24] flex-shrink-0 mt-0.5" />
@@ -399,67 +393,6 @@ export const AgencyDashboard: React.FC<AgencyDashboardProps> = ({
                             <span>
                               <strong>Drop Point:</strong> {post.dropLocation}
                             </span>
-                          </div>
-                        )}
-
-                        {/* Specs Grid */}
-                        <div className="grid grid-cols-2 gap-2 pt-1 text-[10px]">
-                          {post.tollTaxOption && (
-                            <div className="p-2 rounded-xl bg-white border border-[#EBE5D8]">
-                              <span className="text-[#6B6B6B] block">Tolls & Taxes</span>
-                              <strong className="text-[#1C1C1C]">{post.tollTaxOption}</strong>
-                            </div>
-                          )}
-
-                          {post.kmLimit && (
-                            <div className="p-2 rounded-xl bg-white border border-[#EBE5D8]">
-                              <span className="text-[#6B6B6B] block">Km Package</span>
-                              <strong className="text-[#1C1C1C]">{post.kmLimit}</strong>
-                            </div>
-                          )}
-
-                          {post.driverNightAllowance && (
-                            <div className="p-2 rounded-xl bg-white border border-[#EBE5D8]">
-                              <span className="text-[#6B6B6B] block">Night Allowance</span>
-                              <strong className="text-[#00A86B]">{post.driverNightAllowance}</strong>
-                            </div>
-                          )}
-
-                          {post.luggageCapacity && (
-                            <div className="p-2 rounded-xl bg-white border border-[#EBE5D8]">
-                              <span className="text-[#6B6B6B] block">Luggage</span>
-                              <strong className="text-[#1C1C1C]">{post.luggageCapacity}</strong>
-                            </div>
-                          )}
-                        </div>
-
-                        {post.driverPreferences && (
-                          <div className="p-2 rounded-xl bg-amber-50/60 border border-amber-200/60 text-amber-900 text-[10px]">
-                            <strong>Driver Rules:</strong> {post.driverPreferences}
-                          </div>
-                        )}
-
-                        {post.paymentTerms && (
-                          <div className="p-2 rounded-xl bg-emerald-50/60 border border-emerald-200/60 text-emerald-900 text-[10px]">
-                            <strong>Payment Terms:</strong> {post.paymentTerms}
-                          </div>
-                        )}
-
-                        {post.routeHighlights && post.routeHighlights.length > 0 && (
-                          <div className="pt-1">
-                            <span className="text-[10px] font-bold text-[#1C1C1C] block mb-1">
-                              Sightseeing Highlights:
-                            </span>
-                            <div className="flex flex-wrap gap-1">
-                              {post.routeHighlights.map((hl, i) => (
-                                <span
-                                  key={i}
-                                  className="px-2 py-0.5 bg-white border border-[#EBE5D8] rounded-md text-[10px] font-semibold text-[#1C1C1C]"
-                                >
-                                  {hl}
-                                </span>
-                              ))}
-                            </div>
                           </div>
                         )}
                       </div>

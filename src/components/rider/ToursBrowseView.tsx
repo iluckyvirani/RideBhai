@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Sparkles, MapPin, X, IndianRupee, Car, Calendar, ChevronRight } from 'lucide-react';
+import { Sparkles, MapPin, X, IndianRupee, Car, Calendar, Share2 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { AgencyTripPost } from '../../types';
 import { DealChoiceActions } from '../common/ContactActions';
 import { PosterCard } from '../common/PosterCard';
 import { ListSkeleton } from '../common/SkeletonLoader';
+import { shareTourListing } from '../../lib/share';
 import {
   BrowseFilters,
   browseFilterActive,
@@ -81,6 +82,12 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
   const myId = currentUser?.id;
   const myName = currentUser?.agencyName || currentUser?.name || 'Ride Bhai user';
 
+  const [expandedTourIds, setExpandedTourIds] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (tourId: string) => {
+    setExpandedTourIds((prev) => ({ ...prev, [tourId]: !prev[tourId] }));
+  };
+
   return (
     <div className="space-y-3 pb-24 animate-fade-in">
       <p className="text-[11px] text-[#6B6B6B] leading-snug">
@@ -119,72 +126,113 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
 
       {tours.map((tour) => (
         <article key={tour.id} className="bg-white rounded-3xl border border-[#EBE5D8] p-4 space-y-3 shadow-card">
-          <button
-            type="button"
-            onClick={() => onOpenDetails?.(tour)}
-            className="w-full text-left"
-          >
-            {tour.tourType ? (
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-[#F15A24]">
-                {tour.tourType}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-extrabold text-[#1C1C1C] flex items-center gap-1 mt-0.5">
+                <MapPin className="w-3.5 h-3.5 text-[#F15A24] flex-shrink-0" />
+                {tour.fromCity} {tour.tripSide === 'two_side' ? '⇄' : '→'} {tour.toCity}
+              </h3>
+              <p className="text-[11px] text-[#6B6B6B] mt-0.5">
+                {tour.agencyName} · {tour.duration} · {tour.passengers} pax
               </p>
-            ) : null}
-            <h3 className="text-sm font-extrabold text-[#1C1C1C] flex items-center gap-1 mt-0.5">
-              <MapPin className="w-3.5 h-3.5 text-[#F15A24] flex-shrink-0" />
-              {tour.fromCity} {tour.tripSide === 'two_side' ? '⇄' : '→'} {tour.toCity}
-            </h3>
-            <p className="text-[11px] text-[#6B6B6B] mt-0.5">
-              {tour.agencyName} · {tour.duration} · {tour.passengers} pax
-            </p>
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              <span className="px-2 py-0.5 rounded-full bg-[#FFF0EB] text-[#F15A24] text-[10px] font-extrabold">
-                {tour.tripSide === 'two_side' ? 'Two side' : 'One side'}
-              </span>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                <span className="px-2 py-0.5 rounded-full bg-[#FFF0EB] text-[#F15A24] text-[10px] font-extrabold">
+                  {tour.tripSide === 'two_side' ? 'Two side' : 'One side'}
+                </span>
+              </div>
+              <div className="mt-2 space-y-0.5 text-[11px] text-[#6B6B6B]">
+                {(tour.bookingDate || tour.startDate || tour.bookingTime || tour.pickupTime) && (
+                  <p className="flex items-center gap-1 font-bold text-[#1C1C1C]">
+                    <Calendar className="w-3 h-3 text-[#F15A24]" />
+                    Booking {formatTourStamp(tour.bookingDate || tour.startDate, tour.bookingTime || tour.pickupTime)}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="mt-2 space-y-0.5 text-[11px] text-[#6B6B6B]">
-              {(tour.bookingDate || tour.startDate || tour.bookingTime || tour.pickupTime) && (
-                <p className="flex items-center gap-1 font-bold text-[#1C1C1C]">
-                  <Calendar className="w-3 h-3 text-[#F15A24]" />
-                  Booking {formatTourStamp(tour.bookingDate || tour.startDate, tour.bookingTime || tour.pickupTime)}
-                </p>
-              )}
-            </div>
-          </button>
 
-          <div
-            className="grid grid-cols-3 gap-1.5 cursor-pointer"
-            onClick={() => onOpenDetails?.(tour)}
-            role="presentation"
-          >
-            <div className="p-2.5 rounded-2xl bg-[#FFF0EB] border border-[#FFD8CB]">
-              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#F15A24]">Total tour</p>
-              <p className="text-sm font-extrabold text-[#1C1C1C] flex items-center mt-0.5">
-                <IndianRupee className="w-3.5 h-3.5" />
-                {tour.totalCustomerPrice.toLocaleString('en-IN')}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8]">
-              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#6B6B6B]">Agency cut</p>
-              <p className="text-sm font-extrabold text-[#1C1C1C] flex items-center mt-0.5">
-                <IndianRupee className="w-3.5 h-3.5" />
-                {tour.agencyCommission.toLocaleString('en-IN')}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-2xl bg-[#EBF7F0] border border-[#B8E6CB]">
-              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#2E9E5B]">Net to car</p>
-              <p className="text-sm font-extrabold text-[#2E9E5B] flex items-center mt-0.5">
-                <IndianRupee className="w-3.5 h-3.5" />
-                {tour.driverNetPayout.toLocaleString('en-IN')}
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={() => shareTourListing(tour)}
+              className="p-2 rounded-xl bg-[#FAF6EE] hover:bg-[#F15A24]/10 text-[#6B6B6B] hover:text-[#F15A24] border border-[#EBE5D8] transition-colors flex items-center gap-1 text-[11px] font-bold shrink-0 active-press"
+              title="Share Booking"
+            >
+              <Share2 className="w-3.5 h-3.5 text-[#F15A24]" />
+              <span>Share</span>
+            </button>
           </div>
 
+          {tour.totalCustomerPrice > 0 ? (
+            <div className="grid grid-cols-3 gap-1.5">
+              <div className="p-2.5 rounded-2xl bg-[#FFF0EB] border border-[#FFD8CB]">
+                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#F15A24]">Total tour</p>
+                <p className="text-sm font-extrabold text-[#1C1C1C] flex items-center mt-0.5">
+                  <IndianRupee className="w-3.5 h-3.5" />
+                  {tour.totalCustomerPrice.toLocaleString('en-IN')}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8]">
+                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#6B6B6B]">Agency cut</p>
+                <p className="text-sm font-extrabold text-[#1C1C1C] flex items-center mt-0.5">
+                  <IndianRupee className="w-3.5 h-3.5" />
+                  {tour.agencyCommission.toLocaleString('en-IN')}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-2xl bg-[#EBF7F0] border border-[#B8E6CB]">
+                <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#2E9E5B]">Net to car</p>
+                <p className="text-sm font-extrabold text-[#2E9E5B] flex items-center mt-0.5">
+                  <IndianRupee className="w-3.5 h-3.5" />
+                  {tour.driverNetPayout.toLocaleString('en-IN')}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="p-3 rounded-2xl bg-gradient-to-r from-[#FFF5F0] to-[#FAF6EE] border border-[#FFD8CB] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-xl bg-gradient-to-br from-[#F15A24] to-[#FF7A45] flex items-center justify-center text-white text-xs shadow-xs">
+                  💬
+                </span>
+                <div>
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#F15A24]">
+                    Quotation Invited
+                  </p>
+                  <p className="text-xs font-black text-[#1C1C1C]">
+                    Send Best Quotation
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#F15A24] border border-[#FFD8CB]">
+                Open for Quotes
+              </span>
+            </div>
+          )}
+
+          {/* Full Travel Details & Itinerary - Above Desired Car with simple inline View more */}
+          {tour.tripDetails && (
+            <div className="p-3 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8]">
+              <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#8A8478]">
+                Full Travel Details & Itinerary
+              </p>
+              <p
+                className={`text-xs font-semibold text-[#1C1C1C] mt-1 whitespace-pre-line leading-relaxed ${
+                  expandedTourIds[tour.id] ? '' : 'line-clamp-2'
+                }`}
+              >
+                {tour.tripDetails}
+              </p>
+              {tour.tripDetails.length > 80 && (
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(tour.id)}
+                  className="mt-1 text-[11px] font-extrabold text-[#F15A24] hover:underline"
+                >
+                  {expandedTourIds[tour.id] ? 'View less' : 'View more'}
+                </button>
+              )}
+            </div>
+          )}
+
           {tour.desiredCar && (
-            <div
-              className="p-3 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] cursor-pointer"
-              onClick={() => onOpenDetails?.(tour)}
-              role="presentation"
-            >
+            <div className="p-3 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8]">
               <p className="text-[10px] font-extrabold uppercase text-[#6B6B6B] flex items-center gap-1">
                 <Car className="w-3 h-3" /> Desired car
               </p>
@@ -193,26 +241,36 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
                   .filter(Boolean)
                   .join(' · ')}
               </p>
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {tour.desiredCar.specs.filter(Boolean).map((spec) => (
-                  <span
-                    key={spec}
-                    className="px-2 py-0.5 rounded-full bg-white border border-[#EBE5D8] text-[10px] font-bold text-[#1C1C1C]"
-                  >
-                    {spec}
-                  </span>
-                ))}
-              </div>
+              {tour.desiredCar.specs?.length ? (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {tour.desiredCar.specs.filter(Boolean).map((spec) => (
+                    <span
+                      key={spec}
+                      className="px-2 py-0.5 rounded-full bg-white border border-[#EBE5D8] text-[10px] font-bold text-[#1C1C1C]"
+                    >
+                      {spec}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </div>
           )}
 
-          {tour.tripDetails && (
-            <p
-              className="text-[11px] text-[#6B6B6B] leading-relaxed line-clamp-2 cursor-pointer"
-              onClick={() => onOpenDetails?.(tour)}
-            >
-              {tour.tripDetails}
-            </p>
+          {(tour.pickupLocation || tour.dropLocation) && (
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              {tour.pickupLocation ? (
+                <div className="p-2.5 rounded-xl bg-white border border-[#EBE5D8]">
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#6B6B6B]">Pickup</p>
+                  <p className="font-bold text-[#1C1C1C] mt-0.5">{tour.pickupLocation}</p>
+                </div>
+              ) : null}
+              {tour.dropLocation ? (
+                <div className="p-2.5 rounded-xl bg-white border border-[#EBE5D8]">
+                  <p className="text-[9px] font-extrabold uppercase tracking-wide text-[#6B6B6B]">Drop</p>
+                  <p className="font-bold text-[#1C1C1C] mt-0.5">{tour.dropLocation}</p>
+                </div>
+              ) : null}
+            </div>
           )}
 
           <PosterCard
@@ -224,33 +282,29 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
             ratingCount={tour.agencyRatingCount}
           />
 
-          <button
-            type="button"
-            onClick={() => onOpenDetails?.(tour)}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] text-[11px] font-extrabold text-[#F15A24]"
-          >
-            View details
-            <ChevronRight className="w-4 h-4" />
-          </button>
-
           {myId && tour.agencyId === myId ? (
             <p className="text-[11px] font-extrabold text-center py-2.5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8]">
               Your listing
             </p>
           ) : (
-          <DealChoiceActions
-            onNeedUnlock={onNeedUnlock}
-            phone={tour.agencyPhone}
-            whatsapp={tour.whatsappNumber}
-            message={`Hi ${tour.agencyName}, I’m ${myName}. I am interested in your ${tour.fromCity} to ${tour.toCity} package (₹${tour.totalCustomerPrice}) on Ride Bhai.`}
-            onDirect={async () => {
-              const result = await openDeal({ listingType: 'tour', listingId: tour.id, channel: 'direct' });
-              onDealWithRideBhai?.(result.thread.id);
-            }}
-            onRideBhai={async () => {
-              await openDeal({ listingType: 'tour', listingId: tour.id, channel: 'ridebhai' });
-            }}
-          />
+            <DealChoiceActions
+              onNeedUnlock={onNeedUnlock}
+              phone={tour.agencyPhone}
+              whatsapp={tour.whatsappNumber}
+              directLabel={tour.totalCustomerPrice > 0 ? 'Message direct' : 'Send quotation'}
+              message={
+                tour.totalCustomerPrice > 0
+                  ? `Hi ${tour.agencyName}, I’m ${myName}. I am interested in your ${tour.fromCity} to ${tour.toCity} package (₹${tour.totalCustomerPrice}) on Ride Bhai.`
+                  : `Hi ${tour.agencyName}, I’m ${myName}. I am sending my best quotation for your ${tour.fromCity} to ${tour.toCity} tour on Ride Bhai.`
+              }
+              onDirect={async () => {
+                const result = await openDeal({ listingType: 'tour', listingId: tour.id, channel: 'direct' });
+                onDealWithRideBhai?.(result.thread.id);
+              }}
+              onRideBhai={async () => {
+                await openDeal({ listingType: 'tour', listingId: tour.id, channel: 'ridebhai' });
+              }}
+            />
           )}
         </article>
       ))}

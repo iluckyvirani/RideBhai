@@ -145,8 +145,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-[#EBE5D8] overflow-hidden relative animate-scale-up">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-sm animate-fade-in max-w-[430px] mx-auto">
+      <div className="w-full bg-white rounded-3xl shadow-2xl border border-[#EBE5D8] overflow-hidden relative animate-scale-up">
         {/* Simulated SMS Toast notification at top */}
         {showSimulatedSms && (
           <div className="bg-[#1C1C1C] text-white p-3.5 px-4 flex items-center justify-between border-b border-white/10 animate-slide-down">

@@ -2,18 +2,6 @@ import React from 'react';
 import { AgencyTripPost } from '../../types';
 
 const EXTRA_FIELDS: { label: string; value: (tour: AgencyTripPost) => string }[] = [
-  {
-    label: 'Sightseeing Highlights',
-    value: (tour) => (tour.routeHighlights || []).filter(Boolean).join(', '),
-  },
-  { label: 'Tour Category', value: (tour) => tour.tourType || '' },
-  { label: 'Tolls & Border Tax Rule', value: (tour) => tour.tollTaxOption || '' },
-  { label: 'Km Limit / Package Kms', value: (tour) => tour.kmLimit || '' },
-  { label: 'Driver Night Allowance / Stay', value: (tour) => tour.driverNightAllowance || '' },
-  { label: 'Luggage Capacity', value: (tour) => tour.luggageCapacity || '' },
-  { label: 'Driver Preferences / Rules', value: (tour) => tour.driverPreferences || '' },
-  { label: 'Payment Payout Mode', value: (tour) => tour.payoutMode || '' },
-  { label: 'Payment Terms', value: (tour) => tour.paymentTerms || '' },
   { label: 'Full Travel Details & Itinerary', value: (tour) => tour.tripDetails || '' },
 ];
 

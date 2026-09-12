@@ -55,19 +55,10 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
   const [desiredSpec1, setDesiredSpec1] = useState('');
   const [desiredSpec2, setDesiredSpec2] = useState('');
   const [desiredSpec3, setDesiredSpec3] = useState('');
+  const [pricingMode, setPricingMode] = useState<'fixed' | 'quotation'>('fixed');
   const [totalCustomerPrice, setTotalCustomerPrice] = useState('');
   const [agencyCommission, setAgencyCommission] = useState('');
-  const [tourType, setTourType] = useState('');
-  const [tollTaxOption, setTollTaxOption] = useState('');
-  const [parkingOption, setParkingOption] = useState('');
-  const [driverNightAllowance, setDriverNightAllowance] = useState('');
-  const [kmLimit, setKmLimit] = useState('');
-  const [luggageCapacity, setLuggageCapacity] = useState('');
-  const [driverPreferences, setDriverPreferences] = useState('');
-  const [paymentTerms, setPaymentTerms] = useState('');
-  const [payoutMode, setPayoutMode] = useState('');
   const [tripDetails, setTripDetails] = useState('');
-  const [highlightsInput, setHighlightsInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -76,7 +67,7 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
   const gate = canAgencyPost();
   const tourGate = canPostTour();
   const activeSubInfo = getAgencyActiveSubscription(currentUser?.id || currentAgency.id);
-  const driverNetPayout = Math.max(0, Number(totalCustomerPrice) - Number(agencyCommission));
+  const driverNetPayout = Math.max(0, Number(totalCustomerPrice || 0) - Number(agencyCommission || 0));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,22 +94,24 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
       return;
     }
     const desiredCarName = carDisplayName(desiredMake, desiredModel);
-    if (Number(totalCustomerPrice) <= 0) {
-      setErrorMsg('Please enter a valid total booking price.');
-      return;
-    }
-    if (Number(agencyCommission) >= Number(totalCustomerPrice)) {
-      setErrorMsg('Agency commission cannot be equal to or greater than total booking price.');
-      return;
+
+    const isQuotation = pricingMode === 'quotation' || (!totalCustomerPrice && Number(totalCustomerPrice) <= 0);
+    const finalTotal = isQuotation ? 0 : Number(totalCustomerPrice);
+    const finalCommission = isQuotation ? 0 : Number(agencyCommission || 0);
+
+    if (!isQuotation) {
+      if (finalTotal <= 0) {
+        setErrorMsg('Please enter a valid total booking price or select "Send Best Quotation".');
+        return;
+      }
+      if (finalCommission >= finalTotal) {
+        setErrorMsg('Agency commission cannot be equal to or greater than total booking price.');
+        return;
+      }
     }
 
     try {
       setIsSubmitting(true);
-      const highlights = highlightsInput
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-
       await postAgencyTrip({
         fromCity,
         toCity,
@@ -132,19 +125,9 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
         pickupLocation,
         dropLocation,
         requiredVehicleType: desiredCarName.trim(),
-        totalCustomerPrice: Number(totalCustomerPrice),
-        agencyCommission: Number(agencyCommission),
+        totalCustomerPrice: finalTotal,
+        agencyCommission: finalCommission,
         tripDetails,
-        routeHighlights: highlights,
-        tourType,
-        tollTaxOption,
-        parkingOption,
-        driverNightAllowance,
-        kmLimit,
-        luggageCapacity,
-        driverPreferences,
-        paymentTerms,
-        payoutMode,
         desiredCar: {
           name: desiredCarName.trim(),
           specs: [desiredSpec1, desiredSpec2, desiredSpec3].map((s) => s.trim()).filter(Boolean),
@@ -161,8 +144,8 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-xs animate-fade-in overflow-y-auto">
-      <div className="bg-white text-[#1C1C1C] w-full max-w-lg rounded-3xl shadow-2xl border border-[#EBE5D8] overflow-hidden my-auto max-h-[92vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-3 bg-black/75 backdrop-blur-xs animate-fade-in max-w-[430px] mx-auto">
+      <div className="bg-white text-[#1C1C1C] w-full rounded-t-[32px] sm:rounded-3xl shadow-2xl border-t sm:border border-[#EBE5D8] overflow-hidden max-h-[90vh] sm:max-h-[820px] flex flex-col">
         {/* Modal Header */}
         <div className="px-5 py-4 bg-[#1C1C1C] text-white flex items-center justify-between border-b border-white/10 flex-shrink-0">
           <div className="flex items-center gap-2.5">
@@ -185,7 +168,7 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
         </div>
 
         {/* Modal Body with Posting Gates */}
-        <div className="p-5 overflow-y-auto flex-1 space-y-4">
+        <div className="p-5 overflow-y-auto flex-1 space-y-4 no-scrollbar">
           {/* Gate 1: Not Verified */}
           {!gate.canPost && gate.code === 'not_verified' && (
             <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-3">
@@ -248,7 +231,9 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 <ShieldAlert className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <h3 className="text-xs font-bold text-amber-900">Travel agency name required</h3>
-                  <p className="text-[11px] text-amber-700 mt-1 leading-relaxed">{tourGate.reason}</p>
+                  <p className="text-[11px] text-amber-700 mt-1 leading-relaxed">
+                    {tourGate.reason}
+                  </p>
                 </div>
               </div>
               <button
@@ -257,50 +242,85 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                   onClose();
                   if (onOpenVerification) onOpenVerification();
                 }}
-                className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"
+                className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 active-press"
               >
-                Add agency name on profile
+                <span>Complete partner profile</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
 
+          {/* Form */}
           {tourGate.ok && (
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Agency Quick Badge */}
-              <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-[11px]">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  <span className="font-bold text-[#1C1C1C]">
-                    {currentUser?.agencyName || currentAgency.agencyName}
-                  </span>
-                </div>
-                <span className="text-[#6B6B6B]">
-                  Plan: <strong className="text-[#F15A24]">{activeSubInfo?.pkg.name || 'Pro'}</strong>
-                </span>
-              </div>
-
               {errorMsg && (
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 font-bold animate-shake">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
-              {/* Route Input */}
+              {/* Agency Banner Info */}
+              <div className="p-3 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] flex items-center justify-between text-xs font-semibold">
+                <div>
+                  <span className="text-[#6B6B6B]">Posting as: </span>
+                  <span className="font-extrabold text-[#1C1C1C]">
+                    {currentUser?.agencyName || currentAgency.agencyName || 'Verified Travel Agency'}
+                  </span>
+                </div>
+                {activeSubInfo?.pkg && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 text-[#F15A24]">
+                    {activeSubInfo.pkg.name}
+                  </span>
+                )}
+              </div>
+
+              {/* Trip Side Selection */}
+              <div>
+                <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1.5">
+                  Trip Route Type *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setTripSide('one_side')}
+                    className={`py-2.5 rounded-2xl text-xs font-extrabold border transition-all ${
+                      tripSide === 'one_side'
+                        ? 'bg-[#1C1C1C] text-white border-[#1C1C1C] shadow-xs'
+                        : 'bg-[#FAF6EE] text-[#6B6B6B] border-[#EBE5D8] hover:bg-white'
+                    }`}
+                  >
+                    One Side (Drop)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTripSide('two_side')}
+                    className={`py-2.5 rounded-2xl text-xs font-extrabold border transition-all ${
+                      tripSide === 'two_side'
+                        ? 'bg-[#1C1C1C] text-white border-[#1C1C1C] shadow-xs'
+                        : 'bg-[#FAF6EE] text-[#6B6B6B] border-[#EBE5D8] hover:bg-white'
+                    }`}
+                  >
+                    Two Side (Round Trip)
+                  </button>
+                </div>
+              </div>
+
+              {/* From / To Cities */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
                     Pickup City *
                   </label>
                   <div className="relative">
-                    <MapPin className="w-4 h-4 text-[#F15A24] absolute left-3 top-3" />
+                    <MapPin className="w-3.5 h-3.5 text-[#F15A24] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="text"
                       value={fromCity}
                       onChange={(e) => setFromCity(e.target.value)}
-                      placeholder="e.g. Agra"
+                      placeholder="e.g. Delhi"
                       required
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
                     />
                   </div>
                 </div>
@@ -310,44 +330,80 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                     Destination City *
                   </label>
                   <div className="relative">
-                    <MapPin className="w-4 h-4 text-[#00A86B] absolute left-3 top-3" />
+                    <MapPin className="w-3.5 h-3.5 text-[#00A86B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       type="text"
                       value={toCity}
                       onChange={(e) => setToCity(e.target.value)}
-                      placeholder="e.g. Jaipur"
+                      placeholder="e.g. Agra"
                       required
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
                     />
                   </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">Trip type *</label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setTripSide('one_side')}
-                    className={`flex-1 py-2.5 rounded-xl text-[11px] font-extrabold ${
-                      tripSide === 'one_side'
-                        ? 'bg-[#F15A24] text-white'
-                        : 'bg-[#FAF6EE] border border-[#EBE5D8]'
-                    }`}
-                  >
-                    One side
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTripSide('two_side')}
-                    className={`flex-1 py-2.5 rounded-xl text-[11px] font-extrabold ${
-                      tripSide === 'two_side'
-                        ? 'bg-[#F15A24] text-white'
-                        : 'bg-[#FAF6EE] border border-[#EBE5D8]'
-                    }`}
-                  >
-                    Two side
-                  </button>
+              {/* Specific Pickup & Drop Addresses */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
+                    Exact Pickup Address
+                  </label>
+                  <input
+                    type="text"
+                    value={pickupLocation}
+                    onChange={(e) => setPickupLocation(e.target.value)}
+                    placeholder="Terminal 3 / Hotel name"
+                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
+                    Drop / Hotel Address
+                  </label>
+                  <input
+                    type="text"
+                    value={dropLocation}
+                    onChange={(e) => setDropLocation(e.target.value)}
+                    placeholder="Hotel / Destination area"
+                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Date & Time */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
+                    Booking Date *
+                  </label>
+                  <div className="relative">
+                    <Calendar className="w-3.5 h-3.5 text-[#6B6B6B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      required
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
+                    Pickup Time *
+                  </label>
+                  <div className="relative">
+                    <Clock className="w-3.5 h-3.5 text-[#6B6B6B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="time"
+                      value={pickupTime}
+                      onChange={(e) => setPickupTime(e.target.value)}
+                      required
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -355,85 +411,48 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Passengers / Members *
+                    Passengers *
                   </label>
                   <div className="relative">
-                    <Users className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
+                    <Users className="w-3.5 h-3.5 text-[#6B6B6B] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <select
                       value={passengers}
                       onChange={(e) => setPassengers(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
+                      required
+                      className="w-full pl-9 pr-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
                     >
-                      <option value="">Select passengers</option>
-                      <option value={1}>1 Member</option>
-                      <option value={2}>2 Members</option>
-                      <option value={3}>3 Members</option>
-                      <option value={4}>4 Members (Family)</option>
-                      <option value={5}>5 Members</option>
-                      <option value={6}>6 Members (Group)</option>
-                      <option value={7}>7+ Members</option>
+                      <option value="">Select Pax</option>
+                      <option value="1">1 Person</option>
+                      <option value="2">2 Persons</option>
+                      <option value="3">3 Persons</option>
+                      <option value="4">4 Persons</option>
+                      <option value="5">5 Persons</option>
+                      <option value="6">6 Persons</option>
+                      <option value="7">7+ Persons</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Duration / Tour Days *
+                    Trip Duration
                   </label>
-                  <div className="relative">
-                    <Clock className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
-                    <input
-                      type="text"
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                      placeholder="e.g. 3 Days 1 Night"
-                      required
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    placeholder="e.g. 1 Day / 2 Days 1 Night"
+                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
+                  />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Actual booking date *
-                  </label>
-                  <div className="relative">
-                    <Calendar className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      required
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Actual booking time *
-                  </label>
-                  <div className="relative">
-                    <Clock className="w-4 h-4 text-[#6B6B6B] absolute left-3 top-3" />
-                    <input
-                      type="time"
-                      value={pickupTime}
-                      onChange={(e) => setPickupTime(e.target.value)}
-                      required
-                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none transition-all"
-                    />
-                  </div>
-                </div>
-              </div>
+              {/* Vehicle Type & Make/Model */}
+              <div className="p-3.5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] space-y-3">
+                <span className="text-xs font-extrabold text-[#1C1C1C] block">
+                  Required Car / Vehicle Details *
+                </span>
 
-              <div className="p-4 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] space-y-2.5">
-                <label className="block text-[11px] font-extrabold text-[#1C1C1C]">
-                  Required Vehicle *
-                </label>
-                <p className="text-[10px] text-[#6B6B6B]">
-                  Select type, make and model. Optional extras below.
-                </p>
                 <CarMakeModelSelect
                   bodyType={desiredBodyType}
                   make={desiredMake}
@@ -442,7 +461,8 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                   onMake={setDesiredMake}
                   onModel={setDesiredModel}
                 />
-                <div className="grid grid-cols-3 gap-2">
+
+                <div className="grid grid-cols-3 gap-2 pt-1">
                   <select
                     value={desiredSpec1}
                     onChange={(e) => setDesiredSpec1(e.target.value)}
@@ -476,202 +496,106 @@ export const PostAgencyTripModal: React.FC<PostAgencyTripModalProps> = ({
                 </div>
               </div>
 
-              {/* PRICING & COMMISSION FORMULA (e.g. ₹1000 Total, ₹200 Comm, ₹800 Driver) */}
+              {/* PRICING & COMMISSION FORMULA / QUOTATION MODE */}
               <div className="p-4 rounded-2xl bg-gradient-to-br from-[#FFF5F0] to-[#FAF6EE] border border-[#FFD8CB] space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1.5">
                     <DollarSign className="w-4 h-4 text-[#F15A24]" />
                     Pricing & Driver Payout
                   </span>
-                  <span className="text-[10px] font-extrabold text-[#00A86B] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    Auto Calculated
-                  </span>
+                  {pricingMode === 'fixed' && (
+                    <span className="text-[10px] font-extrabold text-[#00A86B] bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Auto Calculated
+                    </span>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#6B6B6B] mb-1">
-                      Total Booking Price (₹) *
-                    </label>
-                    <input
-                      type="number"
-                      value={totalCustomerPrice}
-                      onChange={(e) => setTotalCustomerPrice(e.target.value)}
-                      placeholder="1000"
-                      min={100}
-                      step={50}
-                      required
-                      className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-sm font-extrabold text-[#1C1C1C] bg-white focus:border-[#F15A24] outline-none"
-                    />
+                {/* Pricing Mode Toggle */}
+                <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-white border border-[#EBE5D8]">
+                  <button
+                    type="button"
+                    onClick={() => setPricingMode('fixed')}
+                    className={`py-2 rounded-lg text-xs font-extrabold transition-all ${
+                      pricingMode === 'fixed'
+                        ? 'bg-[#1C1C1C] text-white shadow-xs'
+                        : 'text-[#6B6B6B] hover:text-[#1C1C1C]'
+                    }`}
+                  >
+                    Fixed Price
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPricingMode('quotation');
+                      setTotalCustomerPrice('');
+                      setAgencyCommission('');
+                    }}
+                    className={`py-2 rounded-lg text-xs font-extrabold transition-all ${
+                      pricingMode === 'quotation'
+                        ? 'bg-[#F15A24] text-white shadow-xs'
+                        : 'text-[#6B6B6B] hover:text-[#F15A24]'
+                    }`}
+                  >
+                    Send Quotation
+                  </button>
+                </div>
+
+                {pricingMode === 'fixed' ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#6B6B6B] mb-1">
+                          Total Booking Price (₹) *
+                        </label>
+                        <input
+                          type="number"
+                          value={totalCustomerPrice}
+                          onChange={(e) => setTotalCustomerPrice(e.target.value)}
+                          placeholder="1000"
+                          min={100}
+                          step={50}
+                          required={pricingMode === 'fixed'}
+                          className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-sm font-extrabold text-[#1C1C1C] bg-white focus:border-[#F15A24] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-[#6B6B6B] mb-1">
+                          My Commission Cut (₹) *
+                        </label>
+                        <input
+                          type="number"
+                          value={agencyCommission}
+                          onChange={(e) => setAgencyCommission(e.target.value)}
+                          placeholder="200"
+                          min={0}
+                          step={50}
+                          required={pricingMode === 'fixed'}
+                          className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-sm font-extrabold text-[#F15A24] bg-white focus:border-[#F15A24] outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Live Payout Highlight */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#EBE5D8]">
+                      <span className="text-xs font-bold text-[#6B6B6B]">
+                        Net Driver Payout:
+                      </span>
+                      <span className="text-sm font-black text-[#00A86B]">
+                        ₹{driverNetPayout.toLocaleString()}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-3 rounded-xl bg-white border border-[#FFD8CB] text-[11px] text-[#A33B12] space-y-1">
+                    <p className="font-extrabold text-[#F15A24] flex items-center gap-1.5">
+                      💬 Open for Best Quotations
+                    </p>
+                    <p className="text-[#6B6B6B] leading-relaxed">
+                      No fixed price entered. Verified drivers and taxi owners will send you their best quotations directly.
+                    </p>
                   </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-[#6B6B6B] mb-1">
-                      My Commission Cut (₹) *
-                    </label>
-                    <input
-                      type="number"
-                      value={agencyCommission}
-                      onChange={(e) => setAgencyCommission(e.target.value)}
-                      placeholder="200"
-                      min={0}
-                      step={50}
-                      required
-                      className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-sm font-extrabold text-[#F15A24] bg-white focus:border-[#F15A24] outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Live Payout Highlight */}
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#EBE5D8]">
-                  <span className="text-xs font-bold text-[#6B6B6B]">
-                    Net Driver Payout:
-                  </span>
-                  <span className="text-sm font-black text-[#00A86B]">
-                    ₹{driverNetPayout.toLocaleString()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Route Highlights */}
-              <div>
-                <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                  Sightseeing Highlights (Comma separated)
-                </label>
-                <input
-                  type="text"
-                  value={highlightsInput}
-                  onChange={(e) => setHighlightsInput(e.target.value)}
-                  placeholder="Taj Mahal, Fatehpur Sikri, Hawa Mahal"
-                  className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
-                />
-              </div>
-
-              {/* Tour Category & Toll Rule */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Tour Category
-                  </label>
-                    <select
-                    value={tourType}
-                    onChange={(e) => setTourType(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
-                  >
-                    <option value="">Select category</option>
-                    <option value="Family Sightseeing Tour">Family Sightseeing Tour</option>
-                    <option value="Leisure Group Tour">Leisure Group Tour</option>
-                    <option value="Pilgrimage / Religious Tour">Pilgrimage / Religious Tour</option>
-                    <option value="Corporate Business Tour">Corporate Business Tour</option>
-                    <option value="Honeymoon Couple Tour">Honeymoon Couple Tour</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Tolls & Border Tax Rule
-                  </label>
-                    <select
-                    value={tollTaxOption}
-                    onChange={(e) => setTollTaxOption(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
-                  >
-                    <option value="">Select toll rule</option>
-                    <option value="Paid directly by Guest at Toll Plazas">Paid directly by Guest</option>
-                    <option value="Included in Total Package Fare">Included in Fare</option>
-                    <option value="Extra on actual FASTag receipts">Extra on Actuals</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Km Limit & Night Stay Allowance */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Km Limit / Package Kms
-                  </label>
-                  <input
-                    type="text"
-                    value={kmLimit}
-                    onChange={(e) => setKmLimit(e.target.value)}
-                    placeholder="e.g. 550 Km included (₹10/Km extra)"
-                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Driver Night Allowance / Stay
-                  </label>
-                  <input
-                    type="text"
-                    value={driverNightAllowance}
-                    onChange={(e) => setDriverNightAllowance(e.target.value)}
-                    placeholder="e.g. ₹300/Night included"
-                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Luggage & Driver Preferences */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Luggage Capacity
-                  </label>
-                  <input
-                    type="text"
-                    value={luggageCapacity}
-                    onChange={(e) => setLuggageCapacity(e.target.value)}
-                    placeholder="e.g. 2 Large Bags + 2 Small"
-                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Driver Preferences / Rules
-                  </label>
-                  <input
-                    type="text"
-                    value={driverPreferences}
-                    onChange={(e) => setDriverPreferences(e.target.value)}
-                    placeholder="e.g. AC throughout, Non-smoking"
-                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* Payment Terms & Payout Method */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Payment Payout Mode
-                  </label>
-                    <select
-                    value={payoutMode}
-                    onChange={(e) => setPayoutMode(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
-                  >
-                    <option value="">Select payout mode</option>
-                    <option value="Direct Cash from Guest">Direct Cash from Guest</option>
-                    <option value="Instant UPI by Agency">Instant UPI by Agency</option>
-                    <option value="Split 50-50 (Advance + Drop)">Split 50-50</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-[#6B6B6B] mb-1">
-                    Payment Terms
-                  </label>
-                  <input
-                    type="text"
-                    value={paymentTerms}
-                    onChange={(e) => setPaymentTerms(e.target.value)}
-                    placeholder="e.g. ₹200 advance, balance to driver"
-                    className="w-full px-3 py-2 rounded-xl border border-[#EBE5D8] text-xs font-medium text-[#1C1C1C] bg-[#FAF6EE]/50 focus:bg-white focus:border-[#F15A24] outline-none"
-                  />
-                </div>
+                )}
               </div>
 
               {/* Full Trip Itinerary Details */}

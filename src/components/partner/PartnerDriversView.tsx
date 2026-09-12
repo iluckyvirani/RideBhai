@@ -198,18 +198,37 @@ export const PartnerDriversView: React.FC = () => {
               className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
                 (driver.verificationStatus || 'pending_verification') === 'verified'
                   ? 'bg-[#EBF7EE] text-[#00A86B] border-[#BDE8C7]'
-                  : driver.verificationStatus === 'rejected'
-                    ? 'bg-red-50 text-red-600 border-red-200'
-                    : 'bg-amber-50 text-amber-700 border-amber-200'
+                  : driver.verificationStatus === 'blocked'
+                    ? 'bg-red-100 text-red-700 border-red-300'
+                    : driver.verificationStatus === 'rejected'
+                      ? 'bg-red-50 text-red-600 border-red-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
               }`}
             >
               {(driver.verificationStatus || 'pending_verification') === 'verified'
                 ? 'Verified'
-                : driver.verificationStatus === 'rejected'
-                  ? 'Rejected'
-                  : 'Pending verification'}
+                : driver.verificationStatus === 'blocked'
+                  ? 'Blocked'
+                  : driver.verificationStatus === 'rejected'
+                    ? 'Rejected'
+                    : 'Pending verification'}
             </span>
           </div>
+
+          {driver.verificationStatus === 'blocked' && (
+            <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[11px] font-bold">
+              <p className="font-extrabold text-red-800">🚫 Your driver is now blocked by admin</p>
+              <p className="mt-0.5 text-red-600">{driver.rejectionReason || 'Violated community guidelines'}</p>
+              <p className="mt-0.5 text-[10px] text-red-500">Car postings with this driver are hidden from the platform.</p>
+            </div>
+          )}
+
+          {driver.verificationStatus === 'rejected' && driver.rejectionReason && (
+            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-bold">
+              <p className="font-extrabold text-amber-900">KYC Rejection Note</p>
+              <p className="mt-0.5 text-amber-700">{driver.rejectionReason}</p>
+            </div>
+          )}
           <p className="text-[11px] text-[#6B6B6B]">
             +91 {driver.phone}
             {driver.email ? ` · ${driver.email}` : ''}

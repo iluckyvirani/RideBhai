@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Ticket } from 'lucide-react';
+import { Share2, Ticket } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { Deal } from '../../lib/deals';
 import { ChatListSkeleton } from './SkeletonLoader';
@@ -21,6 +21,7 @@ export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded, on
   const { deals, currentUser, refreshDeals, rateDeal } = useAppStore();
   const [loading, setLoading] = useState(true);
   const [ratingId, setRatingId] = useState('');
+  const [sharedId, setSharedId] = useState('');
 
   useEffect(() => {
     refreshDeals().finally(() => setLoading(false));
@@ -43,16 +44,49 @@ export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded, on
     }
   };
 
+  const shareDeal = async (deal: Deal) => {
+    const route = deal.fromCity && deal.toCity ? `${deal.fromCity} → ${deal.toCity}\n` : '';
+    const text = `${deal.title}\n${route}₹${deal.price.toLocaleString('en-IN')} · ${deal.status}\nBooking ref: #${deal.id.slice(-6)}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Ride Bhai booking', text });
+        return;
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setSharedId(deal.id);
+      setTimeout(() => setSharedId(''), 2000);
+    } catch {
+      // clipboard unavailable; nothing more we can do
+    }
+  };
+
   const renderDeal = (deal: Deal, kind: 'incoming' | 'outgoing') => (
     <div key={deal.id} className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-2">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] font-extrabold uppercase text-[#F15A24]">
           {deal.listingType} · {deal.channel === 'ridebhai' ? 'Ride Bhai' : 'Direct'}
         </span>
-        <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${statusClass(deal.status)}`}>
-          {deal.status}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${statusClass(deal.status)}`}>
+            {deal.status}
+          </span>
+          <button
+            type="button"
+            onClick={() => shareDeal(deal)}
+            title="Share booking"
+            className="w-6 h-6 shrink-0 rounded-full bg-[#FAF6EE] flex items-center justify-center text-[#6B6B6B] hover:text-[#F15A24] active-press"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
+      {sharedId === deal.id && (
+        <p className="text-[10px] font-bold text-[#2E9E5B] -mt-1">Booking details copied to clipboard.</p>
+      )}
       <p className="text-sm font-extrabold text-[#1C1C1C]">{deal.title}</p>
       <p className="text-[11px] text-[#6B6B6B]">
         {kind === 'outgoing' ? `You requested ${deal.sellerName}` : `${deal.buyerName} requested you`}

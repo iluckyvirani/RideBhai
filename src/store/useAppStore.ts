@@ -994,7 +994,7 @@ export function useAppStore() {
   const canPostCar = useCallback((): {
     ok: boolean;
     reason?: string;
-    code?: 'no_driver' | 'pending_driver' | 'no_vehicle' | 'pending_vehicle';
+    code?: 'no_driver' | 'pending_driver' | 'no_vehicle' | 'pending_vehicle' | 'blocked_driver';
   } => {
     const drivers = currentUser?.driverProfiles?.length
       ? currentUser.driverProfiles
@@ -1022,8 +1022,16 @@ export function useAppStore() {
         dp.aadhaarDoc &&
         dp.selfieDoc
     );
+    const allDriversBlocked = drivers.length > 0 && drivers.every((dp) => dp.verificationStatus === 'blocked');
     const hasVehicle = partnerCars.some((v) => isVehicleReady(v));
     const verifiedVehicle = partnerCars.some((v) => isVehicleReady(v) && v.verificationStatus === 'verified');
+    if (allDriversBlocked) {
+      return {
+        ok: false,
+        code: 'blocked_driver',
+        reason: 'Your driver is now blocked by admin. You cannot post car listings.',
+      };
+    }
     if (!completeDriver) {
       return {
         ok: false,
@@ -1700,16 +1708,6 @@ export function useAppStore() {
       totalCustomerPrice: number;
       agencyCommission: number;
       tripDetails: string;
-      routeHighlights?: string[];
-      tourType?: string;
-      tollTaxOption?: string;
-      parkingOption?: string;
-      driverNightAllowance?: string;
-      kmLimit?: string;
-      luggageCapacity?: string;
-      driverPreferences?: string;
-      paymentTerms?: string;
-      payoutMode?: string;
       desiredCar?: { name: string; specs: string[] };
     }) => {
       const tourGate = canPostTour();
@@ -1744,16 +1742,6 @@ export function useAppStore() {
           totalCustomerPrice: Number(tripData.totalCustomerPrice),
           agencyCommission: Number(tripData.agencyCommission || 0),
           tripDetails: tripData.tripDetails,
-          tourType: tripData.tourType,
-          routeHighlights: tripData.routeHighlights || [],
-          tollTaxOption: tripData.tollTaxOption,
-          parkingOption: tripData.parkingOption,
-          driverNightAllowance: tripData.driverNightAllowance,
-          kmLimit: tripData.kmLimit,
-          luggageCapacity: tripData.luggageCapacity,
-          driverPreferences: tripData.driverPreferences,
-          paymentTerms: tripData.paymentTerms,
-          payoutMode: tripData.payoutMode,
         },
       });
       await Promise.all([refreshListings(), hydrateMe()]);

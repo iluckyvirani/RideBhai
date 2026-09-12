@@ -34,8 +34,8 @@ export function RateLastBookingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60">
-      <div className="w-full max-w-sm rounded-3xl bg-white border border-[#EBE5D8] p-5 space-y-3">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 max-w-[430px] mx-auto">
+      <div className="w-full max-w-sm rounded-3xl bg-white border border-[#EBE5D8] p-5 space-y-3 shadow-2xl">
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-[10px] font-extrabold uppercase text-[#F15A24] flex items-center gap-1">

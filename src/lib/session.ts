@@ -15,6 +15,8 @@ export type ServerUser = {
   profile_status: AppUser['profileStatus'];
   profile_completed: boolean;
   rejection_reason?: string | null;
+  is_blocked?: boolean;
+  blocked_reason?: string | null;
   created_at?: string;
 };
 
@@ -106,6 +108,8 @@ export function mapServerUser(
     profileCompleted: Boolean(row.profile_completed),
     createdAt: row.created_at || new Date().toISOString(),
     rejectionReason: row.rejection_reason || undefined,
+    isBlocked: Boolean(row.is_blocked),
+    blockedReason: row.blocked_reason || undefined,
     vehicles: (extras?.vehicles || []).map(mapVehicle),
     driverProfiles,
     driverProfile: driverProfiles[0],

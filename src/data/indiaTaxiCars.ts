@@ -1,4 +1,4 @@
-export type CarBodyType = 'hatchback' | 'sedan' | 'suv' | 'muv';
+export type CarBodyType = 'hatchback' | 'sedan' | 'suv' | 'muv' | 'traveler' | 'bus' | 'commercial';
 
 export type TaxiCar = {
   id?: string;
@@ -13,6 +13,9 @@ export const CAR_BODY_TYPES: { id: CarBodyType; label: string }[] = [
   { id: 'sedan', label: 'Sedan' },
   { id: 'suv', label: 'SUV' },
   { id: 'muv', label: 'MUV / Innova class' },
+  { id: 'traveler', label: 'Traveller' },
+  { id: 'bus', label: 'Bus' },
+  { id: 'commercial', label: 'Commercial' },
 ];
 
 /** Fallback if the API is offline. Admin catalog is the live source. */
@@ -69,6 +72,33 @@ export const INDIA_TAXI_CARS: TaxiCar[] = [
   { make: 'Renault', model: 'Triber', body: 'muv', seats: 7 },
   { make: 'Mahindra', model: 'Marazzo', body: 'muv', seats: 7 },
   { make: 'Mahindra', model: 'Xylo', body: 'muv', seats: 7 },
+
+  { make: 'Force Motors', model: 'Tempo Traveller 12 Seater', body: 'traveler', seats: 12 },
+  { make: 'Force Motors', model: 'Tempo Traveller 17 Seater', body: 'traveler', seats: 17 },
+  { make: 'Force Motors', model: 'Tempo Traveller 26 Seater', body: 'traveler', seats: 26 },
+  { make: 'Force Motors', model: 'Urbania', body: 'traveler', seats: 14 },
+  { make: 'Tata', model: 'Winger', body: 'traveler', seats: 13 },
+  { make: 'Mahindra', model: 'Tourister', body: 'traveler', seats: 15 },
+
+  { make: 'Tata', model: 'Starbus 24 Seater', body: 'bus', seats: 24 },
+  { make: 'Tata', model: 'Starbus 32 Seater', body: 'bus', seats: 32 },
+  { make: 'Tata', model: 'Ultra Bus 40 Seater', body: 'bus', seats: 40 },
+  { make: 'Ashok Leyland', model: 'Viking Bus', body: 'bus', seats: 36 },
+  { make: 'Ashok Leyland', model: 'Oyster Bus', body: 'bus', seats: 28 },
+  { make: 'Eicher', model: 'Starline Bus', body: 'bus', seats: 30 },
+  { make: 'Volvo', model: '9600 Luxury Coach', body: 'bus', seats: 45 },
+  { make: 'BharatBenz', model: 'Tourist Coach', body: 'bus', seats: 36 },
+
+  { make: 'Tata', model: 'Ace (Chhota Hathi)', body: 'commercial', seats: 2 },
+  { make: 'Tata', model: 'Intra V30', body: 'commercial', seats: 2 },
+  { make: 'Tata', model: '407 Pickup', body: 'commercial', seats: 3 },
+  { make: 'Mahindra', model: 'Bolero Maxi Truck', body: 'commercial', seats: 2 },
+  { make: 'Mahindra', model: 'Bolero Pik-Up', body: 'commercial', seats: 2 },
+  { make: 'Mahindra', model: 'Jeeto', body: 'commercial', seats: 2 },
+  { make: 'Ashok Leyland', model: 'Dost+', body: 'commercial', seats: 2 },
+  { make: 'Ashok Leyland', model: 'Bada Dost', body: 'commercial', seats: 3 },
+  { make: 'Maruti Suzuki', model: 'Super Carry', body: 'commercial', seats: 2 },
+  { make: 'Force Motors', model: 'Trax Kargo King', body: 'commercial', seats: 2 },
 ];
 
 let liveCars: TaxiCar[] = INDIA_TAXI_CARS;
@@ -131,5 +161,8 @@ export function desiredCarBody(name?: string): CarBodyType | undefined {
   if (lower.includes('sedan')) return 'sedan';
   if (lower.includes('muv') || lower.includes('innova') || lower.includes('ertiga')) return 'muv';
   if (lower.includes('suv')) return 'suv';
+  if (lower.includes('traveler') || lower.includes('traveller') || lower.includes('tempo') || lower.includes('winger') || lower.includes('urbania')) return 'traveler';
+  if (lower.includes('bus') || lower.includes('volvo') || lower.includes('coach') || lower.includes('starbus')) return 'bus';
+  if (lower.includes('commercial') || lower.includes('pickup') || lower.includes('truck') || lower.includes('chhota hathi') || lower.includes('dost') || lower.includes('407') || lower.includes('ace')) return 'commercial';
   return undefined;
 }

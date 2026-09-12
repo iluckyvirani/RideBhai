@@ -236,7 +236,7 @@ export const CompleteProfileView: React.FC<{ embedded?: boolean }> = ({ embedded
               Use demo Aadhaar
             </button>
             {uploading === 'aadhaar' && (
-              <p className="text-[11px] font-bold text-[#F15A24] mt-1">Uploading to Cloudinary…</p>
+              <p className="text-[11px] font-bold text-[#F15A24] mt-1">Uploading your Aadhaar…</p>
             )}
             {aadhaarDoc && (
               <p className="text-[11px] font-bold text-[#00A86B] mt-1 flex items-center gap-1">
@@ -268,7 +268,7 @@ export const CompleteProfileView: React.FC<{ embedded?: boolean }> = ({ embedded
               Use demo selfie
             </button>
             {uploading === 'selfie' && (
-              <p className="text-[11px] font-bold text-[#F15A24] mt-1">Uploading to Cloudinary…</p>
+              <p className="text-[11px] font-bold text-[#F15A24] mt-1">Uploading your selfie…</p>
             )}
             {selfieDoc && (
               <p className="text-[11px] font-bold text-[#00A86B] mt-1 flex items-center gap-1">

@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   RefreshCw,
   CheckCircle,
+  LifeBuoy,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { UserRole } from '../../types';
@@ -19,9 +20,14 @@ import { MyBookingsPreview } from '../common/MyBookingsPreview';
 interface RiderProfileViewProps {
   onSwitchRole: (role: UserRole) => void;
   onOpenBookings?: () => void;
+  onOpenSupportTickets?: () => void;
 }
 
-export const RiderProfileView: React.FC<RiderProfileViewProps> = ({ onSwitchRole, onOpenBookings }) => {
+export const RiderProfileView: React.FC<RiderProfileViewProps> = ({
+  onSwitchRole,
+  onOpenBookings,
+  onOpenSupportTickets,
+}) => {
   const { currentRider, updateRiderProfile, resetDemoData } = useAppStore();
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
@@ -155,6 +161,26 @@ export const RiderProfileView: React.FC<RiderProfileViewProps> = ({ onSwitchRole
             <span className="font-semibold text-[#1C1C1C]">{currentRider.city}</span>
           </div>
         </div>
+      </div>
+
+      {/* Support & Help Tickets */}
+      <div className="bg-white rounded-3xl p-4 border border-[#EBE5D8] shadow-xs space-y-2">
+        <button
+          type="button"
+          onClick={onOpenSupportTickets}
+          className="w-full p-3.5 bg-[#FAF6EE] border border-[#EBE5D8] hover:border-[#F15A24] rounded-2xl text-left active-press transition-all flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[#FFF0EB] flex items-center justify-center text-[#F15A24]">
+              <LifeBuoy className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#1C1C1C]">Help & Support Tickets</p>
+              <p className="text-[10px] text-[#6B6B6B]">Raise a ticket and view direct admin resolution notes</p>
+            </div>
+          </div>
+          <span className="text-xs font-bold text-[#F15A24]">Open →</span>
+        </button>
       </div>
 
       {/* Role Switcher Sandbox Cards */}

@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { Car, MapPin, X, IndianRupee, Navigation, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Car, MapPin, X, IndianRupee, Navigation, Calendar, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
 import type { CarListing } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { DealChoiceActions } from '../common/ContactActions';
 import { PosterCard } from '../common/PosterCard';
 import { ListSkeleton } from '../common/SkeletonLoader';
+import { shareCarListing } from '../../lib/share';
 import {
   BrowseFilters,
   browseFilterActive,
@@ -195,12 +196,23 @@ export const CarsBrowseView: React.FC<CarsBrowseViewProps> = ({
                   {[carTypeLabel(car), `${car.seats} seater`, car.partnerName].filter(Boolean).join(' · ')}
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-sm font-extrabold text-[#F15A24] flex items-center justify-end">
-                  <IndianRupee className="w-3.5 h-3.5" />
-                  {car.fullCarPrice.toLocaleString('en-IN')}
-                </p>
-                <p className="text-[10px] font-bold text-[#6B6B6B]">Full car</p>
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  <p className="text-sm font-extrabold text-[#F15A24] flex items-center justify-end">
+                    <IndianRupee className="w-3.5 h-3.5" />
+                    {car.fullCarPrice.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-[10px] font-bold text-[#6B6B6B]">Full car</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => shareCarListing(car)}
+                  className="p-2 rounded-xl bg-[#FAF6EE] hover:bg-[#F15A24]/10 text-[#6B6B6B] hover:text-[#F15A24] border border-[#EBE5D8] transition-colors flex items-center gap-1 text-[11px] font-bold shrink-0 active-press"
+                  title="Share Car"
+                >
+                  <Share2 className="w-3.5 h-3.5 text-[#F15A24]" />
+                  <span className="hidden sm:inline">Share</span>
+                </button>
               </div>
             </div>
 

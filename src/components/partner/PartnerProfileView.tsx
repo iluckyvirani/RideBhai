@@ -13,6 +13,7 @@ import {
   ChevronRight,
   PhoneCall,
   Landmark,
+  LifeBuoy,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { UserRole } from '../../types';
@@ -30,6 +31,7 @@ interface PartnerProfileViewProps {
   onOpenMyTours?: () => void;
   onOpenMyBookings?: () => void;
   onOpenBankDetails?: () => void;
+  onOpenSupportTickets?: () => void;
 }
 
 export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
@@ -41,6 +43,7 @@ export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
   onOpenMyTours,
   onOpenMyBookings,
   onOpenBankDetails,
+  onOpenSupportTickets,
 }) => {
   const {
     currentUser,
@@ -263,6 +266,24 @@ export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
             {myBookings.length === 0
               ? 'No bookings yet. Open to view chat and Ride Bhai deals.'
               : `${myBookings.length} booking${myBookings.length === 1 ? '' : 's'}`}
+          </p>
+        </div>
+        <span className="text-[11px] font-extrabold text-[#F15A24] flex items-center gap-0.5">
+          Open <ChevronRight className="w-4 h-4" />
+        </span>
+      </button>
+
+      <button
+        type="button"
+        onClick={onOpenSupportTickets}
+        className="w-full p-4 rounded-3xl bg-white border border-[#EBE5D8] shadow-card flex items-center justify-between text-left active-press"
+      >
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-wider text-[#1C1C1C] flex items-center gap-2">
+            <LifeBuoy className="w-4 h-4 text-[#F15A24]" /> Help & Support Tickets
+          </p>
+          <p className="text-[11px] text-[#6B6B6B] mt-1">
+            Raise support tickets, track query progress, and view admin resolution notes.
           </p>
         </div>
         <span className="text-[11px] font-extrabold text-[#F15A24] flex items-center gap-0.5">
