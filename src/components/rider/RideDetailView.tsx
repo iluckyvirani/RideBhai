@@ -52,9 +52,10 @@ export const RideDetailView: React.FC<RideDetailViewProps> = ({
   const isBoosted = driver ? isDriverBoosted(driver.id) : false;
   const totalPrice = ride.pricePerSeat * selectedSeats;
 
-  const handleConfirmPayment = (method: 'upi' | 'card') => {
+  const handleConfirmPayment = (method: 'upi' | 'card' | 'razorpay') => {
     try {
-      const booking = bookSeats(ride.id, selectedSeats, method);
+      const paymentMethod = method === 'razorpay' ? 'card' : method;
+      const booking = bookSeats(ride.id, selectedSeats, paymentMethod);
       onBookSuccess(booking.id);
     } catch (err: any) {
       alert(err.message || 'Failed to book seats');

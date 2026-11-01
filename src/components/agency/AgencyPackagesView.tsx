@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { PackageCheck, Check, Zap, ShieldCheck, AlertCircle } from 'lucide-react';
+import { PackageCheck, Check, Zap, ShieldCheck, AlertCircle, Loader2, CreditCard } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { useAppStore } from '../../store/useAppStore';
 import { MockPaymentModal } from '../common/MockPaymentModal';
 import { api } from '../../lib/api';
 import { PlanCardSkeleton } from '../common/SkeletonLoader';
+import { openRazorpayCheckout } from '../../lib/razorpay';
 
 type ServerPlan = {
   id: string;
@@ -41,6 +43,7 @@ export const AgencyPackagesView: React.FC = () => {
   const [plans, setPlans] = useState<ServerPlan[]>([]);
   const [subscription, setSubscription] = useState<ServerSub | null>(null);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
+  const [isProcessingRazorpay, setIsProcessingRazorpay] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const [successNotif, setSuccessNotif] = useState('');
   const [error, setError] = useState('');
@@ -71,16 +74,107 @@ export const AgencyPackagesView: React.FC = () => {
     ? Math.max(0, Math.ceil((new Date(subscription.expires_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
     : 0;
 
-  const handlePurchase = (packageId: string) => {
+  /**
+   * Primary checkout flow: Official Razorpay Gateway
+   */
+  const handleRazorpayPurchase = async (packageId: string) => {
     if (!verified) {
       setError('Admin must verify your KYC before you can buy a plan.');
       return;
     }
+
     setPurchasingId(packageId);
-    setPayOpen(true);
+    setIsProcessingRazorpay(true);
+    setError('');
+
+    try {
+      // 1. Create order on the server
+      const orderData = await api<{
+        orderId: string;
+        amount: number;
+        currency: string;
+        keyId: string;
+        plan: any;
+      }>('/plans/create-order', {
+        method: 'POST',
+        json: { planId: packageId },
+      });
+
+      const keyId =
+        orderData.keyId ||
+        (import.meta.env.VITE_RAZORPAY_KEY_ID as string) ||
+        'rzp_test_Tv0524KOYGaeFl';
+
+      // 2. Open Razorpay Checkout modal
+      await openRazorpayCheckout({
+        key: keyId,
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'Ride Bhai',
+        description: `${orderData.plan?.name || 'Partner'} Plan`,
+        order_id: orderData.orderId,
+        theme: { color: '#F15A24' },
+        prefill: {
+          name: currentUser?.name || '',
+          contact: currentUser?.phone || '',
+        },
+        handler: async (response) => {
+          try {
+            // 3. Verify signature on server and activate plan
+            await api('/plans/verify-payment', {
+              method: 'POST',
+              json: {
+                planId: packageId,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              },
+            });
+
+            const me = await hydrateMe();
+            setSubscription((me?.subscription as ServerSub) || null);
+            setSuccessNotif(
+              `Payment verified (${response.razorpay_payment_id}). Plan is active! 🚀`
+            );
+
+            confetti({
+              particleCount: 90,
+              spread: 75,
+              origin: { y: 0.6 },
+              colors: ['#F15A24', '#FF8A00', '#2E9E5B', '#FFB800'],
+            });
+
+            setTimeout(() => setSuccessNotif(''), 6000);
+          } catch (verifyErr: any) {
+            setError(verifyErr?.message || 'Payment verification failed');
+          } finally {
+            setPurchasingId(null);
+            setIsProcessingRazorpay(false);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setPurchasingId(null);
+            setIsProcessingRazorpay(false);
+          },
+        },
+      });
+    } catch (err: any) {
+      console.error('Razorpay order initiation failed:', err);
+      // Fallback: If network or server error, offer manual/simulated payment
+      setError(
+        err?.message
+          ? `${err.message}. You can also use simulated payment.`
+          : 'Could not connect to Razorpay. Please try again.'
+      );
+      setIsProcessingRazorpay(false);
+    }
   };
 
-  const handlePaySuccess = async (method: 'upi' | 'card') => {
+  /**
+   * Fallback mock payment handler
+   */
+  const handlePaySuccess = async (method: 'upi' | 'card' | 'razorpay') => {
     if (!purchasingId) return;
     try {
       await api('/plans/subscribe', {
@@ -98,16 +192,23 @@ export const AgencyPackagesView: React.FC = () => {
       setError(err?.message || 'Purchase failed');
     } finally {
       setPurchasingId(null);
+      setPayOpen(false);
     }
   };
 
   return (
     <div className="space-y-4 pb-24 animate-fade-in">
-      <div>
-        <h2 className="text-lg font-extrabold text-[#1C1C1C]">Plans</h2>
-        <p className="text-[11px] text-[#6B6B6B]">
-          After admin verifies your profile, buy a plan to book, chat, and post. This is the only in-app payment.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-extrabold text-[#1C1C1C]">Plans</h2>
+          <p className="text-[11px] text-[#6B6B6B]">
+            Buy a plan to unlock book, chat, and post.
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-bold">
+          <CreditCard className="w-3 h-3 text-blue-600" />
+          <span>Razorpay Enabled</span>
+        </div>
       </div>
 
       {!verified && (
@@ -174,7 +275,9 @@ export const AgencyPackagesView: React.FC = () => {
 
         {plans.map((pkg) => {
           const isCurrentActive = subscription?.plan_id === pkg.id;
+          const isThisPurchasing = purchasingId === pkg.id && isProcessingRazorpay;
           const benefits = benefitsList(pkg.benefits);
+
           return (
             <div
               key={pkg.id}
@@ -207,29 +310,56 @@ export const AgencyPackagesView: React.FC = () => {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 pt-2">
+
+              {/* Action Buttons */}
+              <div className="mt-4 pt-2 space-y-2">
                 <button
-                  onClick={() => handlePurchase(pkg.id)}
-                  disabled={purchasingId === pkg.id || isCurrentActive || !verified}
+                  onClick={() => handleRazorpayPurchase(pkg.id)}
+                  disabled={Boolean(purchasingId) || isCurrentActive || !verified}
                   className={`w-full py-3 rounded-2xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 ${
                     isCurrentActive
                       ? 'bg-emerald-100 text-emerald-800 cursor-default'
                       : !verified
                         ? 'bg-[#E5E5E5] text-[#6B6B6B] cursor-not-allowed'
-                        : pkg.popular
-                          ? 'bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white shadow-md'
-                          : 'bg-[#1C1C1C] text-white'
+                        : isThisPurchasing
+                          ? 'bg-[#F15A24]/80 text-white cursor-wait'
+                          : pkg.popular
+                            ? 'bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white shadow-md active-press'
+                            : 'bg-[#1C1C1C] text-white active-press'
                   }`}
                 >
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>
-                    {isCurrentActive
-                      ? 'Current active plan'
-                      : !verified
-                        ? 'Verify KYC first'
-                        : `Pay ₹${pkg.price.toLocaleString('en-IN')} in app`}
-                  </span>
+                  {isThisPurchasing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Connecting Razorpay...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>
+                        {isCurrentActive
+                          ? 'Current active plan'
+                          : !verified
+                            ? 'Verify KYC first'
+                            : `Pay ₹${pkg.price.toLocaleString('en-IN')} via Razorpay`}
+                      </span>
+                    </>
+                  )}
                 </button>
+
+                {/* Secondary Simulated Demo Pay Option */}
+                {!isCurrentActive && verified && (
+                  <button
+                    onClick={() => {
+                      setPurchasingId(pkg.id);
+                      setPayOpen(true);
+                    }}
+                    disabled={Boolean(purchasingId)}
+                    className="w-full text-center py-1.5 text-[11px] font-semibold text-[#8C827A] hover:text-[#1C1C1C] transition-colors"
+                  >
+                    Simulated / Demo Checkout
+                  </button>
+                )}
               </div>
             </div>
           );

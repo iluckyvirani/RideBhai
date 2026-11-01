@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { X, CreditCard, ShieldCheck, CheckCircle2, Loader2, QrCode, ArrowRight, Lock } from 'lucide-react';
+import { X, CreditCard, ShieldCheck, CheckCircle2, Loader2, QrCode, ArrowRight, Lock, Zap } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { openRazorpayCheckout } from '../../lib/razorpay';
 
 interface MockPaymentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (method: 'upi' | 'card') => void;
+  onSuccess: (method: 'upi' | 'card' | 'razorpay') => void;
   title: string;
   amount: number;
   itemDescription: string;
@@ -19,7 +20,7 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
   amount,
   itemDescription,
 }) => {
-  const [tab, setTab] = useState<'upi' | 'card'>('upi');
+  const [tab, setTab] = useState<'razorpay' | 'upi' | 'card'>('razorpay');
   const [selectedUpiApp, setSelectedUpiApp] = useState<'gpay' | 'phonepe' | 'paytm' | 'other'>('gpay');
   const [upiId, setUpiId] = useState('rohan@oksbi');
   const [cardNumber, setCardNumber] = useState('4532 •••• •••• 8891');
@@ -28,14 +29,62 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
   const [cardName, setCardName] = useState('Rohan Mehra');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [txnId, setTxnId] = useState('');
 
   if (!isOpen) return null;
 
-  const handlePay = () => {
+  const handleRazorpayPay = async () => {
+    setIsProcessing(true);
+    const keyId =
+      (import.meta.env.VITE_RAZORPAY_KEY_ID as string) || 'rzp_test_Tv0524KOYGaeFl';
+
+    try {
+      await openRazorpayCheckout({
+        key: keyId,
+        amount: Math.round(amount * 100),
+        currency: 'INR',
+        name: 'Ride Bhai',
+        description: itemDescription,
+        order_id: '', // Razorpay test client-checkout opens seamlessly without server order
+        theme: { color: '#F15A24' },
+        handler: (response) => {
+          const paymentId = response.razorpay_payment_id || `pay_${Date.now()}`;
+          setTxnId(paymentId);
+          setIsProcessing(false);
+          setIsSuccess(true);
+
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#F15A24', '#FF8A00', '#2E9E5B', '#FFB800'],
+          });
+
+          setTimeout(() => {
+            setIsSuccess(false);
+            onSuccess('razorpay');
+            onClose();
+          }, 1400);
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessing(false);
+          },
+        },
+      });
+    } catch {
+      // If Razorpay popup cannot open or fails, fallback to simulated
+      setIsProcessing(false);
+      setTab('upi');
+    }
+  };
+
+  const handleSimulatedPay = () => {
     setIsProcessing(true);
 
     setTimeout(() => {
       setIsProcessing(false);
+      setTxnId(`RB${Math.floor(10000000 + Math.random() * 90000000)}`);
       setIsSuccess(true);
 
       // Trigger celebratory confetti
@@ -48,7 +97,7 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
 
       setTimeout(() => {
         setIsSuccess(false);
-        onSuccess(tab);
+        onSuccess(tab === 'card' ? 'card' : 'upi');
         onClose();
       }, 1400);
     }, 1200);
@@ -65,7 +114,7 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-sm text-[#1C1C1C] leading-none">{title}</h3>
-              <p className="text-[11px] text-[#6B6B6B] mt-0.5">256-bit Secure Mock Checkout</p>
+              <p className="text-[11px] text-[#6B6B6B] mt-0.5">Razorpay Gateway & Demo Checkout</p>
             </div>
           </div>
           {!isProcessing && !isSuccess && (
@@ -88,14 +137,14 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
               <h4 className="text-lg font-extrabold text-[#1C1C1C]">Payment Successful!</h4>
               <p className="text-xs text-[#6B6B6B] mt-1">₹{amount} paid successfully</p>
               <span className="mt-3 text-[11px] text-[#2E9E5B] font-semibold bg-[#EBF7F0] px-3 py-1 rounded-full">
-                Transaction ID: RB{Math.floor(10000000 + Math.random() * 90000000)}
+                Transaction ID: {txnId || `RB${Math.floor(10000000 + Math.random() * 90000000)}`}
               </span>
             </div>
           ) : isProcessing ? (
             <div className="py-12 text-center flex flex-col items-center justify-center">
               <Loader2 className="w-12 h-12 text-[#F15A24] animate-spin mb-4" />
-              <h4 className="font-bold text-base text-[#1C1C1C]">Processing Simulated Payment...</h4>
-              <p className="text-xs text-[#6B6B6B] mt-1">Communicating with bank mock gateway</p>
+              <h4 className="font-bold text-base text-[#1C1C1C]">Connecting Payment Gateway...</h4>
+              <p className="text-xs text-[#6B6B6B] mt-1">Please complete transaction in the prompt</p>
             </div>
           ) : (
             <>
@@ -112,26 +161,53 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
               </div>
 
               {/* Payment Tabs */}
-              <div className="grid grid-cols-2 gap-2 bg-[#F2EDE2] p-1 rounded-xl mb-4 text-xs font-bold">
+              <div className="grid grid-cols-3 gap-1.5 bg-[#F2EDE2] p-1 rounded-xl mb-4 text-xs font-bold">
+                <button
+                  onClick={() => setTab('razorpay')}
+                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 ${
+                    tab === 'razorpay' ? 'bg-[#F15A24] text-white shadow-sm' : 'text-[#6B6B6B]'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  Razorpay
+                </button>
                 <button
                   onClick={() => setTab('upi')}
-                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 ${
                     tab === 'upi' ? 'bg-white text-[#F15A24] shadow-sm' : 'text-[#6B6B6B]'
                   }`}
                 >
                   <QrCode className="w-3.5 h-3.5" />
-                  UPI / QR Code
+                  Mock UPI
                 </button>
                 <button
                   onClick={() => setTab('card')}
-                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                  className={`py-2 rounded-lg transition-all flex items-center justify-center gap-1 ${
                     tab === 'card' ? 'bg-white text-[#F15A24] shadow-sm' : 'text-[#6B6B6B]'
                   }`}
                 >
                   <CreditCard className="w-3.5 h-3.5" />
-                  Debit / Credit Card
+                  Mock Card
                 </button>
               </div>
+
+              {/* Razorpay Tab */}
+              {tab === 'razorpay' && (
+                <div className="space-y-3 p-4 rounded-2xl bg-blue-50/60 border border-blue-200">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-600 text-white">
+                      OFFICIAL GATEWAY
+                    </span>
+                    <span className="text-xs font-bold text-blue-900">Razorpay Test Checkout</span>
+                  </div>
+                  <p className="text-xs text-blue-800 leading-relaxed">
+                    Opens Razorpay checkout popup. Test with test UPI, NetBanking, QR, or Razorpay test cards.
+                  </p>
+                  <div className="text-[11px] font-mono text-blue-700 bg-white/70 p-2 rounded-lg border border-blue-100">
+                    Key: rzp_test_Tv0524KOYGaeFl
+                  </div>
+                </div>
+              )}
 
               {/* UPI Tab */}
               {tab === 'upi' && (
@@ -139,9 +215,9 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
                   <p className="text-xs font-bold text-[#1C1C1C]">Select UPI App:</p>
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { id: 'gpay', name: 'Google Pay', icon: '🔵 Google Pay' },
-                      { id: 'phonepe', name: 'PhonePe', icon: '🟣 PhonePe' },
-                      { id: 'paytm', name: 'Paytm', icon: '🔷 Paytm' },
+                      { id: 'gpay', name: 'Google Pay' },
+                      { id: 'phonepe', name: 'PhonePe' },
+                      { id: 'paytm', name: 'Paytm' },
                     ].map((app) => (
                       <button
                         key={app.id}
@@ -176,7 +252,7 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
                   <div className="p-3 bg-[#EBF7F0] rounded-xl border border-[#B8E6CB] flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-[#2E9E5B] flex-shrink-0" />
                     <span className="text-[11px] text-[#2E9E5B] font-medium leading-tight">
-                      Instant Mock Simulation: Click Pay below to instantly complete.
+                      Instant Mock Simulation: Click Pay below to complete.
                     </span>
                   </div>
                 </div>
@@ -236,15 +312,17 @@ export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({
         {!isSuccess && !isProcessing && (
           <div className="p-4 bg-white border-t border-[#EBE5D8]">
             <button
-              onClick={handlePay}
-              className="w-full py-3.5 rounded-xl brand-gradient text-white font-bold text-sm shadow-md active-press flex items-center justify-center gap-2 hover:opacity-95"
+              onClick={tab === 'razorpay' ? handleRazorpayPay : handleSimulatedPay}
+              className={`w-full py-3.5 rounded-xl text-white font-bold text-sm shadow-md active-press flex items-center justify-center gap-2 hover:opacity-95 ${
+                tab === 'razorpay' ? 'bg-[#0c2340] hover:bg-[#08182b]' : 'brand-gradient'
+              }`}
             >
-              <span>Pay ₹{amount}</span>
+              <span>{tab === 'razorpay' ? `Pay ₹${amount} with Razorpay` : `Simulate Pay ₹${amount}`}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <p className="text-[10px] text-center text-[#6B6B6B] mt-2 flex items-center justify-center gap-1">
               <Lock className="w-3 h-3 text-[#2E9E5B]" />
-              Demo Mock Gateway — No real money will be charged
+              {tab === 'razorpay' ? 'Razorpay Test Mode — 256-bit Encrypted' : 'Demo Mock Gateway — No real money charged'}
             </p>
           </div>
         )}
