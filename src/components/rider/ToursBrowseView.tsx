@@ -136,9 +136,10 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1 shadow-2xs">
-                  <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
-                  Tour ID: {tour.displayId || formatTourId(tour.id)}
+                <span className="px-3 py-1 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-xs font-black tracking-wide inline-flex items-center gap-1.5 shadow-2xs">
+                  <Tag className="w-3.5 h-3.5 text-[#F15A24]" />
+                  <span>Tour ID:</span>
+                  <span className="text-[#F15A24] font-mono font-black">{tour.displayId || formatTourId(tour.id)}</span>
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-[#FFF0EB] text-[#F15A24] text-[10px] font-extrabold">
                   {tour.tripSide === 'two_side' ? 'Two side' : 'One side'}

@@ -216,9 +216,10 @@ export const AgencyToursFeed: React.FC = () => {
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="px-2 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1">
-                          <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
-                          Tour ID: {post.displayId || formatTourId(post.id)}
+                        <span className="px-2.5 py-1 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-xs font-black tracking-wide inline-flex items-center gap-1.5 shadow-2xs">
+                          <Tag className="w-3.5 h-3.5 text-[#F15A24]" />
+                          <span>Tour ID:</span>
+                          <span className="text-[#F15A24] font-mono font-black">{post.displayId || formatTourId(post.id)}</span>
                         </span>
                         <h2 className="text-xs font-extrabold text-[#1C1C1C] leading-tight">
                           {post.agencyName}

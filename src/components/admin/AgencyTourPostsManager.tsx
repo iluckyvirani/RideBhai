@@ -114,9 +114,10 @@ export const AgencyTourPostsManager: React.FC = () => {
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="px-2 py-0.5 rounded-md bg-[#FFF0EB] border border-[#FFD8CB] text-[#F15A24] text-[11px] font-black inline-flex items-center gap-1">
-                      <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
-                      Tour ID: {post.displayId || formatTourId(post.id)}
+                    <span className="px-2.5 py-1 rounded-xl bg-[#FFF0EB] border border-[#FFD8CB] text-[#1C1C1C] text-xs font-black inline-flex items-center gap-1.5 shadow-2xs">
+                      <Tag className="w-3.5 h-3.5 text-[#F15A24]" />
+                      <span>Tour ID:</span>
+                      <span className="text-[#F15A24] font-mono font-black">{post.displayId || formatTourId(post.id)}</span>
                     </span>
                     <h3 className="text-xs font-extrabold text-[#1C1C1C]">{post.agencyName}</h3>
                   </div>

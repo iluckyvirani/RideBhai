@@ -34,9 +34,10 @@ export const TourDetailsView: React.FC<TourDetailsViewProps> = ({
     <div className="space-y-3 pb-2 animate-fade-in">
       <div className="p-4 rounded-3xl bg-[#1C1C1C] text-white flex items-start justify-between gap-2">
         <div>
-          <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-[#FF7A45] border border-white/10 text-[10px] font-black tracking-wider inline-flex items-center gap-1 mb-1.5">
-            <Tag className="w-2.5 h-2.5 text-[#FF7A45]" />
-            Tour ID: {tour.displayId || formatTourId(tour.id)}
+          <span className="px-3 py-1 rounded-xl bg-white/10 text-white border border-white/15 text-xs font-black tracking-wide inline-flex items-center gap-1.5 mb-2 shadow-2xs">
+            <Tag className="w-3.5 h-3.5 text-[#FF7A45]" />
+            <span>Tour ID:</span>
+            <span className="text-[#FF7A45] font-mono font-black">{tour.displayId || formatTourId(tour.id)}</span>
           </span>
           <h2 className="text-base font-extrabold flex items-center gap-1.5 mt-0.5">
             <MapPin className="w-4 h-4 text-[#F15A24] flex-shrink-0" />
