@@ -14,11 +14,13 @@ import {
   PhoneCall,
   Landmark,
   LifeBuoy,
+  Tag,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { UserRole } from '../../types';
 import { CompleteProfileView } from '../auth/CompleteProfileView';
 import { isPreviewableImage } from '../../lib/upload';
+import { formatUserId } from '../../lib/displayId';
 
 interface PartnerProfileViewProps {
   onSwitchRole: (role: UserRole) => void;
@@ -102,7 +104,13 @@ export const PartnerProfileView: React.FC<PartnerProfileViewProps> = ({
             </div>
           )}
           <div>
-            <h2 className="text-sm font-extrabold text-[#1C1C1C]">{currentUser?.name || 'Your profile'}</h2>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h2 className="text-sm font-extrabold text-[#1C1C1C]">{currentUser?.name || 'Your profile'}</h2>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black bg-[#FFF0EB] text-[#F15A24] border border-[#FFD8CB]">
+                <Tag className="w-2.5 h-2.5" />
+                {currentUser?.displayId || formatUserId(currentUser?.id)}
+              </span>
+            </div>
             <p className="text-xs text-[#6B6B6B]">+91 {currentUser?.phone}</p>
             <p className="text-[11px] font-extrabold text-[#F15A24] mt-0.5">{statusLabel}</p>
           </div>

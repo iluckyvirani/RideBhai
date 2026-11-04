@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Sparkles, MapPin, X, IndianRupee, Car, Calendar, Share2 } from 'lucide-react';
+import { Sparkles, MapPin, X, IndianRupee, Car, Calendar, Share2, Tag } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { AgencyTripPost } from '../../types';
 import { DealChoiceActions } from '../common/ContactActions';
 import { PosterCard } from '../common/PosterCard';
 import { ListSkeleton } from '../common/SkeletonLoader';
 import { shareTourListing } from '../../lib/share';
+import { formatTourId } from '../../lib/displayId';
 import {
   BrowseFilters,
   browseFilterActive,
@@ -128,6 +129,15 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
         <article key={tour.id} className="bg-white rounded-3xl border border-[#EBE5D8] p-4 space-y-3 shadow-card">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                <span className="px-2 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1">
+                  <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                  {tour.displayId || formatTourId(tour.id)}
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-[#FFF0EB] text-[#F15A24] text-[10px] font-extrabold">
+                  {tour.tripSide === 'two_side' ? 'Two side' : 'One side'}
+                </span>
+              </div>
               <h3 className="text-sm font-extrabold text-[#1C1C1C] flex items-center gap-1 mt-0.5">
                 <MapPin className="w-3.5 h-3.5 text-[#F15A24] flex-shrink-0" />
                 {tour.fromCity} {tour.tripSide === 'two_side' ? '⇄' : '→'} {tour.toCity}
@@ -135,11 +145,6 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
               <p className="text-[11px] text-[#6B6B6B] mt-0.5">
                 {tour.agencyName} · {tour.duration} · {tour.passengers} pax
               </p>
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                <span className="px-2 py-0.5 rounded-full bg-[#FFF0EB] text-[#F15A24] text-[10px] font-extrabold">
-                  {tour.tripSide === 'two_side' ? 'Two side' : 'One side'}
-                </span>
-              </div>
               <div className="mt-2 space-y-0.5 text-[11px] text-[#6B6B6B]">
                 {(tour.bookingDate || tour.startDate || tour.bookingTime || tour.pickupTime) && (
                   <p className="flex items-center gap-1 font-bold text-[#1C1C1C]">

@@ -86,11 +86,11 @@ export const Logo: React.FC<LogoProps> = ({
   );
 
   if (variant === 'icon-only') {
-    return <div className={`inline-flex items-center justify-center ${className}`}>{PinIcon}</div>;
+    return <div className={`inline-flex items-center justify-center notranslate ${className}`}>{PinIcon}</div>;
   }
 
   return (
-    <div className={`inline-flex items-center gap-2.5 ${className}`}>
+    <div className={`inline-flex items-center gap-2.5 notranslate ${className}`}>
       {PinIcon}
       <div className="flex flex-col justify-center">
         <div className="flex items-center">

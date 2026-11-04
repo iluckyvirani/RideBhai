@@ -2,6 +2,7 @@ import { AppUser, BankDetails, DriverProfile, Vehicle } from '../types';
 
 export type ServerUser = {
   id: string;
+  display_id?: string | null;
   phone: string;
   name: string;
   email: string;
@@ -23,6 +24,7 @@ export type ServerUser = {
 export function mapVehicle(row: any): Vehicle {
   return {
     id: row.id,
+    displayId: row.display_id || undefined,
     make: row.make,
     model: row.model,
     year: row.year || 0,
@@ -51,6 +53,7 @@ export function mapDriver(row: any): DriverProfile | undefined {
   if (!row) return undefined;
   return {
     id: row.id,
+    displayId: row.display_id || undefined,
     name: row.name,
     email: row.email,
     phone: row.phone,
@@ -94,6 +97,7 @@ export function mapServerUser(
     .filter(Boolean) as DriverProfile[];
   return {
     id: row.id,
+    displayId: row.display_id || undefined,
     phone: row.phone,
     name: row.name || '',
     email: row.email || '',

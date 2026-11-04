@@ -12,10 +12,12 @@ import {
   RefreshCw,
   CheckCircle,
   LifeBuoy,
+  Tag,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { UserRole } from '../../types';
 import { MyBookingsPreview } from '../common/MyBookingsPreview';
+import { formatUserId } from '../../lib/displayId';
 
 interface RiderProfileViewProps {
   onSwitchRole: (role: UserRole) => void;
@@ -28,7 +30,7 @@ export const RiderProfileView: React.FC<RiderProfileViewProps> = ({
   onOpenBookings,
   onOpenSupportTickets,
 }) => {
-  const { currentRider, updateRiderProfile, resetDemoData } = useAppStore();
+  const { currentRider, currentUser, updateRiderProfile, resetDemoData } = useAppStore();
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadSuccess, setShowUploadSuccess] = useState(false);
 
@@ -59,9 +61,15 @@ export const RiderProfileView: React.FC<RiderProfileViewProps> = ({
           )}
         </div>
 
-        <h3 className="font-display font-extrabold text-lg text-[#1C1C1C]">
-          {currentRider.name}
-        </h3>
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <h3 className="font-display font-extrabold text-lg text-[#1C1C1C]">
+            {currentUser?.name || currentRider.name}
+          </h3>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-[#FFF0EB] text-[#F15A24] border border-[#FFD8CB]">
+            <Tag className="w-2.5 h-2.5" />
+            {currentUser?.displayId || formatUserId(currentUser?.id || currentRider.id)}
+          </span>
+        </div>
         <p className="text-xs text-[#6B6B6B]">{currentRider.city} • Member since {currentRider.memberSince}</p>
 
         <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-[#F2ECE1]">

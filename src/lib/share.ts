@@ -1,10 +1,65 @@
+export interface SharedLinkTarget {
+  type: 'tour' | 'car' | null;
+  id: string | null;
+}
+
+/**
+ * Extracts tour or car target from the current URL hash or query params.
+ * Supports: #tour=123, #tour-123, ?tour=123, #car=123, #car-123, ?car=123
+ */
+export function parseSharedLink(): SharedLinkTarget {
+  if (typeof window === 'undefined') return { type: null, id: null };
+
+  // 1. Check query parameters: ?tour=... or ?car=...
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const tourParam = params.get('tour');
+    if (tourParam) return { type: 'tour', id: tourParam.trim() };
+    const carParam = params.get('car');
+    if (carParam) return { type: 'car', id: carParam.trim() };
+  } catch {
+    /* ignore search params parse error */
+  }
+
+  // 2. Check hash: #tour=... or #tour-... or #car=... or #car-...
+  const rawHash = (window.location.hash || '').replace(/^#/, '').trim();
+  if (!rawHash) return { type: null, id: null };
+
+  if (rawHash.startsWith('tour=')) {
+    return { type: 'tour', id: decodeURIComponent(rawHash.slice(5)).trim() };
+  }
+  if (rawHash.startsWith('tour-')) {
+    return { type: 'tour', id: decodeURIComponent(rawHash.slice(5)).trim() };
+  }
+  if (rawHash.startsWith('car=')) {
+    return { type: 'car', id: decodeURIComponent(rawHash.slice(4)).trim() };
+  }
+  if (rawHash.startsWith('car-')) {
+    return { type: 'car', id: decodeURIComponent(rawHash.slice(4)).trim() };
+  }
+
+  return { type: null, id: null };
+}
+
+export function getTourShareUrl(tourId: string): string {
+  if (typeof window === 'undefined') return '';
+  const base = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
+  return `${base}#tour=${encodeURIComponent(tourId)}`;
+}
+
+export function getCarShareUrl(carId: string): string {
+  if (typeof window === 'undefined') return '';
+  const base = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
+  return `${base}#car=${encodeURIComponent(carId)}`;
+}
+
 export async function shareListing(options: {
   title: string;
   text: string;
   url?: string;
 }) {
   const shareUrl = options.url || (typeof window !== 'undefined' ? window.location.href : '');
-  const fullText = `${options.text}\n\n👉 View on Ride Bhai: ${shareUrl}`;
+  const fullText = `${options.text}\n\n👉 View details on Ride Bhai:\n${shareUrl}`;
 
   if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
     try {
@@ -28,6 +83,7 @@ export async function shareListing(options: {
 }
 
 export function shareTourListing(tour: {
+  id?: string;
   fromCity: string;
   toCity: string;
   tripSide?: string;
@@ -58,13 +114,17 @@ export function shareTourListing(tour: {
     tour.agencyName ? `🏢 *Agency:* ${tour.agencyName}` : '',
   ].filter(Boolean);
 
+  const url = tour.id ? getTourShareUrl(tour.id) : undefined;
+
   return shareListing({
     title: `Tour Booking: ${route}`,
     text: lines.join('\n'),
+    url,
   });
 }
 
 export function shareCarListing(car: {
+  id?: string;
   carName: string;
   currentCity: string;
   toCity?: string;
@@ -88,8 +148,11 @@ export function shareCarListing(car: {
     car.partnerName ? `👤 *Partner:* ${car.partnerName}` : '',
   ].filter(Boolean);
 
+  const url = car.id ? getCarShareUrl(car.id) : undefined;
+
   return shareListing({
     title: `Car Available: ${car.carName} - ${car.currentCity}`,
     text: lines.join('\n'),
+    url,
   });
 }

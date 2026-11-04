@@ -1,9 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { PackageCheck, Check, Zap, ShieldCheck, AlertCircle, Loader2, CreditCard } from 'lucide-react';
+import {
+  PackageCheck,
+  Check,
+  Zap,
+  ShieldCheck,
+  AlertCircle,
+  Loader2,
+  Sparkles,
+  CheckCircle2,
+  Clock,
+  Calendar,
+  Tag,
+} from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAppStore } from '../../store/useAppStore';
-import { MockPaymentModal } from '../common/MockPaymentModal';
-import { api } from '../../lib/api';
+import { api, getToken } from '../../lib/api';
 import { PlanCardSkeleton } from '../common/SkeletonLoader';
 import { openRazorpayCheckout } from '../../lib/razorpay';
 
@@ -36,15 +47,18 @@ function benefitsList(raw: ServerPlan['benefits']): string[] {
   }
 }
 
-export const AgencyPackagesView: React.FC = () => {
-  const { currentUser, hydrateMe } = useAppStore();
+interface AgencyPackagesViewProps {
+  onNeedAuth?: () => void;
+}
+
+export const AgencyPackagesView: React.FC<AgencyPackagesViewProps> = ({ onNeedAuth }) => {
+  const { currentUser, isLoggedIn, hydrateMe } = useAppStore();
   const verified = currentUser?.profileStatus === 'verified';
 
   const [plans, setPlans] = useState<ServerPlan[]>([]);
   const [subscription, setSubscription] = useState<ServerSub | null>(null);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   const [isProcessingRazorpay, setIsProcessingRazorpay] = useState(false);
-  const [payOpen, setPayOpen] = useState(false);
   const [successNotif, setSuccessNotif] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -55,8 +69,10 @@ export const AgencyPackagesView: React.FC = () => {
     try {
       const list = await api<ServerPlan[]>('/plans');
       setPlans(list);
-      const me = await hydrateMe();
-      setSubscription((me?.subscription as ServerSub) || null);
+      if (getToken()) {
+        const me = await hydrateMe();
+        setSubscription((me?.subscription as ServerSub) || null);
+      }
     } catch (err: any) {
       setError(err?.message || 'Could not load plans. Is the API running?');
     } finally {
@@ -69,7 +85,6 @@ export const AgencyPackagesView: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const payPkg = plans.find((p) => p.id === purchasingId);
   const daysLeft = subscription
     ? Math.max(0, Math.ceil((new Date(subscription.expires_at).getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
     : 0;
@@ -78,6 +93,11 @@ export const AgencyPackagesView: React.FC = () => {
    * Primary checkout flow: Official Razorpay Gateway
    */
   const handleRazorpayPurchase = async (packageId: string) => {
+    if (!isLoggedIn) {
+      onNeedAuth?.();
+      return;
+    }
+
     if (!verified) {
       setError('Admin must verify your KYC before you can buy a plan.');
       return;
@@ -102,8 +122,11 @@ export const AgencyPackagesView: React.FC = () => {
 
       const keyId =
         orderData.keyId ||
-        (import.meta.env.VITE_RAZORPAY_KEY_ID as string) ||
-        'rzp_test_Tv0524KOYGaeFl';
+        (import.meta.env.VITE_RAZORPAY_KEY_ID as string);
+
+      if (!keyId) {
+        throw new Error('Razorpay Key ID is not configured on the server. Please add your live Razorpay credentials in server/.env');
+      }
 
       // 2. Open Razorpay Checkout modal
       await openRazorpayCheckout({
@@ -134,7 +157,7 @@ export const AgencyPackagesView: React.FC = () => {
             const me = await hydrateMe();
             setSubscription((me?.subscription as ServerSub) || null);
             setSuccessNotif(
-              `Payment verified (${response.razorpay_payment_id}). Plan is active! 🚀`
+              'Payment successful! Your plan is now active 🚀'
             );
 
             confetti({
@@ -160,39 +183,13 @@ export const AgencyPackagesView: React.FC = () => {
         },
       });
     } catch (err: any) {
-      console.error('Razorpay order initiation failed:', err);
-      // Fallback: If network or server error, offer manual/simulated payment
+      console.error('Payment order initiation failed:', err);
       setError(
         err?.message
-          ? `${err.message}. You can also use simulated payment.`
-          : 'Could not connect to Razorpay. Please try again.'
+          ? `${err.message}`
+          : 'Could not connect to payment gateway. Please try again.'
       );
       setIsProcessingRazorpay(false);
-    }
-  };
-
-  /**
-   * Fallback mock payment handler
-   */
-  const handlePaySuccess = async (method: 'upi' | 'card' | 'razorpay') => {
-    if (!purchasingId) return;
-    try {
-      await api('/plans/subscribe', {
-        method: 'POST',
-        json: {
-          planId: purchasingId,
-          paymentMethod: method === 'card' ? 'card' : 'self_transfer',
-        },
-      });
-      const me = await hydrateMe();
-      setSubscription((me?.subscription as ServerSub) || null);
-      setSuccessNotif('Plan paid and activated. Chat, booking and posting are unlocked.');
-      setTimeout(() => setSuccessNotif(''), 5000);
-    } catch (err: any) {
-      setError(err?.message || 'Purchase failed');
-    } finally {
-      setPurchasingId(null);
-      setPayOpen(false);
     }
   };
 
@@ -204,10 +201,6 @@ export const AgencyPackagesView: React.FC = () => {
           <p className="text-[11px] text-[#6B6B6B]">
             Buy a plan to unlock book, chat, and post.
           </p>
-        </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-bold">
-          <CreditCard className="w-3 h-3 text-blue-600" />
-          <span>Razorpay Enabled</span>
         </div>
       </div>
 
@@ -222,29 +215,73 @@ export const AgencyPackagesView: React.FC = () => {
       )}
 
       {subscription ? (
-        <div className="p-5 rounded-3xl bg-gradient-to-br from-[#1C1C1C] to-[#2D2D2D] text-white shadow-card relative overflow-hidden">
-          <div className="flex items-start justify-between relative z-10">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#00A86B]/20 text-[#00A86B] border border-[#00A86B]/30 text-[10px] font-extrabold mb-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00A86B] animate-pulse"></span>
-                <span>Your current active plan</span>
-              </div>
-              <h2 className="text-base font-extrabold text-white">{subscription.plan_name}</h2>
-              <p className="text-xs text-white/70 mt-1">
-                Valid until {new Date(subscription.expires_at).toLocaleDateString('en-IN')}
-              </p>
-              <p className="text-[11px] font-extrabold text-[#FF7A45] mt-1">{daysLeft} days left</p>
+        <div className="p-5 rounded-3xl bg-white border border-[#EBE5D8] shadow-card relative overflow-hidden space-y-4">
+          {/* Top row: Status pill and Icon */}
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#EBF7EE] text-[#00A86B] border border-[#BDE8C7] text-[11px] font-extrabold shadow-2xs">
+              <span className="w-2 h-2 rounded-full bg-[#00A86B] animate-pulse"></span>
+              <span>Active Plan</span>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-[#F15A24] flex items-center justify-center text-white shadow-lg">
-              <PackageCheck className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-2xl bg-[#FFF0EB] border border-[#FFD8CB] flex items-center justify-center text-[#F15A24] shadow-2xs">
+              <Sparkles className="w-5 h-5 text-[#F15A24]" />
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-            <span className="text-white/70">Posts allowed</span>
-            <span className="font-extrabold text-[#FF7A45]">
-              {subscription.posts_remaining > 5000
-                ? 'Unlimited postings'
-                : `${subscription.posts_remaining} remaining`}
+
+          {/* Plan Name & Expiry badge */}
+          <div>
+            <div className="flex items-baseline justify-between gap-2 flex-wrap">
+              <h2 className="text-xl font-black text-[#1C1C1C] tracking-tight font-display">
+                {subscription.plan_name}
+              </h2>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-extrabold text-[#F15A24] bg-[#FFF0EB] px-3 py-1 rounded-full border border-[#FFD8CB]">
+                <Clock className="w-3 h-3" />
+                {daysLeft} days left
+              </span>
+            </div>
+            <p className="text-xs text-[#6B6B6B] mt-1 font-medium">
+              Full access to book cars, direct chat, and publish tour listings.
+            </p>
+          </div>
+
+          {/* Metric Sub-Cards */}
+          <div className="grid grid-cols-2 gap-2.5 pt-1">
+            <div className="p-3.5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] space-y-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase text-[#8A8478] tracking-wider">
+                <Calendar className="w-3 h-3 text-[#6B6B6B]" />
+                <span>Valid Until</span>
+              </div>
+              <p className="text-xs font-black text-[#1C1C1C]">
+                {new Date(subscription.expires_at).toLocaleDateString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </p>
+              <p className="text-[10px] font-bold text-[#00A86B]">Active plan</p>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] space-y-1">
+              <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase text-[#8A8478] tracking-wider">
+                <Tag className="w-3 h-3 text-[#F15A24]" />
+                <span>Posts Balance</span>
+              </div>
+              <p className="text-xs font-black text-[#F15A24]">
+                {subscription.posts_remaining > 5000
+                  ? 'Unlimited'
+                  : `${subscription.posts_remaining} remaining`}
+              </p>
+              <p className="text-[10px] font-bold text-[#6B6B6B]">Ready to post</p>
+            </div>
+          </div>
+
+          {/* Bottom status line */}
+          <div className="pt-3 border-t border-[#F2ECE1] flex items-center justify-between text-[11px]">
+            <span className="flex items-center gap-1.5 text-[#00A86B] font-extrabold">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#00A86B]" />
+              Posting & Deals Unlocked
+            </span>
+            <span className="text-[#8A8478] font-bold">
+              {subscription.posts_remaining > 0 ? 'Ready to post' : 'Posts exhausted'}
             </span>
           </div>
         </div>
@@ -281,9 +318,8 @@ export const AgencyPackagesView: React.FC = () => {
           return (
             <div
               key={pkg.id}
-              className={`p-5 rounded-3xl bg-white border transition-all relative overflow-hidden shadow-card ${
-                pkg.popular ? 'border-[#F15A24] ring-2 ring-[#F15A24]/20' : 'border-[#EBE5D8]'
-              }`}
+              className={`p-5 rounded-3xl bg-white border transition-all relative overflow-hidden shadow-card ${pkg.popular ? 'border-[#F15A24] ring-2 ring-[#F15A24]/20' : 'border-[#EBE5D8]'
+                }`}
             >
               {pkg.popular && (
                 <div className="absolute top-0 right-0 bg-gradient-to-l from-[#F15A24] to-[#FF7A45] text-white text-[9px] font-extrabold px-3 py-1 rounded-bl-xl uppercase tracking-wider">
@@ -315,23 +351,24 @@ export const AgencyPackagesView: React.FC = () => {
               <div className="mt-4 pt-2 space-y-2">
                 <button
                   onClick={() => handleRazorpayPurchase(pkg.id)}
-                  disabled={Boolean(purchasingId) || isCurrentActive || !verified}
-                  className={`w-full py-3 rounded-2xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 ${
-                    isCurrentActive
+                  disabled={Boolean(purchasingId) || isCurrentActive || (isLoggedIn && !verified)}
+                  className={`w-full py-3 rounded-2xl text-xs font-extrabold transition-all flex items-center justify-center gap-2 ${isCurrentActive
                       ? 'bg-emerald-100 text-emerald-800 cursor-default'
-                      : !verified
-                        ? 'bg-[#E5E5E5] text-[#6B6B6B] cursor-not-allowed'
-                        : isThisPurchasing
-                          ? 'bg-[#F15A24]/80 text-white cursor-wait'
-                          : pkg.popular
-                            ? 'bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white shadow-md active-press'
-                            : 'bg-[#1C1C1C] text-white active-press'
-                  }`}
+                      : !isLoggedIn
+                        ? 'brand-gradient text-white shadow-md active-press'
+                        : !verified
+                          ? 'bg-[#E5E5E5] text-[#6B6B6B] cursor-not-allowed'
+                          : isThisPurchasing
+                            ? 'bg-[#F15A24]/80 text-white cursor-wait'
+                            : pkg.popular
+                              ? 'bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white shadow-md active-press'
+                              : 'bg-[#1C1C1C] text-white active-press'
+                    }`}
                 >
                   {isThisPurchasing ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Connecting Razorpay...</span>
+                      <span>Opening checkout...</span>
                     </>
                   ) : (
                     <>
@@ -339,44 +376,20 @@ export const AgencyPackagesView: React.FC = () => {
                       <span>
                         {isCurrentActive
                           ? 'Current active plan'
-                          : !verified
-                            ? 'Verify KYC first'
-                            : `Pay ₹${pkg.price.toLocaleString('en-IN')} via Razorpay`}
+                          : !isLoggedIn
+                            ? `Login to subscribe (₹${pkg.price.toLocaleString('en-IN')})`
+                            : !verified
+                              ? 'Verify KYC first'
+                              : `Subscribe • ₹${pkg.price.toLocaleString('en-IN')}`}
                       </span>
                     </>
                   )}
                 </button>
-
-                {/* Secondary Simulated Demo Pay Option */}
-                {!isCurrentActive && verified && (
-                  <button
-                    onClick={() => {
-                      setPurchasingId(pkg.id);
-                      setPayOpen(true);
-                    }}
-                    disabled={Boolean(purchasingId)}
-                    className="w-full text-center py-1.5 text-[11px] font-semibold text-[#8C827A] hover:text-[#1C1C1C] transition-colors"
-                  >
-                    Simulated / Demo Checkout
-                  </button>
-                )}
               </div>
             </div>
           );
         })}
       </div>
-
-      <MockPaymentModal
-        isOpen={payOpen}
-        onClose={() => {
-          setPayOpen(false);
-          setPurchasingId(null);
-        }}
-        onSuccess={handlePaySuccess}
-        title="Partner package payment"
-        amount={payPkg?.price || 0}
-        itemDescription={payPkg ? `${payPkg.name} · unlock chat, booking and posting` : 'Posting package'}
-      />
     </div>
   );
 };

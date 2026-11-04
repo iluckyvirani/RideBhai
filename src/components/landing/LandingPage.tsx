@@ -15,6 +15,11 @@ import {
   ArrowRight,
   MessageCircle,
   Package,
+  Phone,
+  Mail,
+  Headphones,
+  Clock,
+  ShieldCheck,
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { api } from '../../lib/api';
@@ -23,6 +28,8 @@ type SiteSettings = {
   supportPhone: string;
   supportEmail: string;
   emergencyPhone: string;
+  whatsappNumber?: string;
+  supportHours?: string;
 };
 
 type SiteFaq = {
@@ -32,9 +39,11 @@ type SiteFaq = {
 };
 
 const FALLBACK_SETTINGS: SiteSettings = {
-  supportPhone: '1800-RIDE-BHAI',
+  supportPhone: '+91 70550 54387',
   supportEmail: 'support@ridebhai.com',
   emergencyPhone: '112',
+  whatsappNumber: '+91 70550 54387',
+  supportHours: '24/7 Support Helpline · All India',
 };
 
 export interface LandingSearchParams {
@@ -52,6 +61,8 @@ interface LandingPageProps {
   onOpenAgencyPortal?: () => void;
   onOpenAdminPortal: () => void;
   onOpenLegal?: (slug: 'terms' | 'privacy') => void;
+  onOpenCars?: () => void;
+  onOpenTours?: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
@@ -61,6 +72,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenAgencyPortal,
   onOpenAdminPortal,
   onOpenLegal,
+  onOpenCars,
+  onOpenTours,
 }) => {
   const { agencyPackages } = useAppStore();
   const [fromCity, setFromCity] = useState('');
@@ -106,21 +119,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         onOpenDriverApp={onOpenDriverPortal}
         onOpenAgencyPortal={onOpenAgencyPortal}
         onOpenAdminPortal={onOpenAdminPortal}
+        onOpenCars={onOpenCars || (() => goBrowse('cars'))}
+        onOpenTours={onOpenTours || (() => goBrowse('tours'))}
       />
 
       <main className="flex-1">
         <section className="relative pt-12 pb-20 lg:pt-20 lg:pb-28 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-4xl mx-auto space-y-5 mb-12">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white shadow-xs border border-[#FFD8CB]">
-                <Sparkles className="w-4 h-4 text-[#F15A24]" />
+            <div className="text-center max-w-4xl mx-auto mb-12 flex flex-col items-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white shadow-xs border border-[#FFD8CB] mb-6 sm:mb-8">
+                <Sparkles className="w-4 h-4 text-[#F15A24] shrink-0" />
                 <span className="text-xs sm:text-sm font-extrabold text-[#F15A24] uppercase tracking-wider">
                   Full car hire · Tours · Chat & Deal with Ride Bhai
                 </span>
               </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display tracking-tight leading-[1.15]">
-                Hire a full car or a tour. <br />
-                <span className="text-gradient">Talk to the partner directly.</span>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold font-display leading-[1.4] sm:leading-[1.38] mb-6 sm:mb-7">
+                <span className="block mb-3 sm:mb-4 pb-0.5">Hire a full car or a tour.</span>
+                <span className="text-gradient block pt-1 pb-1">Talk to the partner directly.</span>
               </h1>
               <p className="text-base sm:text-lg text-[#6B6B6B] max-w-2xl mx-auto leading-relaxed">
                 Browse hatchback, sedan, SUV and MUV cars plus tour packages across India. Cars show when they are available, from start to end. See the price, then Message direct or Deal with Ride Bhai. No seat sharing. No in-app trip checkout.
@@ -480,6 +495,107 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
         </section>
+
+        {/* Support & Contact Section */}
+        <section id="support" className="py-16 bg-[#FAF6EE] border-t border-[#EBE5D8]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="bg-white rounded-3xl border border-[#EBE5D8] p-8 sm:p-12 shadow-card relative overflow-hidden">
+              <div className="max-w-3xl space-y-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FFF0EB] border border-[#FFD8CB] text-[11px] font-extrabold text-[#F15A24] uppercase tracking-wider">
+                  <Headphones className="w-3.5 h-3.5 text-[#F15A24]" />
+                  <span>24/7 Dedicated Support</span>
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-[#1C1C1C] font-display">
+                  Need assistance? <span className="text-gradient">We're here to help.</span>
+                </h2>
+                <p className="text-xs sm:text-sm text-[#6B6B6B] leading-relaxed">
+                  Have questions about verified partner onboarding, booking full-car hires, posting tour packages, or deals? Connect with our support team directly.
+                </p>
+              </div>
+
+              {/* Dynamic Support Contact Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+                {/* Phone Call Card */}
+                {support.supportPhone && (
+                  <a
+                    href={`tel:${support.supportPhone.replace(/\s/g, '')}`}
+                    className="p-5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] hover:border-[#F15A24] hover:bg-white hover:shadow-card transition-all flex items-start gap-4 group"
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-[#FFF0EB] text-[#F15A24] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-extrabold uppercase text-[#8A8478] tracking-wider block">
+                        Call Support
+                      </span>
+                      <p className="text-sm font-extrabold text-[#1C1C1C] group-hover:text-[#F15A24] transition-colors">
+                        {support.supportPhone}
+                      </p>
+                      <p className="text-[11px] text-[#6B6B6B] font-medium">{support.supportHours || 'Available 24/7'}</p>
+                    </div>
+                  </a>
+                )}
+
+                {/* Email Support Card */}
+                {support.supportEmail && (
+                  <a
+                    href={`mailto:${support.supportEmail}`}
+                    className="p-5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] hover:border-[#00A86B] hover:bg-white hover:shadow-card transition-all flex items-start gap-4 group"
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-[#EBF7EE] text-[#00A86B] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-extrabold uppercase text-[#8A8478] tracking-wider block">
+                        Email Support
+                      </span>
+                      <p className="text-sm font-extrabold text-[#1C1C1C] group-hover:text-[#00A86B] transition-colors break-all">
+                        {support.supportEmail}
+                      </p>
+                      <p className="text-[11px] text-[#6B6B6B] font-medium">Fast email assistance</p>
+                    </div>
+                  </a>
+                )}
+
+                {/* WhatsApp Support Card */}
+                {support.whatsappNumber ? (
+                  <a
+                    href={`https://wa.me/${support.whatsappNumber.replace(/[^0-9]/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] hover:border-[#25D366] hover:bg-white hover:shadow-card transition-all flex items-start gap-4 group"
+                  >
+                    <div className="w-11 h-11 rounded-xl bg-[#EBF7EE] text-[#25D366] flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
+                      <MessageCircle className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-extrabold uppercase text-[#8A8478] tracking-wider block">
+                        WhatsApp Chat
+                      </span>
+                      <p className="text-sm font-extrabold text-[#1C1C1C] group-hover:text-[#25D366] transition-colors">
+                        {support.whatsappNumber}
+                      </p>
+                      <p className="text-[11px] text-[#6B6B6B] font-medium">Instant messaging helpline</p>
+                    </div>
+                  </a>
+                ) : support.emergencyPhone ? (
+                  <div className="p-5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] flex items-start gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-red-50 text-red-600 flex items-center justify-center flex-shrink-0">
+                      <ShieldCheck className="w-5 h-5" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-extrabold uppercase text-[#8A8478] tracking-wider block">
+                        Emergency Helpline
+                      </span>
+                      <p className="text-sm font-extrabold text-[#1C1C1C]">{support.emergencyPhone}</p>
+                      <p className="text-[11px] text-[#6B6B6B] font-medium">National emergency response</p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <footer className="bg-[#121212] text-white pt-16 pb-12 border-t border-white/10">
@@ -532,37 +648,63 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </ul>
             </div>
             <div>
-              <h4 className="text-xs font-extrabold uppercase tracking-wider mb-4">Support</h4>
-              <ul className="space-y-2.5 text-xs text-white/60 font-bold">
+              <h4 className="text-xs font-extrabold uppercase tracking-wider mb-4 text-[#F15A24]">Support & Contact</h4>
+              <ul className="space-y-3 text-xs text-white/70 font-medium">
                 {support.supportPhone && (
                   <li>
-                    <a href={`tel:${support.supportPhone.replace(/\s/g, '')}`} className="text-white/80 hover:text-[#F15A24]">
-                      {support.supportPhone}
+                    <a
+                      href={`tel:${support.supportPhone.replace(/\s/g, '')}`}
+                      className="flex items-center gap-2 text-white/90 hover:text-[#F15A24] transition-colors font-bold"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-[#F15A24] flex-shrink-0" />
+                      <span>{support.supportPhone}</span>
                     </a>
                   </li>
                 )}
                 {support.supportEmail && (
                   <li>
-                    <a href={`mailto:${support.supportEmail}`} className="text-white/80 hover:text-[#F15A24]">
-                      {support.supportEmail}
+                    <a
+                      href={`mailto:${support.supportEmail}`}
+                      className="flex items-center gap-2 text-white/90 hover:text-[#00A86B] transition-colors font-bold break-all"
+                    >
+                      <Mail className="w-3.5 h-3.5 text-[#00A86B] flex-shrink-0" />
+                      <span>{support.supportEmail}</span>
                     </a>
                   </li>
                 )}
-                {support.emergencyPhone && (
-                  <li className="text-white/40">Emergency: {support.emergencyPhone}</li>
+                {support.whatsappNumber && (
+                  <li>
+                    <a
+                      href={`https://wa.me/${support.whatsappNumber.replace(/[^0-9]/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-white/90 hover:text-[#25D366] transition-colors font-bold"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 text-[#25D366] flex-shrink-0" />
+                      <span>WhatsApp: {support.whatsappNumber}</span>
+                    </a>
+                  </li>
                 )}
-                <li>
-                  <button onClick={() => scrollToSafety()} className="hover:text-[#F15A24]">
-                    Safety
+                {support.supportHours && (
+                  <li className="flex items-center gap-2 text-white/50 text-[11px]">
+                    <Clock className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />
+                    <span>{support.supportHours}</span>
+                  </li>
+                )}
+                {support.emergencyPhone && (
+                  <li className="flex items-center gap-2 text-white/40 text-[11px]">
+                    <ShieldCheck className="w-3.5 h-3.5 text-white/40 flex-shrink-0" />
+                    <span>Emergency: {support.emergencyPhone}</span>
+                  </li>
+                )}
+                <li className="pt-2 border-t border-white/10 flex flex-col gap-1.5 text-white/60">
+                  <button onClick={() => scrollToSafety()} className="text-left hover:text-[#F15A24] transition-colors">
+                    Safety & Trust
                   </button>
-                </li>
-                <li>
-                  <button onClick={() => onOpenLegal?.('terms')} className="hover:text-[#F15A24]">
+                  <button onClick={() => onOpenLegal?.('terms')} className="text-left hover:text-[#F15A24] transition-colors">
                     Terms and conditions
                   </button>
-                </li>
-                <li>
-                  <button onClick={() => onOpenLegal?.('privacy')} className="hover:text-[#F15A24]">
+                  <button onClick={() => onOpenLegal?.('privacy')} className="text-left hover:text-[#F15A24] transition-colors">
                     Privacy policy
                   </button>
                 </li>

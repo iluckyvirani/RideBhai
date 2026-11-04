@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Car, Plus, CheckCircle2, Loader2 } from 'lucide-react';
+import { Car, Plus, CheckCircle2, Loader2, Tag } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { Vehicle } from '../../types';
 import { FilePick } from '../common/FilePick';
@@ -7,6 +7,7 @@ import { isPreviewableImage } from '../../lib/upload';
 import { VehicleDetailsView } from './VehicleDetailsView';
 import { CarMakeModelSelect } from '../common/CarMakeModelSelect';
 import { findTaxiCar, type CarBodyType } from '../../data/indiaTaxiCars';
+import { formatVehicleId } from '../../lib/displayId';
 
 export const PartnerCarsView: React.FC = () => {
   const { partnerCars, addPartnerCar, currentUser } = useAppStore();
@@ -205,10 +206,16 @@ export const PartnerCarsView: React.FC = () => {
             className="w-full text-left p-3 rounded-2xl bg-white border border-[#EBE5D8] active-press"
           >
             <div className="flex items-start justify-between gap-2">
-              <p className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1.5">
-                <Car className="w-3.5 h-3.5 text-[#F15A24]" />
-                {car.make} {car.model}
-              </p>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <p className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-[#F15A24]" />
+                  {car.make} {car.model}
+                </p>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black bg-[#1C1C1C] text-white">
+                  <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                  {car.displayId || formatVehicleId(car.id)}
+                </span>
+              </div>
               <span
                 className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
                   status === 'verified'

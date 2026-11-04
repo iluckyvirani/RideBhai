@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Share2, Ticket } from 'lucide-react';
+import { Share2, Ticket, Tag } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { Deal } from '../../lib/deals';
 import { ChatListSkeleton } from './SkeletonLoader';
 import { RateStars } from './RateStars';
+import { formatBookingId } from '../../lib/displayId';
 
 interface InquiriesViewProps {
   mode: 'rider' | 'partner' | 'user';
@@ -45,8 +46,9 @@ export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded, on
   };
 
   const shareDeal = async (deal: Deal) => {
+    const bookingCode = deal.displayId || formatBookingId(deal.id);
     const route = deal.fromCity && deal.toCity ? `${deal.fromCity} → ${deal.toCity}\n` : '';
-    const text = `${deal.title}\n${route}₹${deal.price.toLocaleString('en-IN')} · ${deal.status}\nBooking ref: #${deal.id.slice(-6)}`;
+    const text = `${deal.title}\n${route}₹${deal.price.toLocaleString('en-IN')} · ${deal.status}\nBooking ID: ${bookingCode}`;
     if (navigator.share) {
       try {
         await navigator.share({ title: 'Ride Bhai booking', text });
@@ -64,12 +66,20 @@ export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded, on
     }
   };
 
-  const renderDeal = (deal: Deal, kind: 'incoming' | 'outgoing') => (
+  const renderDeal = (deal: Deal, kind: 'incoming' | 'outgoing') => {
+    const bookingCode = deal.displayId || formatBookingId(deal.id);
+    return (
     <div key={deal.id} className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-extrabold uppercase text-[#F15A24]">
-          {deal.listingType} · {deal.channel === 'ridebhai' ? 'Ride Bhai' : 'Direct'}
-        </span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[10px] font-black uppercase text-[#F15A24] bg-[#FFF0EB] border border-[#FFD8CB] px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+            <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+            {bookingCode}
+          </span>
+          <span className="text-[10px] font-extrabold uppercase text-[#6B6B6B]">
+            {deal.listingType} · {deal.channel === 'ridebhai' ? 'Ride Bhai' : 'Direct'}
+          </span>
+        </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${statusClass(deal.status)}`}>
             {deal.status}
@@ -124,6 +134,7 @@ export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded, on
       )}
     </div>
   );
+  };
 
   return (
     <div className={`space-y-4 animate-fade-in ${embedded ? '' : 'pb-24'}`}>

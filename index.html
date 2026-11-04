@@ -12,8 +12,93 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+      /* Suppress Google Translate top bar, iframe and body shift completely */
+      body > iframe:not([class*="razorpay"]),
+      .goog-te-banner-frame,
+      .goog-te-banner-frame.skiptranslate,
+      iframe.goog-te-banner-frame,
+      .goog-te-banner,
+      .skiptranslate,
+      iframe[id*="container"],
+      iframe[id*=":1"],
+      iframe[id*=":2"],
+      iframe[src*="translate.google.com"],
+      iframe[class*="VIpgJd"],
+      .VIpgJd-ZVi9od-ORHb-OEVmcd,
+      .VIpgJd-ZVi9od-aZ2wEe-wOHMyf,
+      .VIpgJd-ZVi9od-ORHb,
+      .VIpgJd-yAWNEb-hvhgNd,
+      #goog-gt-tt,
+      .goog-te-balloon-frame,
+      #goog-gt-voting-box,
+      .goog-tooltip,
+      .goog-tooltip:hover {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0px !important;
+        width: 0px !important;
+        max-height: 0px !important;
+        border: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        position: absolute !important;
+        top: -9999px !important;
+        left: -9999px !important;
+        z-index: -99999 !important;
+      }
+      html, body {
+        top: 0px !important;
+        position: static !important;
+        margin-top: 0px !important;
+        padding-top: 0px !important;
+      }
+      .goog-text-highlight {
+        background: transparent !important;
+        box-shadow: none !important;
+      }
+    </style>
+    <script type="text/javascript">
+      // Continuously prevent Google from pushing body down and hide any injected iframe
+      (function() {
+        var fixGoogleTranslate = function() {
+          if (document.body && document.body.style.top && document.body.style.top !== '0px') {
+            document.body.style.top = '0px';
+          }
+          if (document.documentElement && document.documentElement.style.top && document.documentElement.style.top !== '0px') {
+            document.documentElement.style.top = '0px';
+          }
+          var frames = document.querySelectorAll('iframe.goog-te-banner-frame, iframe[id*="container"], body > iframe:not([class*="razorpay"]), .goog-te-banner-frame');
+          for (var i = 0; i < frames.length; i++) {
+            var el = frames[i];
+            el.style.setProperty('display', 'none', 'important');
+            el.style.setProperty('visibility', 'hidden', 'important');
+            el.style.setProperty('height', '0px', 'important');
+            el.style.setProperty('width', '0px', 'important');
+            el.style.setProperty('position', 'absolute', 'important');
+            el.style.setProperty('top', '-9999px', 'important');
+          }
+        };
+        setInterval(fixGoogleTranslate, 120);
+        document.addEventListener('DOMContentLoaded', fixGoogleTranslate);
+        window.addEventListener('load', fixGoogleTranslate);
+      })();
+
+      function googleTranslateElementInit() {
+        if (window.google && window.google.translate) {
+          new window.google.translate.TranslateElement({
+            pageLanguage: 'en',
+            includedLanguages: 'en,hi',
+            autoDisplay: false
+          }, 'google_translate_element');
+        }
+      }
+    </script>
+    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   </head>
   <body class="bg-[#FAF6EE] antialiased text-[#1C1C1C] font-sans min-h-screen overflow-x-hidden">
+    <!-- Hidden Google Translate Element -->
+    <div id="google_translate_element" style="display:none"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

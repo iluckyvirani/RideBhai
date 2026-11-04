@@ -1,8 +1,11 @@
+import { formatBookingId } from './displayId';
+
 export type DealChannel = 'direct' | 'ridebhai';
 export type DealStatus = 'open' | 'pending' | 'success' | 'cancelled';
 
 export type Deal = {
   id: string;
+  displayId?: string;
   listingType: 'car' | 'tour';
   listingId: string;
   buyerId: string;
@@ -26,6 +29,7 @@ export type Deal = {
 
 export type ChatThread = {
   id: string;
+  displayId?: string;
   dealId?: string;
   listingType: 'car' | 'tour';
   listingId: string;
@@ -59,6 +63,7 @@ export type ThreadMessage = {
 export function mapDeal(row: any): Deal {
   return {
     id: row.id,
+    displayId: row.display_id || formatBookingId(row.id),
     listingType: row.listing_type === 'tour' ? 'tour' : 'car',
     listingId: row.listing_id,
     buyerId: row.buyer_id,
@@ -84,6 +89,7 @@ export function mapDeal(row: any): Deal {
 export function mapThread(row: any): ChatThread {
   return {
     id: row.id,
+    displayId: row.display_id || (row.deal_id ? formatBookingId(row.deal_id) : undefined),
     dealId: row.deal_id || undefined,
     listingType: row.listing_type === 'tour' || row.deal_listing_type === 'tour' ? 'tour' : 'car',
     listingId: row.listing_id,

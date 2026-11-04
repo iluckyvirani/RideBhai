@@ -1,6 +1,7 @@
 import React from 'react';
-import { Car } from 'lucide-react';
+import { Car, Tag } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { formatCarId } from '../../lib/displayId';
 
 export const MyCarPostsView: React.FC = () => {
   const { currentUser, carListings, updateCarListingStatus } = useAppStore();
@@ -30,6 +31,12 @@ export const MyCarPostsView: React.FC = () => {
           <article key={listing.id} className="p-3 rounded-2xl bg-white border border-[#EBE5D8] space-y-2">
             <div className="flex items-start justify-between gap-2">
               <div>
+                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                  <span className="px-2 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1">
+                    <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                    {listing.displayId || formatCarId(listing.id)}
+                  </span>
+                </div>
                 <p className="text-xs font-extrabold text-[#1C1C1C]">{listing.carName}</p>
                 <p className="text-[11px] text-[#6B6B6B]">
                   {listing.availability === 'route'

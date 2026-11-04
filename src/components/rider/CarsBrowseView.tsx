@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { Car, MapPin, X, IndianRupee, Navigation, Calendar, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
+import { Car, MapPin, X, IndianRupee, Navigation, Calendar, ChevronDown, ChevronUp, Share2, Tag } from 'lucide-react';
 import type { CarListing } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { DealChoiceActions } from '../common/ContactActions';
 import { PosterCard } from '../common/PosterCard';
 import { ListSkeleton } from '../common/SkeletonLoader';
 import { shareCarListing } from '../../lib/share';
+import { formatCarId } from '../../lib/displayId';
 import {
   BrowseFilters,
   browseFilterActive,
@@ -83,6 +84,8 @@ interface CarsBrowseViewProps {
   initialFrom?: string;
   initialTo?: string;
   initialNeedOn?: string;
+  selectedCarId?: string | null;
+  onSelectCar?: (id: string | null) => void;
   onNeedUnlock?: (code?: 'incomplete' | 'unverified' | 'no_package') => void;
   onDealWithRideBhai?: (listingId: string) => void;
 }
@@ -91,6 +94,8 @@ export const CarsBrowseView: React.FC<CarsBrowseViewProps> = ({
   initialFrom = '',
   initialTo = '',
   initialNeedOn = '',
+  selectedCarId,
+  onSelectCar,
   onNeedUnlock,
   onDealWithRideBhai,
 }) => {
@@ -109,7 +114,17 @@ export const CarsBrowseView: React.FC<CarsBrowseViewProps> = ({
     bookingDate: initialNeedOn,
   });
   const [moreOpen, setMoreOpen] = useState(false);
-  const [openDetailsId, setOpenDetailsId] = useState<string | null>(null);
+  const [openDetailsId, setOpenDetailsId] = useState<string | null>(selectedCarId || null);
+
+  React.useEffect(() => {
+    if (selectedCarId) {
+      setOpenDetailsId(selectedCarId);
+      setTimeout(() => {
+        const el = document.getElementById(`car-card-${selectedCarId}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 350);
+    }
+  }, [selectedCarId]);
 
   const listings = useMemo(
     () =>
@@ -183,14 +198,37 @@ export const CarsBrowseView: React.FC<CarsBrowseViewProps> = ({
         </div>
       )}
 
-      {listings.map((car) => (
-        <article key={car.id} className="bg-white rounded-3xl border border-[#EBE5D8] overflow-hidden shadow-card">
+      {listings.map((car) => {
+        const isSelected = selectedCarId === car.id;
+        return (
+          <article
+            key={car.id}
+            id={`car-card-${car.id}`}
+            className={`bg-white rounded-3xl border overflow-hidden shadow-card transition-all ${
+              isSelected ? 'border-[#F15A24] ring-2 ring-[#F15A24]/30' : 'border-[#EBE5D8]'
+            }`}
+          >
+            {isSelected && (
+              <div className="bg-gradient-to-r from-[#F15A24] to-[#FF7A45] text-white text-[10px] font-extrabold px-4 py-1 flex items-center justify-between">
+                <span>📍 Shared Car Post</span>
+                <span>Ride Bhai</span>
+              </div>
+            )}
           {car.carImage && (
             <img src={car.carImage} alt={car.carName} className="w-full h-36 object-cover" />
           )}
           <div className="p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div>
+                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                  <span className="px-2 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1">
+                    <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                    {car.displayId || formatCarId(car.id)}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-[#FFF0EB] text-[#F15A24] text-[10px] font-extrabold">
+                    {car.availability === 'route' ? 'Route only' : 'All citywide'}
+                  </span>
+                </div>
                 <h3 className="text-sm font-extrabold text-[#1C1C1C]">{car.carName}</h3>
                 <p className="text-[11px] text-[#6B6B6B]">
                   {[carTypeLabel(car), `${car.seats} seater`, car.partnerName].filter(Boolean).join(' · ')}
@@ -246,7 +284,11 @@ export const CarsBrowseView: React.FC<CarsBrowseViewProps> = ({
 
             <button
               type="button"
-              onClick={() => setOpenDetailsId((id) => (id === car.id ? null : car.id))}
+              onClick={() => {
+                const next = openDetailsId === car.id ? null : car.id;
+                setOpenDetailsId(next);
+                if (onSelectCar) onSelectCar(next);
+              }}
               className="w-full py-2 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-[11px] font-extrabold text-[#F15A24] inline-flex items-center justify-center gap-1"
             >
               {openDetailsId === car.id ? (
@@ -296,7 +338,8 @@ export const CarsBrowseView: React.FC<CarsBrowseViewProps> = ({
             )}
           </div>
         </article>
-      ))}
+      );
+    })}
     </div>
   );
 };

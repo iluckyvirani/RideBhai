@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Logo } from '../common/Logo';
 import { Menu, X, ChevronRight } from 'lucide-react';
+import { LanguageToggle } from '../common/LanguageToggle';
 import { useAppStore } from '../../store/useAppStore';
 
 interface LandingNavProps {
@@ -8,16 +9,21 @@ interface LandingNavProps {
   onOpenDriverApp: () => void;
   onOpenAgencyPortal?: () => void;
   onOpenAdminPortal?: () => void;
+  onOpenCars?: () => void;
+  onOpenTours?: () => void;
 }
 
 export const LandingNav: React.FC<LandingNavProps> = ({
   onOpenRiderApp,
+  onOpenCars,
+  onOpenTours,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isLoggedIn, currentUser } = useAppStore();
 
   const scrollTo = (id: string) => {
     setMobileMenuOpen(false);
+    window.location.hash = id;
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -27,29 +33,85 @@ export const LandingNav: React.FC<LandingNavProps> = ({
     <header className="sticky top-0 z-50 bg-[#FAF6EE]/90 backdrop-blur-md border-b border-[#EBE5D8]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-3 min-h-[88px] py-3">
-          <div className="cursor-pointer shrink-0" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          <a
+            href="#home"
+            className="cursor-pointer shrink-0"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.hash = 'home';
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          >
             <Logo size="md" showTagline={true} />
-          </div>
+          </a>
 
-          <nav className="hidden md:flex items-center gap-5 lg:gap-7">
-            <button onClick={() => scrollTo('how-it-works')} className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24]">
+          <nav className="hidden md:flex items-center gap-4 lg:gap-6">
+            <a
+              href="#cars"
+              onClick={(e) => {
+                e.preventDefault();
+                if (onOpenCars) onOpenCars();
+                else window.location.hash = 'cars';
+              }}
+              className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
+            >
+              Cars
+            </a>
+            <a
+              href="#tours"
+              onClick={(e) => {
+                e.preventDefault();
+                if (onOpenTours) onOpenTours();
+                else window.location.hash = 'tours';
+              }}
+              className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
+            >
+              Tours
+            </a>
+            <a
+              href="#how-it-works"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollTo('how-it-works');
+              }}
+              className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
+            >
               How it works
-            </button>
-            <button onClick={() => scrollTo('browse-india')} className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24]">
-              Cars & tours
-            </button>
-            <button onClick={() => scrollTo('for-partners')} className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24]">
+            </a>
+            <a
+              href="#for-partners"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollTo('for-partners');
+              }}
+              className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
+            >
               For users
-            </button>
-            <button onClick={() => scrollTo('partner-packages')} className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24]">
+            </a>
+            <a
+              href="#partner-packages"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollTo('partner-packages');
+              }}
+              className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
+            >
               Plans
-            </button>
-            <button onClick={() => scrollTo('safety-trust')} className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24]">
+            </a>
+            <a
+              href="#safety-trust"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollTo('safety-trust');
+              }}
+              className="text-sm font-extrabold text-[#6B6B6B] hover:text-[#F15A24] transition-colors"
+            >
               Safety
-            </button>
+            </a>
           </nav>
 
           <div className="flex items-center gap-2 shrink-0">
+            <LanguageToggle />
             <button
               type="button"
               onClick={onOpenRiderApp}
@@ -71,17 +133,48 @@ export const LandingNav: React.FC<LandingNavProps> = ({
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-b border-[#EBE5D8] px-4 pt-3 pb-6 space-y-3 shadow-xl">
+        <div className="md:hidden bg-white border-b border-[#EBE5D8] px-4 pt-3 pb-6 space-y-2 shadow-xl">
+          <a
+            href="#cars"
+            onClick={(e) => {
+              e.preventDefault();
+              setMobileMenuOpen(false);
+              if (onOpenCars) onOpenCars();
+              else window.location.hash = 'cars';
+            }}
+            className="block w-full py-2 text-sm font-extrabold text-[#1C1C1C] hover:text-[#F15A24]"
+          >
+            Cars
+          </a>
+          <a
+            href="#tours"
+            onClick={(e) => {
+              e.preventDefault();
+              setMobileMenuOpen(false);
+              if (onOpenTours) onOpenTours();
+              else window.location.hash = 'tours';
+            }}
+            className="block w-full py-2 text-sm font-extrabold text-[#1C1C1C] hover:text-[#F15A24]"
+          >
+            Tours
+          </a>
           {[
             ['how-it-works', 'How it works'],
-            ['browse-india', 'Cars & tours'],
             ['for-partners', 'For users'],
             ['partner-packages', 'Plans'],
             ['safety-trust', 'Safety'],
           ].map(([id, label]) => (
-            <button key={id} onClick={() => scrollTo(id)} className="block w-full text-left py-2.5 text-sm font-extrabold text-[#1C1C1C]">
+            <a
+              key={id}
+              href={`#${id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                scrollTo(id);
+              }}
+              className="block w-full py-2 text-sm font-extrabold text-[#1C1C1C] hover:text-[#F15A24]"
+            >
               {label}
-            </button>
+            </a>
           ))}
           <div className="pt-3 border-t border-[#F2ECE1]">
             <button

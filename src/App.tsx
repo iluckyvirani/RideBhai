@@ -28,8 +28,9 @@ import { SupportTicketsView } from './components/common/SupportTicketsView';
 import { AgencyTripPost } from './types';
 import { RateLastBookingModal } from './components/common/RateLastBookingModal';
 import { LegalPageView, type LegalSlug } from './components/legal/LegalPageView';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Sparkles } from 'lucide-react';
 import type { Deal } from './lib/deals';
+import { parseSharedLink } from './lib/share';
 
 function hashLegalSlug(): LegalSlug | null {
   const h = window.location.hash.replace(/^#/, '');
@@ -52,10 +53,12 @@ export function App() {
     chatThreads,
     canPostCar,
     deals,
+    listingsLoading,
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState('tours');
   const [detailsTourId, setDetailsTourId] = useState<string | null>(null);
+  const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
   const [detailsFrom, setDetailsFrom] = useState<'tours' | 'my-tours'>('tours');
   const [chatThreadId, setChatThreadId] = useState<string | null>(null);
   const [filter, setFilter] = useState({ fromCity: '', toCity: '', bookingDate: '' });
@@ -89,16 +92,142 @@ export function App() {
     setActiveTab(gate.code === 'no_vehicle' || gate.code === 'pending_vehicle' ? 'my-cars' : 'my-drivers');
   };
 
+  const tabToHash = (tab: string) => {
+    if (tab === 'packages') return 'plans';
+    return tab;
+  };
+
+  const navigateTab = (tab: string, replace = false) => {
+    setActiveTab(tab);
+    if (tab !== 'tour-details') setDetailsTourId(null);
+    if (tab !== 'cars') setSelectedCarId(null);
+    setAppView('rider-app');
+
+    const hash = tabToHash(tab);
+    const currentHash = (window.location.hash || '').replace(/^#/, '');
+    if (currentHash !== hash) {
+      if (replace) {
+        window.history.replaceState(null, '', `#${hash}`);
+      } else {
+        window.location.hash = hash;
+      }
+    }
+  };
+
+  const exitToLanding = (section?: string) => {
+    setLegalSlug(null);
+    setDetailsTourId(null);
+    setSelectedCarId(null);
+    setAppView('landing');
+    const hash = section || 'home';
+    if ((window.location.hash || '').replace(/^#/, '') !== hash) {
+      window.location.hash = hash;
+    }
+    if (section && section !== 'home') {
+      setTimeout(() => {
+        document.getElementById(section)?.scrollIntoView({ behavior: 'smooth' });
+      }, 70);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   useEffect(() => {
-    const readHash = () => {
-      const slug = hashLegalSlug();
-      if (slug) {
-        setLegalSlug(slug);
+    const handleRoute = () => {
+      const rawHash = (window.location.hash || '').replace(/^#/, '').trim();
+
+      // 1. Legal pages
+      if (rawHash === 'terms' || rawHash === 'privacy') {
+        setLegalSlug(rawHash);
         setAppView('landing');
+        return;
+      }
+      setLegalSlug(null);
+
+      // 2. Shared tour / car links: #tour=... or #car=...
+      const shared = parseSharedLink();
+      if (shared.type === 'tour' && shared.id) {
+        setDetailsTourId(shared.id);
+        setDetailsFrom('tours');
+        setActiveTab('tour-details');
+        setAppView('rider-app');
+        return;
+      }
+      if (shared.type === 'car' && shared.id) {
+        setSelectedCarId(shared.id);
+        setActiveTab('cars');
+        setAppView('rider-app');
+        return;
+      }
+
+      // 3. Admin portal
+      if (rawHash === 'admin') {
+        setAppView('admin-portal');
+        return;
+      }
+
+      // 4. App tabs
+      const appTabMap: Record<string, string> = {
+        cars: 'cars',
+        tours: 'tours',
+        plans: 'packages',
+        packages: 'packages',
+        chat: 'chat',
+        profile: 'profile',
+        bookings: 'bookings',
+        'my-bookings': 'bookings',
+        'my-cars': 'my-cars',
+        'my-drivers': 'my-drivers',
+        'my-tours': 'my-tours',
+        'my-car-posts': 'my-car-posts',
+        'bank-details': 'bank-details',
+      };
+
+      if (appTabMap[rawHash]) {
+        const tab = appTabMap[rawHash];
+        setActiveTab(tab);
+        if (tab !== 'tour-details') setDetailsTourId(null);
+        if (tab !== 'cars') setSelectedCarId(null);
+        setAppView('rider-app');
+        return;
+      }
+
+      // 5. Landing page sections
+      const landingSections: Record<string, string> = {
+        'how-it-works': 'how-it-works',
+        'browse-india': 'browse-india',
+        'cars-tours': 'browse-india',
+        'for-partners': 'for-partners',
+        'for-users': 'for-partners',
+        'partner-packages': 'partner-packages',
+        'safety-trust': 'safety-trust',
+        safety: 'safety-trust',
+        faq: 'faq',
+      };
+
+      if (landingSections[rawHash]) {
+        setAppView('landing');
+        const sectionId = landingSections[rawHash];
+        setTimeout(() => {
+          document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+        }, 80);
+        return;
+      }
+
+      // 6. Default root or home
+      if (!rawHash || rawHash === 'home') {
+        setAppView('landing');
+        return;
       }
     };
-    window.addEventListener('hashchange', readHash);
-    return () => window.removeEventListener('hashchange', readHash);
+
+    handleRoute();
+    window.addEventListener('hashchange', handleRoute);
+    window.addEventListener('popstate', handleRoute);
+    return () => {
+      window.removeEventListener('hashchange', handleRoute);
+      window.removeEventListener('popstate', handleRoute);
+    };
   }, [setAppView]);
 
   useEffect(() => {
@@ -147,27 +276,29 @@ export function App() {
   }, [awaitRatePrompt, isLoggedIn, currentUser?.id, needsProfile, deals]);
 
   const enterApp = (tab = 'tours') => {
-    if (!isLoggedIn) {
-      setPendingTab(tab);
-      setAuthOpen(true);
-      return;
-    }
-    setActiveTab(tab);
-    setAppView('rider-app');
+    navigateTab(tab);
   };
 
   const handleAuthSuccess = (phone?: string) => {
     if (phone) loginUser(phone);
-    setActiveTab(pendingTab || 'tours');
-    setPendingTab(null);
-    setAppView('rider-app');
+    setAuthOpen(false);
+    if (pendingTab) {
+      navigateTab(pendingTab);
+      setPendingTab(null);
+    } else {
+      navigateTab('tours');
+    }
     refreshListings();
     refreshDeals().finally(() => setAwaitRatePrompt(true));
   };
 
   const handleNeedUnlock = (code?: 'incomplete' | 'unverified' | 'no_package') => {
-    if (code === 'no_package') setActiveTab('packages');
-    else setActiveTab('profile');
+    if (!isLoggedIn) {
+      setAuthOpen(true);
+      return;
+    }
+    if (code === 'no_package') navigateTab('packages');
+    else navigateTab('profile');
   };
 
   const handleLandingSearch = (params: {
@@ -182,7 +313,7 @@ export function App() {
   };
 
   if (appView === 'admin-portal') {
-    return <AdminApp onExitToWebsite={() => setAppView('landing')} />;
+    return <AdminApp onExitToWebsite={() => exitToLanding('home')} />;
   }
 
   if (legalSlug) {
@@ -205,8 +336,13 @@ export function App() {
           onOpenDriverPortal={() => enterApp('tours')}
           onOpenRiderPortal={() => enterApp('tours')}
           onOpenAgencyPortal={() => enterApp('tours')}
-          onOpenAdminPortal={() => setAppView('admin-portal')}
+          onOpenAdminPortal={() => {
+            window.location.hash = 'admin';
+            setAppView('admin-portal');
+          }}
           onOpenLegal={openLegal}
+          onOpenCars={() => enterApp('cars')}
+          onOpenTours={() => enterApp('tours')}
         />
         <AuthModal
           isOpen={authOpen}
@@ -239,7 +375,7 @@ export function App() {
             type="button"
             onClick={() => {
               logoutUser();
-              setAppView('landing');
+              exitToLanding('home');
             }}
             className="w-full py-3 rounded-2xl bg-[#1C1C1C] text-white text-xs font-extrabold"
           >
@@ -250,37 +386,16 @@ export function App() {
     );
   }
 
-  if (!isLoggedIn) {
-    return (
-      <>
-        <LandingPage
-          onSearchInitiated={handleLandingSearch}
-          onOpenDriverPortal={() => enterApp('tours')}
-          onOpenRiderPortal={() => enterApp('tours')}
-          onOpenAgencyPortal={() => enterApp('tours')}
-          onOpenAdminPortal={() => setAppView('admin-portal')}
-          onOpenLegal={openLegal}
-        />
-        <AuthModal
-          isOpen
-          onClose={() => setAppView('landing')}
-          title="Login with OTP"
-          subtitle="One account for cars, tours, bookings and posting. Plan unlocks chat, booking and posting."
-          onSuccess={handleAuthSuccess}
-        />
-      </>
-    );
-  }
-
-  const openTourDetails = (tour: AgencyTripPost, from: 'tours' | 'my-tours') => {
+  const openTourDetails = (tour: AgencyTripPost, from: 'tours' | 'my-tours' = 'tours') => {
     setDetailsTourId(tour.id);
     setDetailsFrom(from);
     setActiveTab('tour-details');
+    window.location.hash = `tour=${encodeURIComponent(tour.id)}`;
   };
 
   const closeTourDetails = () => {
     setDetailsTourId(null);
-    setActiveTab(detailsFrom);
+    navigateTab(detailsFrom);
   };
 
   const detailsTour = agencyTripPosts.find((t) => t.id === detailsTourId);
@@ -296,6 +411,7 @@ export function App() {
           showBack={
             chatThreadOpen ||
             activeTab === 'tour-details' ||
+            (activeTab === 'cars' && Boolean(selectedCarId)) ||
             activeTab === 'my-cars' ||
             activeTab === 'my-car-posts' ||
             activeTab === 'my-drivers' ||
@@ -306,11 +422,21 @@ export function App() {
           onBack={() => {
             if (chatThreadOpen) setChatThreadId(null);
             else if (activeTab === 'tour-details') closeTourDetails();
-            else setActiveTab('profile');
+            else if (activeTab === 'cars' && selectedCarId) {
+              setSelectedCarId(null);
+              window.history.replaceState(null, '', '#cars');
+            } else navigateTab('profile');
           }}
-          onExitToLanding={() => setAppView('landing')}
-          onLogoClick={() => setActiveTab('tours')}
-          onOpenNotifications={() => setIsNotificationsOpen(true)}
+          onExitToLanding={() => exitToLanding('home')}
+          onLogoClick={() => exitToLanding('home')}
+          onOpenNotifications={() => {
+            if (!isLoggedIn) {
+              setAuthOpen(true);
+              return;
+            }
+            setIsNotificationsOpen(true);
+          }}
+          onLoginClick={() => setAuthOpen(true)}
         />
 
         <main
@@ -339,10 +465,19 @@ export function App() {
               initialFrom={filter.fromCity}
               initialTo={filter.toCity}
               initialNeedOn={filter.bookingDate}
+              selectedCarId={selectedCarId}
+              onSelectCar={(carId) => {
+                setSelectedCarId(carId);
+                if (carId) {
+                  window.history.replaceState(null, '', `#car=${encodeURIComponent(carId)}`);
+                } else {
+                  window.history.replaceState(null, '', '#cars');
+                }
+              }}
               onNeedUnlock={handleNeedUnlock}
               onDealWithRideBhai={(threadId) => {
                 setChatThreadId(threadId);
-                setActiveTab('chat');
+                navigateTab('chat');
               }}
             />
           )}
@@ -356,7 +491,7 @@ export function App() {
               onOpenDetails={(tour) => openTourDetails(tour, 'tours')}
               onDealWithRideBhai={(threadId) => {
                 setChatThreadId(threadId);
-                setActiveTab('chat');
+                navigateTab('chat');
               }}
             />
           )}
@@ -367,28 +502,45 @@ export function App() {
               isOwn={Boolean(currentUser?.id && detailsTour.agencyId === currentUser.id)}
               onNeedUnlock={handleNeedUnlock}
               onDirect={async () => {
+                if (!isLoggedIn) {
+                  setAuthOpen(true);
+                  return;
+                }
                 const result = await openDeal({ listingType: 'tour', listingId: detailsTour.id, channel: 'direct' });
                 setDetailsTourId(null);
                 setChatThreadId(result.thread.id);
-                setActiveTab('chat');
+                navigateTab('chat');
               }}
               onRideBhai={async () => {
+                if (!isLoggedIn) {
+                  setAuthOpen(true);
+                  return;
+                }
                 await openDeal({ listingType: 'tour', listingId: detailsTour.id, channel: 'ridebhai' });
               }}
             />
           )}
 
           {activeTab === 'tour-details' && !detailsTour && (
-            <div className="p-8 text-center rounded-3xl bg-white border border-[#EBE5D8]">
-              <p className="text-sm font-bold text-[#6B6B6B]">This tour is no longer available.</p>
-              <button
-                type="button"
-                onClick={closeTourDetails}
-                className="mt-3 text-xs font-extrabold text-[#F15A24]"
-              >
-                Back to tours
-              </button>
-            </div>
+            listingsLoading ? (
+              <div className="p-8 text-center space-y-3 rounded-3xl bg-white border border-[#EBE5D8] animate-pulse">
+                <div className="w-10 h-10 rounded-full bg-[#F15A24]/10 text-[#F15A24] flex items-center justify-center mx-auto">
+                  <Sparkles className="w-5 h-5 animate-spin" />
+                </div>
+                <p className="text-xs font-bold text-[#6B6B6B]">Loading tour details...</p>
+              </div>
+            ) : (
+              <div className="p-8 text-center rounded-3xl bg-white border border-[#EBE5D8]">
+                <p className="text-sm font-bold text-[#6B6B6B]">This tour is no longer available.</p>
+                <button
+                  type="button"
+                  onClick={closeTourDetails}
+                  className="mt-3 text-xs font-extrabold text-[#F15A24]"
+                >
+                  Back to tours
+                </button>
+              </div>
+            )
           )}
 
           {activeTab === 'profile' && (
@@ -396,24 +548,24 @@ export function App() {
               onSwitchRole={(role) => {
                 if (role === 'admin') setAppView('admin-portal');
               }}
-              onOpenVerification={() => setActiveTab('profile')}
-              onOpenPackages={() => setActiveTab('packages')}
-              onOpenMyCars={() => setActiveTab('my-cars')}
-              onOpenMyCarPosts={() => setActiveTab('my-car-posts')}
-              onOpenMyDrivers={() => setActiveTab('my-drivers')}
-              onOpenMyTours={() => setActiveTab('my-tours')}
-              onOpenMyBookings={() => setActiveTab('my-bookings')}
-              onOpenBankDetails={() => setActiveTab('bank-details')}
-              onOpenSupportTickets={() => setActiveTab('support-tickets')}
+              onOpenVerification={() => navigateTab('profile')}
+              onOpenPackages={() => navigateTab('packages')}
+              onOpenMyCars={() => navigateTab('my-cars')}
+              onOpenMyCarPosts={() => navigateTab('my-car-posts')}
+              onOpenMyDrivers={() => navigateTab('my-drivers')}
+              onOpenMyTours={() => navigateTab('my-tours')}
+              onOpenMyBookings={() => navigateTab('my-bookings')}
+              onOpenBankDetails={() => navigateTab('bank-details')}
+              onOpenSupportTickets={() => navigateTab('support-tickets')}
               onLogout={() => {
                 logoutUser();
-                setAppView('landing');
+                exitToLanding('home');
               }}
             />
           )}
 
           {activeTab === 'support-tickets' && (
-            <SupportTicketsView onBack={() => setActiveTab('profile')} />
+            <SupportTicketsView onBack={() => navigateTab('profile')} />
           )}
 
           {activeTab === 'my-cars' && (
@@ -437,7 +589,7 @@ export function App() {
           )}
 
           {activeTab === 'my-bookings' && (
-            <InquiriesView mode="user" onOpenChat={(id) => { setChatThreadId(id); setActiveTab('chat'); }} />
+            <InquiriesView mode="user" onOpenChat={(id) => { setChatThreadId(id); navigateTab('chat'); }} />
           )}
 
           {activeTab === 'bank-details' && (
@@ -446,7 +598,7 @@ export function App() {
             </div>
           )}
 
-          {activeTab === 'packages' && <AgencyPackagesView />}
+          {activeTab === 'packages' && <AgencyPackagesView onNeedAuth={() => setAuthOpen(true)} />}
         </main>
 
         <BottomNav
@@ -466,11 +618,21 @@ export function App() {
                 : activeTab
           }
           onTabChange={(tab) => {
-            setDetailsTourId(null);
+            if (!isLoggedIn && (tab === 'chat' || tab === 'profile')) {
+              setPendingTab(tab);
+              setAuthOpen(true);
+              return;
+            }
             if (tab === 'chat') setChatThreadId(null);
-            setActiveTab(tab);
+            navigateTab(tab);
           }}
-          onCreate={() => setCreateOpen(true)}
+          onCreate={() => {
+            if (!isLoggedIn) {
+              setAuthOpen(true);
+              return;
+            }
+            setCreateOpen(true);
+          }}
         />
 
         <CreateListingSheet
@@ -479,12 +641,20 @@ export function App() {
           onPostCar={() => setIsPostCarOpen(true)}
           onPostTour={() => setIsPostTourOpen(true)}
           onOpenDriverSetup={openCarSetup}
-          onOpenProfile={() => setActiveTab('profile')}
+          onOpenProfile={() => navigateTab('profile')}
         />
 
         <NotificationsModal
           isOpen={isNotificationsOpen}
           onClose={() => setIsNotificationsOpen(false)}
+        />
+
+        <AuthModal
+          isOpen={authOpen}
+          onClose={() => setAuthOpen(false)}
+          title="Login with OTP"
+          subtitle="One account for cars, tours, bookings and posting. Plan unlocks chat, booking and posting."
+          onSuccess={handleAuthSuccess}
         />
 
         <PostCarModal

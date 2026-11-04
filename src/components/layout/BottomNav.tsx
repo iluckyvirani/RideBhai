@@ -11,25 +11,28 @@ interface BottomNavProps {
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, onCreate, chatUnread = 0 }) => {
   const left = [
-    { id: 'tours', label: 'Tours', icon: Sparkles },
-    { id: 'cars', label: 'Cars', icon: Car },
+    { id: 'tours', label: 'Tours', icon: Sparkles, hash: 'tours' },
+    { id: 'cars', label: 'Cars', icon: Car, hash: 'cars' },
   ];
   const right = [
-    { id: 'chat', label: 'Chat', icon: MessageCircle },
-    { id: 'packages', label: 'Plans', icon: CreditCard },
-    { id: 'profile', label: 'Profile', icon: User },
+    { id: 'chat', label: 'Chat', icon: MessageCircle, hash: 'chat' },
+    { id: 'packages', label: 'Plans', icon: CreditCard, hash: 'plans' },
+    { id: 'profile', label: 'Profile', icon: User, hash: 'profile' },
   ];
 
-  const renderTab = (tab: { id: string; label: string; icon: typeof Car }) => {
+  const renderTab = (tab: { id: string; label: string; icon: typeof Car; hash: string }) => {
     const Icon = tab.icon;
     const isActive = activeTab === tab.id;
     return (
-      <button
+      <a
         key={tab.id}
-        onClick={() => onTabChange(tab.id)}
-        className={`flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl transition-all relative min-w-[48px] ${
-          isActive ? 'text-[#F15A24]' : 'text-[#6B6B6B] hover:text-[#1C1C1C]'
-        } active-press`}
+        href={`#${tab.hash}`}
+        onClick={(e) => {
+          e.preventDefault();
+          onTabChange(tab.id);
+        }}
+        className={`flex flex-col items-center justify-center py-1.5 px-1.5 rounded-xl transition-all relative min-w-[48px] ${isActive ? 'text-[#F15A24]' : 'text-[#6B6B6B] hover:text-[#1C1C1C]'
+          } active-press`}
       >
         <span className="relative">
           <Icon className={`w-5 h-5 transition-transform ${isActive ? 'scale-110 stroke-[2.5]' : 'stroke-[1.75]'}`} />
@@ -41,7 +44,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, onTabChange, on
         </span>
         <span className={`text-[10px] mt-1 ${isActive ? 'font-bold' : 'font-medium'}`}>{tab.label}</span>
         {isActive && <span className="w-1 h-1 rounded-full bg-[#F15A24] mt-0.5" />}
-      </button>
+      </a>
     );
   };
 

@@ -8,6 +8,7 @@ export type FuelType = 'electric' | 'petrol' | 'diesel' | 'cng' | 'hybrid';
 
 export interface Vehicle {
   id?: string;
+  displayId?: string;
   make: string;
   model: string;
   year: number;
@@ -42,6 +43,7 @@ export type CarAvailability = 'citywide' | 'route';
 
 export interface CarListing {
   id: string;
+  displayId?: string;
   partnerId: string;
   partnerName: string;
   partnerPhone: string;
@@ -207,6 +209,7 @@ export type TourTripSide = 'one_side' | 'two_side';
 
 export interface AgencyTripPost {
   id: string;
+  displayId?: string;
   agencyId: string;
   agencyName: string;
   agencyPhone: string;
@@ -422,6 +425,7 @@ export type UserProfileStatus = 'incomplete' | 'pending_verification' | 'verifie
 
 export interface DriverProfile {
   id?: string;
+  displayId?: string;
   name: string;
   email: string;
   phone: string;
@@ -449,6 +453,7 @@ export interface BankDetails {
 
 export interface AppUser {
   id: string;
+  displayId?: string;
   phone: string;
   name: string;
   email: string;

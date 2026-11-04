@@ -1,4 +1,5 @@
 import { AgencyTripPost, CarListing } from '../types';
+import { formatCarId, formatTourId } from './displayId';
 
 function dateOnly(value: unknown): string | undefined {
   if (!value) return undefined;
@@ -27,6 +28,7 @@ function asStringArray(value: unknown): string[] {
 export function mapCarListing(row: any): CarListing {
   return {
     id: row.id,
+    displayId: row.display_id || formatCarId(row.id),
     partnerId: row.partner_id,
     partnerName: row.agency_name || row.partner_name || 'Partner',
     partnerPersonName: row.partner_name || undefined,
@@ -74,6 +76,7 @@ export function mapTourListing(row: any): AgencyTripPost {
   const bookingTime = row.booking_time || '';
   return {
     id: row.id,
+    displayId: row.display_id || formatTourId(row.id),
     agencyId: row.partner_id,
     agencyName: row.agency_name || row.poster_agency || 'Agency',
     agencyPhone: row.partner_phone || '',

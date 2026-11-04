@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Loader2, Plus, UserRound } from 'lucide-react';
+import { CheckCircle2, Loader2, Plus, Tag, UserRound } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { FilePick } from '../common/FilePick';
 import { isPreviewableImage } from '../../lib/upload';
+import { formatDriverId } from '../../lib/displayId';
 
 export const PartnerDriversView: React.FC = () => {
   const { currentUser, saveDriverProfile } = useAppStore();
@@ -190,10 +191,16 @@ export const PartnerDriversView: React.FC = () => {
           className="p-3 rounded-2xl bg-white border border-[#EBE5D8] space-y-2"
         >
           <div className="flex items-start justify-between gap-2">
-            <p className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1.5">
-              <UserRound className="w-3.5 h-3.5 text-[#F15A24]" />
-              {driver.name}
-            </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1.5">
+                <UserRound className="w-3.5 h-3.5 text-[#F15A24]" />
+                {driver.name}
+              </p>
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black bg-[#1C1C1C] text-white">
+                <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                {driver.displayId || formatDriverId(driver.id)}
+              </span>
+            </div>
             <span
               className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border ${
                 (driver.verificationStatus || 'pending_verification') === 'verified'

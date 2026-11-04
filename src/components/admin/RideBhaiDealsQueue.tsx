@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, Search, Tag, XCircle } from 'lucide-react';
 import { api, getToken } from '../../lib/api';
 import { mapDeal, type Deal } from '../../lib/deals';
+import { formatBookingId } from '../../lib/displayId';
 
 export const RideBhaiDealsQueue: React.FC = () => {
   const [filter, setFilter] = useState<'pending' | 'success' | 'cancelled' | 'all'>('pending');
+  const [search, setSearch] = useState('');
   const [rows, setRows] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,6 +48,20 @@ export const RideBhaiDealsQueue: React.FC = () => {
     }
   };
 
+  const filteredRows = rows.filter((deal) => {
+    if (!search.trim()) return true;
+    const q = search.trim().toLowerCase();
+    const bookingId = (deal.displayId || formatBookingId(deal.id)).toLowerCase();
+    return (
+      bookingId.includes(q) ||
+      deal.title.toLowerCase().includes(q) ||
+      deal.buyerName.toLowerCase().includes(q) ||
+      (deal.buyerPhone && deal.buyerPhone.includes(q)) ||
+      deal.sellerName.toLowerCase().includes(q) ||
+      (deal.sellerPhone && deal.sellerPhone.includes(q))
+    );
+  });
+
   return (
     <div className="space-y-4">
       <div>
@@ -70,6 +86,16 @@ export const RideBhaiDealsQueue: React.FC = () => {
         ))}
       </div>
 
+      <div className="relative">
+        <Search className="w-4 h-4 text-[#8C8479] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search by Booking ID (e.g. RB-BK-1001), phone, name, title..."
+          className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] placeholder:text-[#8C8479] outline-none"
+        />
+      </div>
+
       <input
         value={note}
         onChange={(e) => setNote(e.target.value)}
@@ -79,14 +105,20 @@ export const RideBhaiDealsQueue: React.FC = () => {
 
       {error && <p className="text-xs font-bold text-red-600 bg-red-50 p-3 rounded-2xl">{error}</p>}
       {loading && <p className="text-xs font-bold text-[#6B6B6B]">Loading deals…</p>}
-      {!loading && rows.length === 0 && <p className="text-sm font-bold text-[#6B6B6B]">No deals in this filter.</p>}
+      {!loading && filteredRows.length === 0 && <p className="text-sm font-bold text-[#6B6B6B]">No deals matching criteria.</p>}
 
-      {rows.map((deal) => (
+      {filteredRows.map((deal) => (
         <div key={deal.id} className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-extrabold uppercase text-[#F15A24]">
-              {deal.listingType} · {deal.status}
-            </span>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#1C1C1C] text-white">
+                <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                {deal.displayId || formatBookingId(deal.id)}
+              </span>
+              <span className="text-[10px] font-extrabold uppercase text-[#F15A24]">
+                {deal.listingType} · {deal.status}
+              </span>
+            </div>
             <span className="text-[10px] font-bold text-[#6B6B6B]">
               ₹{deal.price.toLocaleString('en-IN')}
             </span>

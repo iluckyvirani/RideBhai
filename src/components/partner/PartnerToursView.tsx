@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { MapPin, Car, EyeOff, RotateCcw, Trash2, Share2 } from 'lucide-react';
+import { MapPin, Car, EyeOff, RotateCcw, Trash2, Share2, Tag } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { AgencyTripPost } from '../../types';
 import { shareTourListing } from '../../lib/share';
+import { formatTourId } from '../../lib/displayId';
 
 interface PartnerToursViewProps {
   onOpenDetails?: (tour: AgencyTripPost) => void;
@@ -69,6 +70,12 @@ export const PartnerToursView: React.FC<PartnerToursViewProps> = () => {
           <div key={tour.id} className="p-3 rounded-2xl bg-white border border-[#EBE5D8] space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <div>
+                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                  <span className="px-2 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1">
+                    <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                    {tour.displayId || formatTourId(tour.id)}
+                  </span>
+                </div>
                 <p className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1">
                   <MapPin className="w-3.5 h-3.5 text-[#F15A24]" />
                   {tour.fromCity} {tour.tripSide === 'two_side' ? '⇄' : '→'} {tour.toCity}
