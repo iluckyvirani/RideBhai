@@ -61,6 +61,7 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
   const tours = useMemo(
     () =>
       getFilteredTours({
+        tourIdQuery: applied.tourIdQuery,
         fromCity: applied.fromCity,
         toCity: applied.toCity,
         bookingDate: applied.bookingDate,
@@ -92,9 +93,14 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
   return (
     <div className="space-y-3 pb-24 animate-fade-in">
       <p className="text-[11px] text-[#6B6B6B] leading-snug">
+        {applied.tourIdQuery ? (
+          <span className="text-[#F15A24] font-black mr-1">
+            Tour ID: #{applied.tourIdQuery.replace(/^#/, '')} ·{' '}
+          </span>
+        ) : null}
         {isFiltered
           ? `${applied.fromCity || 'Any'} → ${applied.toCity || 'any'}${applied.carType ? ` · ${CAR_BODY_TYPES.find((t) => t.id === applied.carType)?.label || applied.carType}` : ''}${applied.bookingDate ? ` · ${applied.bookingDate.split('-').reverse().join('/')}` : ''}`
-          : 'All India · filter by car type. Open More for extra options.'}
+          : 'All India · search by Tour ID or filter by car type. Open More for extra options.'}
       </p>
 
       <BrowseFilters
@@ -130,9 +136,9 @@ export const ToursBrowseView: React.FC<ToursBrowseViewProps> = ({
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                <span className="px-2 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1">
+                <span className="px-2.5 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1 shadow-2xs">
                   <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
-                  {tour.displayId || formatTourId(tour.id)}
+                  Tour ID: {tour.displayId || formatTourId(tour.id)}
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-[#FFF0EB] text-[#F15A24] text-[10px] font-extrabold">
                   {tour.tripSide === 'two_side' ? 'Two side' : 'One side'}

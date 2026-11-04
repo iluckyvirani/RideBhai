@@ -113,7 +113,7 @@ export const RideBhaiDealsQueue: React.FC = () => {
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#1C1C1C] text-white">
                 <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
-                {deal.displayId || formatBookingId(deal.id)}
+                Booking ID: {deal.displayId || formatBookingId(deal.id)}
               </span>
               <span className="text-[10px] font-extrabold uppercase text-[#F15A24]">
                 {deal.listingType} · {deal.status}

@@ -19,11 +19,14 @@ import {
   ChevronDown,
   ChevronUp,
   FileText,
-  Share2
+  Share2,
+  Tag,
+  X
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { AgencyTripPost } from '../../types';
 import { shareTourListing } from '../../lib/share';
+import { formatTourId } from '../../lib/displayId';
 
 export const AgencyToursFeed: React.FC = () => {
   const {
@@ -34,11 +37,21 @@ export const AgencyToursFeed: React.FC = () => {
 
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState('');
+  const [searchTourId, setSearchTourId] = useState('');
   const [claimedNotice, setClaimedNotice] = useState<string | null>(null);
   const [expandedPostId, setExpandedPostId] = useState<string | null>(null);
 
   // Active tour posts from verified agencies
   const activePosts = agencyTripPosts.filter((p) => {
+    if (searchTourId.trim()) {
+      const q = searchTourId.trim().toLowerCase().replace(/^#/, '');
+      const display = (p.displayId || '').toLowerCase().replace(/^#/, '');
+      const formatted = formatTourId(p.id, p.displayId).toLowerCase().replace(/^#/, '');
+      const rawId = p.id.toLowerCase();
+      if (!display.includes(q) && !formatted.includes(q) && !rawId.includes(q)) {
+        return false;
+      }
+    }
     if (selectedCity && !p.fromCity.toLowerCase().includes(selectedCity.toLowerCase()) && !p.toCity.toLowerCase().includes(selectedCity.toLowerCase())) {
       return false;
     }
@@ -91,6 +104,27 @@ export const AgencyToursFeed: React.FC = () => {
           <span>{claimedNotice}</span>
         </div>
       )}
+
+      {/* Tour ID Search Bar */}
+      <div className="relative">
+        <input
+          type="text"
+          value={searchTourId}
+          onChange={(e) => setSearchTourId(e.target.value)}
+          placeholder="Search by Tour ID (e.g. RB-TR-1001)..."
+          className="w-full pl-8 pr-7 py-2.5 rounded-2xl bg-white border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] placeholder-[#8A8478] focus:outline-none focus:border-[#F15A24] shadow-xs"
+        />
+        <Search className="w-3.5 h-3.5 text-[#F15A24] absolute left-3 top-3.5 pointer-events-none" />
+        {searchTourId && (
+          <button
+            type="button"
+            onClick={() => setSearchTourId('')}
+            className="absolute right-3 top-3 text-[#6B6B6B] hover:text-[#1C1C1C]"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
 
       {/* Filter Chips */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
@@ -181,7 +215,11 @@ export const AgencyToursFeed: React.FC = () => {
                       {post.agencyName.charAt(0)}
                     </div>
                     <div>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1">
+                          <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                          Tour ID: {post.displayId || formatTourId(post.id)}
+                        </span>
                         <h2 className="text-xs font-extrabold text-[#1C1C1C] leading-tight">
                           {post.agencyName}
                         </h2>

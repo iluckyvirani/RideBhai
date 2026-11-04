@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Star, X } from 'lucide-react';
+import { Star, X, Tag } from 'lucide-react';
 import type { Deal } from '../../lib/deals';
 import { RateStars } from './RateStars';
 import { useAppStore } from '../../store/useAppStore';
+import { formatBookingId } from '../../lib/displayId';
 
 export function RateLastBookingModal({
   deal,
@@ -38,10 +39,16 @@ export function RateLastBookingModal({
       <div className="w-full max-w-sm rounded-3xl bg-white border border-[#EBE5D8] p-5 space-y-3 shadow-2xl">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="text-[10px] font-extrabold uppercase text-[#F15A24] flex items-center gap-1">
-              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-              Rate last booking
-            </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] font-black uppercase text-[#F15A24] bg-[#FFF0EB] border border-[#FFD8CB] px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                Booking ID: {deal.displayId || formatBookingId(deal.id)}
+              </span>
+              <p className="text-[10px] font-extrabold uppercase text-[#F15A24] flex items-center gap-1">
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                Rate last booking
+              </p>
+            </div>
             <h3 className="text-sm font-extrabold text-[#1C1C1C] mt-1">{deal.title}</h3>
             <p className="text-[11px] text-[#6B6B6B] mt-0.5">
               {deal.listingType === 'tour' ? 'Tour' : 'Car'} · {otherName} · ₹{deal.price.toLocaleString('en-IN')}

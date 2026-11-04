@@ -1,5 +1,6 @@
 import React from 'react';
-import { CheckCircle2, Ticket, ArrowRight, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Ticket, ArrowRight, ShieldCheck, Tag } from 'lucide-react';
+import { formatBookingId } from '../../lib/displayId';
 
 interface BookingSuccessModalProps {
   isOpen: boolean;
@@ -37,8 +38,13 @@ export const BookingSuccessModal: React.FC<BookingSuccessModalProps> = ({
         </div>
 
         <div className="bg-[#FAF6EE] rounded-2xl p-3 border border-[#EBE5D8] flex items-center justify-between text-xs font-semibold text-[#1C1C1C]">
-          <span className="text-[#6B6B6B]">Booking Ref:</span>
-          <span className="font-mono font-bold text-[#F15A24]">{bookingId}</span>
+          <span className="text-[#6B6B6B] flex items-center gap-1 font-bold">
+            <Tag className="w-3.5 h-3.5 text-[#F15A24]" />
+            Booking ID:
+          </span>
+          <span className="font-mono font-black text-[#F15A24]">
+            {formatBookingId(bookingId)}
+          </span>
         </div>
 
         <div className="space-y-2 pt-2">

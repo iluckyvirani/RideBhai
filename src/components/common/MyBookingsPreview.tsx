@@ -1,6 +1,7 @@
 import React from 'react';
-import { Ticket } from 'lucide-react';
+import { Ticket, Tag } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
+import { formatBookingId } from '../../lib/displayId';
 
 interface MyBookingsPreviewProps {
   mode: 'rider' | 'partner' | 'user';
@@ -40,7 +41,10 @@ export const MyBookingsPreview: React.FC<MyBookingsPreviewProps> = ({ onShowAll 
           className="w-full text-left p-3 rounded-2xl bg-white border border-[#EBE5D8] space-y-1"
         >
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[10px] font-extrabold uppercase text-[#F15A24]">{deal.listingType} · Ride Bhai</span>
+            <span className="text-[10px] font-black uppercase text-[#F15A24] bg-[#FFF0EB] border border-[#FFD8CB] px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+              <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+              Booking ID: {deal.displayId || formatBookingId(deal.id)}
+            </span>
             <span className="text-[10px] font-extrabold uppercase text-[#6B6B6B]">{deal.status}</span>
           </div>
           <p className="text-xs font-extrabold text-[#1C1C1C]">{deal.title}</p>

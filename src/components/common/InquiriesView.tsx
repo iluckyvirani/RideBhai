@@ -72,9 +72,9 @@ export const InquiriesView: React.FC<InquiriesViewProps> = ({ mode, embedded, on
     <div key={deal.id} className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-2">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[10px] font-black uppercase text-[#F15A24] bg-[#FFF0EB] border border-[#FFD8CB] px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+          <span className="text-[10px] font-black uppercase text-[#F15A24] bg-[#FFF0EB] border border-[#FFD8CB] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
             <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
-            {bookingCode}
+            Booking ID: {bookingCode}
           </span>
           <span className="text-[10px] font-extrabold uppercase text-[#6B6B6B]">
             {deal.listingType} · {deal.channel === 'ridebhai' ? 'Ride Bhai' : 'Direct'}

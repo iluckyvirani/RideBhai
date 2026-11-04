@@ -11,6 +11,7 @@ import {
   Clock,
   Calendar,
   Tag,
+  RefreshCw,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useAppStore } from '../../store/useAppStore';
@@ -35,6 +36,7 @@ type ServerSub = {
   expires_at: string;
   posts_remaining: number;
   plan_name: string;
+  auto_pay?: boolean;
 };
 
 function benefitsList(raw: ServerPlan['benefits']): string[] {
@@ -62,6 +64,35 @@ export const AgencyPackagesView: React.FC<AgencyPackagesViewProps> = ({ onNeedAu
   const [successNotif, setSuccessNotif] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [autoPayCheckout, setAutoPayCheckout] = useState(true);
+  const [togglingAutoPay, setTogglingAutoPay] = useState(false);
+
+  const handleToggleAutoPay = async () => {
+    if (!subscription) return;
+    setTogglingAutoPay(true);
+    try {
+      const nextState = !subscription.auto_pay;
+      await api('/plans/auto-pay', {
+        method: 'PATCH',
+        json: { enabled: nextState },
+      });
+      setSubscription({ ...subscription, auto_pay: nextState });
+      const me = await hydrateMe();
+      if (me?.subscription) {
+        setSubscription(me.subscription as ServerSub);
+      }
+      setSuccessNotif(
+        nextState
+          ? 'Auto-Pay enabled! Your plan will renew automatically.'
+          : 'Auto-Pay disabled. You can manually renew anytime.'
+      );
+      setTimeout(() => setSuccessNotif(''), 4000);
+    } catch (err: any) {
+      setError(err?.message || 'Could not update auto-pay setting.');
+    } finally {
+      setTogglingAutoPay(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -108,6 +139,73 @@ export const AgencyPackagesView: React.FC<AgencyPackagesViewProps> = ({ onNeedAu
     setError('');
 
     try {
+      if (autoPayCheckout) {
+        // Attempt recurring Razorpay Subscription (UPI AutoPay Mandate)
+        try {
+          const subData = await api<{
+            subscriptionId: string;
+            amount: number;
+            keyId: string;
+            plan: any;
+          }>('/plans/create-subscription', {
+            method: 'POST',
+            json: { planId: packageId },
+          });
+
+          const keyId = subData.keyId || (import.meta.env.VITE_RAZORPAY_KEY_ID as string);
+          await openRazorpayCheckout({
+            key: keyId,
+            name: 'Ride Bhai',
+            description: `${subData.plan?.name || 'Partner'} Plan Auto-Pay Mandate`,
+            subscription_id: subData.subscriptionId,
+            theme: { color: '#F15A24' },
+            prefill: {
+              name: currentUser?.name || '',
+              contact: currentUser?.phone || '',
+            },
+            handler: async (response) => {
+              try {
+                await api('/plans/verify-subscription', {
+                  method: 'POST',
+                  json: {
+                    planId: packageId,
+                    razorpay_subscription_id: response.razorpay_subscription_id || subData.subscriptionId,
+                    razorpay_payment_id: response.razorpay_payment_id,
+                    razorpay_signature: response.razorpay_signature,
+                  },
+                });
+
+                const me = await hydrateMe();
+                setSubscription((me?.subscription as ServerSub) || null);
+                setSuccessNotif('Auto-Pay active! Recurring mandate setup successfully 🚀');
+                confetti({
+                  particleCount: 90,
+                  spread: 75,
+                  origin: { y: 0.6 },
+                  colors: ['#F15A24', '#FF8A00', '#2E9E5B', '#FFB800'],
+                });
+                setTimeout(() => setSuccessNotif(''), 6000);
+              } catch (verifyErr: any) {
+                setError(verifyErr?.message || 'Subscription mandate verification failed');
+              } finally {
+                setPurchasingId(null);
+                setIsProcessingRazorpay(false);
+              }
+            },
+            modal: {
+              ondismiss: () => {
+                setPurchasingId(null);
+                setIsProcessingRazorpay(false);
+              },
+            },
+          });
+          return;
+        } catch (subErr: any) {
+          console.warn('Subscription mandate skipped or falling back to standard order:', subErr);
+          // If merchant has not activated subscriptions on dashboard, fallback to standard checkout
+        }
+      }
+
       // 1. Create order on the server
       const orderData = await api<{
         orderId: string;
@@ -151,6 +249,7 @@ export const AgencyPackagesView: React.FC<AgencyPackagesViewProps> = ({ onNeedAu
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
+                autoPay: autoPayCheckout,
               },
             });
 
@@ -274,6 +373,46 @@ export const AgencyPackagesView: React.FC<AgencyPackagesViewProps> = ({ onNeedAu
             </div>
           </div>
 
+          {/* Auto-Pay / Auto-Renew Toggle */}
+          <div className="p-3.5 rounded-2xl bg-[#FAF6EE] border border-[#EBE5D8] flex items-center justify-between gap-3">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-1.5 text-xs font-black text-[#1C1C1C]">
+                <RefreshCw className={`w-3.5 h-3.5 text-[#F15A24] ${togglingAutoPay ? 'animate-spin' : ''}`} />
+                <span>Auto-Pay Subscription</span>
+                {subscription.auto_pay ? (
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#EBF7EE] text-[#00A86B] border border-[#BDE8C7] flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00A86B] animate-pulse"></span>
+                    Enabled
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white text-[#8A8478] border border-[#EBE5D8]">
+                    Disabled
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-[#6B6B6B] leading-tight">
+                {subscription.auto_pay
+                  ? 'Automatic renewal is ON so your car & tour listings stay active.'
+                  : 'Turn on Auto-Pay to seamlessly renew before plan expires.'}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={togglingAutoPay}
+              onClick={handleToggleAutoPay}
+              title={subscription.auto_pay ? 'Click to turn off Auto-Pay' : 'Click to turn on Auto-Pay'}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                subscription.auto_pay ? 'bg-[#00A86B]' : 'bg-[#D1C9BC]'
+              }`}
+            >
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  subscription.auto_pay ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
           {/* Bottom status line */}
           <div className="pt-3 border-t border-[#F2ECE1] flex items-center justify-between text-[11px]">
             <span className="flex items-center gap-1.5 text-[#00A86B] font-extrabold">
@@ -305,9 +444,20 @@ export const AgencyPackagesView: React.FC<AgencyPackagesViewProps> = ({ onNeedAu
       )}
 
       <div className="space-y-3">
-        <h3 className="text-xs font-extrabold text-[#6B6B6B] uppercase tracking-wider px-1">
-          Partner posting plans
-        </h3>
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-xs font-extrabold text-[#6B6B6B] uppercase tracking-wider">
+            Partner posting plans
+          </h3>
+          <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-[#1C1C1C] select-none bg-[#FAF6EE] px-2.5 py-1 rounded-xl border border-[#EBE5D8]">
+            <input
+              type="checkbox"
+              checked={autoPayCheckout}
+              onChange={(e) => setAutoPayCheckout(e.target.checked)}
+              className="w-3.5 h-3.5 rounded accent-[#F15A24] cursor-pointer"
+            />
+            <span className="text-[11px]">Enable Auto-Pay</span>
+          </label>
+        </div>
         {loading && <PlanCardSkeleton count={3} />}
 
         {plans.map((pkg) => {

@@ -1,9 +1,10 @@
 import React from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 import { POPULAR_CITIES } from '../../data/cities';
 import { CAR_BODY_TYPES } from '../../data/indiaTaxiCars';
 
 export type BrowseFilterValues = {
+  tourIdQuery?: string;
   fromCity: string;
   toCity: string;
   bookingDate: string;
@@ -18,6 +19,7 @@ export type BrowseFilterValues = {
 };
 
 export const EMPTY_BROWSE_FILTERS: BrowseFilterValues = {
+  tourIdQuery: '',
   fromCity: '',
   toCity: '',
   bookingDate: '',
@@ -71,6 +73,30 @@ export function BrowseFilters({
 
   return (
     <div className="p-4 rounded-3xl bg-white border border-[#EBE5D8] space-y-3">
+      {kind === 'tour' && (
+        <div>
+          <Label text="Search by Tour ID">
+            <div className="relative flex items-center">
+              <input
+                value={value.tourIdQuery || ''}
+                onChange={(e) => set({ tourIdQuery: e.target.value })}
+                className="mt-1 w-full pl-8 pr-7 py-2 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] placeholder-[#8A8478] focus:outline-none focus:border-[#F15A24]"
+                placeholder="Search Tour ID (e.g. RB-TR-1001, #1001)..."
+              />
+              <Search className="w-3.5 h-3.5 text-[#F15A24] absolute left-2.5 top-3.5 pointer-events-none" />
+              {value.tourIdQuery && (
+                <button
+                  type="button"
+                  onClick={() => set({ tourIdQuery: '' })}
+                  className="absolute right-2.5 top-3 text-[#6B6B6B] hover:text-[#1C1C1C]"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </Label>
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2">
         <Label text="From">
           <input
@@ -237,7 +263,8 @@ export function BrowseFilters({
 
 export function browseFilterActive(v: BrowseFilterValues) {
   return Boolean(
-    v.fromCity ||
+    v.tourIdQuery ||
+      v.fromCity ||
       v.toCity ||
       v.bookingDate ||
       v.carType ||

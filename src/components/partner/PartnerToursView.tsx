@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Car, EyeOff, RotateCcw, Trash2, Share2, Tag } from 'lucide-react';
+import { MapPin, Car, EyeOff, RotateCcw, Trash2, Share2, Tag, Search, X } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { AgencyTripPost } from '../../types';
 import { shareTourListing } from '../../lib/share';
@@ -44,10 +44,20 @@ export const PartnerToursView: React.FC<PartnerToursViewProps> = () => {
   };
 
   const [expandedTourIds, setExpandedTourIds] = useState<Record<string, boolean>>({});
+  const [searchTourId, setSearchTourId] = useState('');
 
   const toggleExpand = (tourId: string) => {
     setExpandedTourIds((prev) => ({ ...prev, [tourId]: !prev[tourId] }));
   };
+
+  const filteredTours = myTours.filter((tour) => {
+    if (!searchTourId.trim()) return true;
+    const q = searchTourId.trim().toLowerCase().replace(/^#/, '');
+    const display = (tour.displayId || '').toLowerCase().replace(/^#/, '');
+    const formatted = formatTourId(tour.id, tour.displayId).toLowerCase().replace(/^#/, '');
+    const rawId = tour.id.toLowerCase();
+    return display.includes(q) || formatted.includes(q) || rawId.includes(q);
+  });
 
   return (
     <div className="space-y-3">
@@ -60,20 +70,42 @@ export const PartnerToursView: React.FC<PartnerToursViewProps> = () => {
         </p>
       </div>
 
+      {myTours.length > 1 && (
+        <div className="relative">
+          <input
+            type="text"
+            value={searchTourId}
+            onChange={(e) => setSearchTourId(e.target.value)}
+            placeholder="Search by Tour ID (e.g. RB-TR-1001)..."
+            className="w-full pl-8 pr-7 py-2 rounded-xl bg-[#FAF6EE] border border-[#EBE5D8] text-xs font-bold text-[#1C1C1C] placeholder-[#8A8478] focus:outline-none focus:border-[#F15A24]"
+          />
+          <Search className="w-3.5 h-3.5 text-[#F15A24] absolute left-2.5 top-3 pointer-events-none" />
+          {searchTourId && (
+            <button
+              type="button"
+              onClick={() => setSearchTourId('')}
+              className="absolute right-2.5 top-2.5 text-[#6B6B6B] hover:text-[#1C1C1C]"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
       {myTours.length === 0 && (
         <p className="text-[11px] text-[#6B6B6B]">No tour packages yet. Post one from the Tours tab.</p>
       )}
 
-      {myTours.map((tour) => {
+      {filteredTours.map((tour) => {
         const isLive = tour.status === 'active';
         return (
           <div key={tour.id} className="p-3 rounded-2xl bg-white border border-[#EBE5D8] space-y-2.5">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                  <span className="px-2 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1 shadow-2xs">
                     <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
-                    {tour.displayId || formatTourId(tour.id)}
+                    Tour ID: {tour.displayId || formatTourId(tour.id)}
                   </span>
                 </div>
                 <p className="text-xs font-extrabold text-[#1C1C1C] flex items-center gap-1">

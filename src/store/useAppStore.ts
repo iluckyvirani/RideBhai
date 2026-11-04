@@ -48,6 +48,7 @@ import { api, getToken, setToken } from '../lib/api';
 import { refreshNotifications } from '../lib/notifications';
 import { mapDeal, mapThread, type ChatThread, type Deal } from '../lib/deals';
 import { mapCarListing, mapTourListing, mergeById } from '../lib/listings';
+import { formatTourId } from '../lib/displayId';
 import { mapServerUser, type ServerUser } from '../lib/session';
 import { desiredCarBody, listingCarBody } from '../data/indiaTaxiCars';
 
@@ -427,6 +428,7 @@ export function useAppStore() {
           expires_at: string;
           posts_remaining: number;
           plan_name: string;
+          auto_pay?: boolean;
         } | null;
       }>('/auth/me');
       applyServerUser(
@@ -1223,6 +1225,7 @@ export function useAppStore() {
       minPax?: number;
       tripSide?: string;
       carType?: string;
+      tourIdQuery?: string;
     }) => {
       const from = (filter?.fromCity || '').trim().toLowerCase();
       const to = (filter?.toCity || '').trim().toLowerCase();
@@ -1231,8 +1234,19 @@ export function useAppStore() {
       const minPax = Number(filter?.minPax || 0);
       const tripSide = (filter?.tripSide || '').trim();
       const carType = (filter?.carType || '').trim().toLowerCase();
+      const tourIdQuery = (filter?.tourIdQuery || '').trim().toLowerCase().replace(/^#/, '');
 
       return agencyTripPosts.filter((t) => t.status === 'active').filter((t) => {
+        if (tourIdQuery) {
+          const display = (t.displayId || '').toLowerCase().replace(/^#/, '');
+          const formatted = formatTourId(t.id, t.displayId).toLowerCase().replace(/^#/, '');
+          const rawId = t.id.toLowerCase();
+          const matchesId =
+            display.includes(tourIdQuery) ||
+            formatted.includes(tourIdQuery) ||
+            rawId.includes(tourIdQuery);
+          if (!matchesId) return false;
+        }
         if (from && !t.fromCity.toLowerCase().includes(from)) return false;
         if (to && !t.toCity.toLowerCase().includes(to)) return false;
         if (bookingDate && (t.bookingDate || t.startDate) !== bookingDate) return false;

@@ -9,9 +9,11 @@ import {
   MessageCircle,
   Car,
   AlertTriangle,
+  Tag,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { RatingModal } from './RatingModal';
+import { formatBookingId } from '../../lib/displayId';
 
 interface MyBookingsViewProps {
   onOpenChat: (rideId: string) => void;
@@ -101,7 +103,10 @@ export const MyBookingsView: React.FC<MyBookingsViewProps> = ({ onOpenChat }) =>
               >
                 {/* Status Ribbon */}
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-[#9E9E9E]">Ref: #{booking.id.slice(-6)}</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1 shadow-2xs">
+                    <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                    Booking ID: {formatBookingId(booking.id)}
+                  </span>
                   {booking.status === 'confirmed' && (
                     <span className="text-[10px] font-extrabold text-[#2E9E5B] bg-[#EBF7F0] px-2.5 py-0.5 rounded-full border border-[#B8E6CB]">
                       ● Confirmed

@@ -10,9 +10,11 @@ import {
   CheckCircle2,
   Clock,
   PlayCircle,
+  Tag,
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { OTHER_RIDERS, CURRENT_RIDER } from '../../data/mockRiders';
+import { formatBookingId } from '../../lib/displayId';
 
 export const ManageBookingsView: React.FC = () => {
   const {
@@ -163,8 +165,14 @@ export const ManageBookingsView: React.FC = () => {
                       className="w-10 h-10 rounded-full object-cover border border-[#EBE5D8]"
                     />
                     <div>
-                      <h4 className="text-xs font-extrabold text-[#1C1C1C]">{rider.name}</h4>
-                      <p className="text-[10px] text-[#6B6B6B]">{rider.phone}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="px-2 py-0.5 rounded-full bg-[#FAF6EE] border border-[#EBE5D8] text-[#1C1C1C] text-[10px] font-black tracking-wider inline-flex items-center gap-1">
+                          <Tag className="w-2.5 h-2.5 text-[#F15A24]" />
+                          Booking ID: {formatBookingId(b.id)}
+                        </span>
+                        <h4 className="text-xs font-extrabold text-[#1C1C1C]">{rider.name}</h4>
+                      </div>
+                      <p className="text-[10px] text-[#6B6B6B] mt-0.5">{rider.phone}</p>
                     </div>
                   </div>
 

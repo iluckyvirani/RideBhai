@@ -18,18 +18,20 @@ export function loadRazorpayScript(): Promise<boolean> {
 
 export interface RazorpaySuccessResponse {
   razorpay_payment_id: string;
-  razorpay_order_id: string;
+  razorpay_order_id?: string;
+  razorpay_subscription_id?: string;
   razorpay_signature: string;
 }
 
 export interface RazorpayOptions {
   key: string;
-  amount: number; // in paise
-  currency: string;
+  amount?: number; // in paise
+  currency?: string;
   name: string;
   description?: string;
   image?: string;
-  order_id: string;
+  order_id?: string;
+  subscription_id?: string;
   handler: (response: RazorpaySuccessResponse) => void | Promise<void>;
   prefill?: {
     name?: string;
