@@ -5,10 +5,10 @@ import { useSiteSettings } from '../../hooks/useSiteSettings';
 export const WhatsAppWidget: React.FC = () => {
   const settings = useSiteSettings();
   const [open, setOpen] = useState(false);
-  const number = (settings.whatsappNumber || '').replace(/[^0-9]/g, '');
-  const message = settings.whatsappMessage || 'Hi Ride Bhai! I need help with booking a car or tour.';
+  const number = (settings?.whatsappNumber || '').replace(/[^0-9]/g, '');
+  const message = settings?.whatsappMessage || 'Hi Ride Bhai! I need help with booking a car or tour.';
 
-  if (!number) return null;
+  if (!settings || !number) return null;
 
   const openChat = () => {
     window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');

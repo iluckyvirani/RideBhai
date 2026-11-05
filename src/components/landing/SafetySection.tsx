@@ -13,11 +13,13 @@ export const SafetySection: React.FC<{
   supportPhone?: string;
   supportEmail?: string;
   emergencyPhone?: string;
-}> = ({
-  supportPhone = '1800-RIDE-BHAI',
-  supportEmail = 'support@ridebhai.com',
-  emergencyPhone = '112',
-}) => {
+}> = ({ supportPhone, supportEmail, emergencyPhone }) => {
+  const supportContact = [
+    supportPhone && `Call ${supportPhone}`,
+    supportEmail && `email ${supportEmail}`,
+    emergencyPhone && `Emergency: ${emergencyPhone}`,
+  ].filter(Boolean);
+
   const safetyFeatures = [
     {
       icon: <FileCheck2 className="w-6 h-6 text-[#00A86B]" />,
@@ -54,13 +56,17 @@ export const SafetySection: React.FC<{
       desc: 'Listings show the poster’s photo, name and rating. After a successful deal both sides can rate. One rating popup appears after login if you have a pending review.',
       badge: 'Community trust',
     },
-    {
-      icon: <HeartHandshake className="w-6 h-6 text-rose-500" />,
-      bg: 'bg-rose-50 border-rose-100',
-      title: '24/7 support',
-      desc: `Need help with a listing or a partner? Call ${supportPhone} or email ${supportEmail}. Emergency: ${emergencyPhone}.`,
-      badge: 'Always on',
-    },
+    ...(supportContact.length
+      ? [
+          {
+            icon: <HeartHandshake className="w-6 h-6 text-rose-500" />,
+            bg: 'bg-rose-50 border-rose-100',
+            title: '24/7 support',
+            desc: `Need help with a listing or a partner? ${supportContact.join(' · ')}.`,
+            badge: 'Always on',
+          },
+        ]
+      : []),
   ];
 
   return (

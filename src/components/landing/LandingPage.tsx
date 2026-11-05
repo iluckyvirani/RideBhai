@@ -38,12 +38,15 @@ type SiteFaq = {
   answer: string;
 };
 
-const FALLBACK_SETTINGS: SiteSettings = {
-  supportPhone: '+91 70550 54387',
-  supportEmail: 'support@ridebhai.com',
-  emergencyPhone: '112',
-  whatsappNumber: '+91 70550 54387',
-  supportHours: '24/7 Support Helpline · All India',
+// No hardcoded contact fallback here — these are fully admin-controlled (Website →
+// Support contact tab) and start empty so the UI never shows a stale/fake number
+// before the real /site fetch resolves.
+const EMPTY_SETTINGS: SiteSettings = {
+  supportPhone: '',
+  supportEmail: '',
+  emergencyPhone: '',
+  whatsappNumber: '',
+  supportHours: '',
 };
 
 export interface LandingSearchParams {
@@ -82,7 +85,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   const [showFromSuggest, setShowFromSuggest] = useState(false);
   const [showToSuggest, setShowToSuggest] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
-  const [support, setSupport] = useState<SiteSettings>(FALLBACK_SETTINGS);
+  const [support, setSupport] = useState<SiteSettings>(EMPTY_SETTINGS);
   const [faqs, setFaqs] = useState<SiteFaq[]>([]);
 
   const goBrowse = (tab: 'cars' | 'tours', from = fromCity, to = toCity) => {
