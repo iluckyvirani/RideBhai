@@ -31,6 +31,8 @@ import { LegalPageView, type LegalSlug } from './components/legal/LegalPageView'
 import { ShieldAlert, Sparkles } from 'lucide-react';
 import type { Deal } from './lib/deals';
 import { parseSharedLink } from './lib/share';
+import { useNewTourAlerts } from './hooks/useNewTourAlerts';
+import { NewTourAlertPopup } from './components/common/NewTourAlertPopup';
 
 function hashLegalSlug(): LegalSlug | null {
   const h = window.location.hash.replace(/^#/, '');
@@ -70,6 +72,7 @@ export function App() {
   const [createOpen, setCreateOpen] = useState(false);
   const [awaitRatePrompt, setAwaitRatePrompt] = useState(false);
   const [ratePrompt, setRatePrompt] = useState<Deal | null>(null);
+  const { current: tourAlert, dismiss: dismissTourAlert } = useNewTourAlerts(isLoggedIn);
   const [legalSlug, setLegalSlug] = useState<LegalSlug | null>(() =>
     typeof window === 'undefined' ? null : hashLegalSlug()
   );
@@ -438,6 +441,17 @@ export function App() {
           }}
           onLoginClick={() => setAuthOpen(true)}
         />
+
+        {tourAlert && (
+          <NewTourAlertPopup
+            alert={tourAlert}
+            onDismiss={dismissTourAlert}
+            onView={() => {
+              dismissTourAlert();
+              navigateTab('tours');
+            }}
+          />
+        )}
 
         <main
           className={

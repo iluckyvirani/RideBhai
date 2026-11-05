@@ -47,6 +47,9 @@ export default {
         'fade-in': 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'slide-up': 'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
         'scale-in': 'scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-down-bounce': 'slideDownBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+        'ring-pulse': 'ringPulse 1.4s ease-out infinite',
+        'shrink-bar': 'shrinkBar linear forwards',
       },
       keyframes: {
         fadeIn: {
@@ -60,6 +63,20 @@ export default {
         scaleIn: {
           '0%': { transform: 'scale(0.92)', opacity: '0' },
           '100%': { transform: 'scale(1)', opacity: '1' },
+        },
+        slideDownBounce: {
+          '0%': { transform: 'translateY(-120%)', opacity: '0' },
+          '60%': { transform: 'translateY(6px)', opacity: '1' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        ringPulse: {
+          '0%': { boxShadow: '0 0 0 0 rgba(241, 90, 36, 0.45)' },
+          '70%': { boxShadow: '0 0 0 10px rgba(241, 90, 36, 0)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(241, 90, 36, 0)' },
+        },
+        shrinkBar: {
+          '0%': { width: '100%' },
+          '100%': { width: '0%' },
         },
       },
     },
