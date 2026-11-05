@@ -58,7 +58,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </a>
       </div>
 
-      <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <LanguageToggle />
 
         {!currentUser ? (
@@ -72,7 +72,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         ) : (
           <>
             {status && (
-              <div className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#EBE5D8] bg-white shadow-xs">
+              <div className="hidden whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#EBE5D8] bg-white shadow-xs min-[380px]:block">
                 {status === 'verified' ? (
                   <span className="text-[#00A86B]">Verified</span>
                 ) : status === 'pending_verification' ? (

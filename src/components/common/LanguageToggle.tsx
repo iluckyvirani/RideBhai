@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Languages, ChevronDown, Check, X, Globe } from 'lucide-react';
 import {
   getCurrentLanguage,
@@ -14,6 +15,8 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }
   const [currentLang, setCurrentLang] = useState<string>('en');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const desktopPanelRef = useRef<HTMLDivElement>(null);
+  const mobilePanelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setCurrentLang(getCurrentLanguage());
@@ -26,19 +29,45 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }
     return () => clearInterval(timer);
   }, []);
 
-  // Close dropdown on outside click
+  // Close on outside click / Escape. The mobile sheet lives in a portal, so it
+  // needs its own ref (containerRef no longer contains it).
   useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
+    if (!isOpen) return;
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (
+        containerRef.current?.contains(target) ||
+        desktopPanelRef.current?.contains(target) ||
+        mobilePanelRef.current?.contains(target)
+      ) {
+        return;
       }
+      setIsOpen(false);
     };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleOutsideClick);
-    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
     return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  // Lock page scroll only while the mobile bottom-sheet is open.
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') return;
+    if (!window.matchMedia('(max-width: 639px)').matches) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
     };
   }, [isOpen]);
 
@@ -51,86 +80,120 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }
   const currentObj =
     SUPPORTED_LANGUAGES.find((l) => l.code === currentLang) || SUPPORTED_LANGUAGES[0];
 
+  const header = (
+    <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[#EBE5D8] bg-[#FAF6EE] px-4 py-3.5">
+      <div className="flex items-center gap-2">
+        <Globe className="h-4 w-4 text-[#F15A24]" />
+        <h4 className="text-xs font-black uppercase tracking-wider text-[#1C1C1C]">
+          Select Language / भाषा चुनें
+        </h4>
+      </div>
+      <button
+        type="button"
+        onClick={() => setIsOpen(false)}
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#EBE5D8] bg-white text-[#6B6B6B] transition-colors hover:text-[#1C1C1C]"
+        aria-label="Close language menu"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+
+  const options = (
+    <div
+      role="listbox"
+      aria-label="Languages"
+      className="grid grid-cols-2 gap-1.5 p-2 sm:p-2.5"
+    >
+      {SUPPORTED_LANGUAGES.map((lang) => {
+        const isActive = lang.code === currentLang;
+        return (
+          <button
+            key={lang.code}
+            type="button"
+            role="option"
+            aria-selected={isActive}
+            onClick={() => handleSelect(lang.code)}
+            className={`active-press flex items-center justify-between gap-1.5 rounded-xl border p-2.5 text-left transition-all ${
+              isActive
+                ? 'border-[#F15A24] bg-[#FFF0EB] font-black text-[#F15A24] shadow-xs ring-1 ring-[#F15A24]/30'
+                : 'border-[#EBE5D8] bg-white text-[#1C1C1C] hover:border-[#F15A24]/50 hover:bg-[#FAF6EE]'
+            }`}
+          >
+            <div className="min-w-0">
+              <p className="truncate text-xs font-black">{lang.nativeName}</p>
+              <p className="truncate text-[10px] font-semibold text-[#6B6B6B]">{lang.name}</p>
+            </div>
+            {isActive && (
+              <div className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#F15A24] text-white">
+                <Check className="h-2.5 w-2.5 stroke-[3]" />
+              </div>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
-    <div ref={containerRef} className={`relative inline-block notranslate ${className}`}>
+    <div ref={containerRef} className={`notranslate relative inline-block ${className}`}>
       {/* Trigger Button */}
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="notranslate inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#EBE5D8] text-xs font-extrabold text-[#1C1C1C] active-press shadow-xs hover:border-[#F15A24] transition-all shrink-0"
+        onClick={() => setIsOpen((open) => !open)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        className="notranslate active-press inline-flex shrink-0 items-center gap-1 rounded-full border border-[#EBE5D8] bg-white px-2.5 py-1.5 text-xs font-extrabold text-[#1C1C1C] shadow-xs transition-all hover:border-[#F15A24] sm:gap-1.5 sm:px-3"
         title="Select Language / भाषा चुनें"
       >
-        <Languages className="w-3.5 h-3.5 text-[#F15A24]" />
-        <span className="text-[11px] font-extrabold">{currentObj.nativeName}</span>
+        <Languages className="h-3.5 w-3.5 shrink-0 text-[#F15A24]" />
+        <span className="text-[10px] font-black uppercase tracking-wide sm:hidden">
+          {currentObj.code}
+        </span>
+        <span className="hidden max-w-[72px] truncate text-[11px] font-extrabold sm:inline">
+          {currentObj.nativeName}
+        </span>
         <ChevronDown
-          className={`w-3 h-3 text-[#6B6B6B] transition-transform duration-200 ${
+          className={`h-3 w-3 shrink-0 text-[#6B6B6B] transition-transform duration-200 ${
             isOpen ? 'rotate-180 text-[#F15A24]' : ''
           }`}
         />
       </button>
 
-      {/* Language Selection Modal / Dropdown */}
+      {/* Desktop dropdown — anchored to the trigger */}
       {isOpen && (
-        <>
-          {/* Backdrop for mobile */}
-          <div
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] sm:hidden"
-            onClick={() => setIsOpen(false)}
-          />
-
-          <div
-            className="notranslate fixed sm:absolute bottom-0 sm:bottom-auto left-0 sm:left-auto right-0 sm:right-0 sm:top-full sm:mt-2 z-50 w-full sm:w-[320px] max-h-[85vh] sm:max-h-[420px] bg-white rounded-t-3xl sm:rounded-2xl border border-[#EBE5D8] shadow-2xl overflow-hidden flex flex-col animate-scale-up"
-          >
-            {/* Header */}
-            <div className="p-3.5 px-4 bg-[#FAF6EE] border-b border-[#EBE5D8] flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-[#F15A24]" />
-                <h4 className="text-xs font-black text-[#1C1C1C] uppercase tracking-wider">
-                  Select Language / भाषा चुनें
-                </h4>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="w-6 h-6 rounded-full bg-white border border-[#EBE5D8] text-[#6B6B6B] hover:text-[#1C1C1C] flex items-center justify-center transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            {/* Language Options Grid */}
-            <div className="p-2 sm:p-2.5 overflow-y-auto grid grid-cols-2 gap-1.5 max-h-[340px]">
-              {SUPPORTED_LANGUAGES.map((lang) => {
-                const isActive = lang.code === currentLang;
-                return (
-                  <button
-                    key={lang.code}
-                    type="button"
-                    onClick={() => handleSelect(lang.code)}
-                    className={`p-2.5 rounded-xl border text-left transition-all flex items-center justify-between gap-1.5 active-press ${
-                      isActive
-                        ? 'bg-[#FFF0EB] border-[#F15A24] text-[#F15A24] font-black shadow-xs ring-1 ring-[#F15A24]/30'
-                        : 'bg-white border-[#EBE5D8] hover:border-[#F15A24]/50 hover:bg-[#FAF6EE] text-[#1C1C1C]'
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <p className="text-xs font-black truncate">{lang.nativeName}</p>
-                      <p className="text-[10px] text-[#6B6B6B] font-semibold truncate">
-                        {lang.name}
-                      </p>
-                    </div>
-                    {isActive && (
-                      <div className="w-4 h-4 rounded-full bg-[#F15A24] text-white flex items-center justify-center shrink-0">
-                        <Check className="w-2.5 h-2.5 stroke-[3]" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </>
+        <div
+          ref={desktopPanelRef}
+          className="notranslate animate-scale-in absolute right-0 top-full z-50 mt-2 hidden max-h-[420px] w-[320px] flex-col overflow-hidden rounded-2xl border border-[#EBE5D8] bg-white shadow-2xl sm:flex"
+        >
+          {header}
+          <div className="min-h-0 overflow-y-auto">{options}</div>
+        </div>
       )}
+
+      {/* Mobile bottom sheet — rendered in a portal so sticky/backdrop-blur
+          headers cannot act as its containing block or clip it. */}
+      {isOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div className="notranslate fixed inset-0 z-[130] sm:hidden">
+            <div
+              className="animate-fade-in absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+              onClick={() => setIsOpen(false)}
+            />
+            <div
+              ref={mobilePanelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Select language"
+              className="animate-slide-up pb-safe absolute inset-x-0 bottom-0 flex max-h-[80vh] flex-col overflow-hidden rounded-t-3xl border-t border-[#EBE5D8] bg-white shadow-2xl"
+            >
+              {header}
+              <div className="min-h-0 flex-1 overflow-y-auto">{options}</div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
