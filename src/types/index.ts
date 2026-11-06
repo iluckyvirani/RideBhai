@@ -247,6 +247,25 @@ export interface AgencyTripPost {
   claimedAt?: string;
 }
 
+export interface HotelListing {
+  id: string;
+  title: string;
+  description?: string;
+  phone: string;
+  whatsappNumber: string;
+  address?: string;
+  city: string;
+  state: string;
+  priceLow: number;
+  priceHigh: number;
+  rating: number;
+  ratingCount: number;
+  images: string[];
+  videoUrl?: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+}
+
 export interface Rider {
   id: string;
   name: string;

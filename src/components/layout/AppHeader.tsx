@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, Bell } from 'lucide-react';
+import { ChevronLeft, Bell, Building2 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { LanguageToggle } from '../common/LanguageToggle';
 import { useAppStore } from '../../store/useAppStore';
@@ -12,6 +12,7 @@ interface AppHeaderProps {
   onExitToLanding?: () => void;
   onLogoClick?: () => void;
   onLoginClick?: () => void;
+  onOpenHotels?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
@@ -21,6 +22,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   onExitToLanding,
   onLogoClick,
   onLoginClick,
+  onOpenHotels,
 }) => {
   const { currentUser } = useAppStore();
   const { unread: unreadCount } = useLiveNotifications();
@@ -56,6 +58,17 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         >
           <Logo size="sm" showTagline={false} />
         </a>
+
+        {onOpenHotels && (
+          <button
+            type="button"
+            onClick={onOpenHotels}
+            title="Hotels"
+            className="w-8 h-8 rounded-full bg-white border border-[#EBE5D8] flex items-center justify-center text-[#1C1C1C] active-press shadow-sm hover:border-[#F15A24] hover:text-[#F15A24] shrink-0"
+          >
+            <Building2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">

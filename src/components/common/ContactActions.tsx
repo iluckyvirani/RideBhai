@@ -16,6 +16,7 @@ interface ContactActionsProps {
   onWhatsApp?: () => void;
   compact?: boolean;
   locked?: boolean;
+  lockTitle?: string;
   lockReason?: string;
   onLockedClick?: () => void;
 }
@@ -28,6 +29,7 @@ export const ContactActions: React.FC<ContactActionsProps> = ({
   onWhatsApp,
   compact,
   locked,
+  lockTitle,
   lockReason,
   onLockedClick,
 }) => {
@@ -42,7 +44,7 @@ export const ContactActions: React.FC<ContactActionsProps> = ({
         className="w-full text-left p-3 rounded-2xl bg-[#FFF0EB] border border-[#FFD8CB] space-y-1"
       >
         <p className="text-[11px] font-extrabold text-[#8A2B09] flex items-center gap-1.5">
-          <Lock className="w-3.5 h-3.5" /> Booking locked
+          <Lock className="w-3.5 h-3.5" /> {lockTitle || 'Booking locked'}
         </p>
         <p className="text-[11px] text-[#A33B12] leading-relaxed">
           {lockReason || 'Verified profile and an active plan are required to chat.'}

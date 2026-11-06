@@ -1,4 +1,4 @@
-import { AgencyTripPost, CarListing } from '../types';
+import { AgencyTripPost, CarListing, HotelListing } from '../types';
 import { formatCarId, formatTourId } from './displayId';
 
 function dateOnly(value: unknown): string | undefined {
@@ -106,6 +106,27 @@ export function mapTourListing(row: any): AgencyTripPost {
     driverNetPayout: Number(row.driver_net_payout || 0),
     tripDetails: row.trip_details || '',
     status: row.status === 'cancelled' ? 'cancelled' : row.status === 'closed' ? 'closed' : 'active',
+    createdAt: row.created_at || new Date().toISOString(),
+  };
+}
+
+export function mapHotelListing(row: any): HotelListing {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description || undefined,
+    phone: row.phone || '',
+    whatsappNumber: whatsappFromPhone(row.phone),
+    address: row.address || undefined,
+    city: row.city,
+    state: row.state,
+    priceLow: Number(row.price_low || 0),
+    priceHigh: Number(row.price_high || 0),
+    rating: Number(row.rating || 0) || 0,
+    ratingCount: Number(row.rating_count || 0) || 0,
+    images: asStringArray(row.image_urls),
+    videoUrl: row.video_url || undefined,
+    status: row.status === 'inactive' ? 'inactive' : 'active',
     createdAt: row.created_at || new Date().toISOString(),
   };
 }

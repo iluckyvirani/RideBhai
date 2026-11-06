@@ -24,6 +24,9 @@ import { AgencyPackagesView } from './components/agency/AgencyPackagesView';
 import { CreateListingSheet } from './components/common/CreateListingSheet';
 import { ChatInboxView } from './components/common/ChatInboxView';
 import { TourDetailsView } from './components/common/TourDetailsView';
+import { HotelsBrowseView } from './components/rider/HotelsBrowseView';
+import { HotelDetailsView } from './components/common/HotelDetailsView';
+import type { HotelListing } from './types';
 import { SupportTicketsView } from './components/common/SupportTicketsView';
 import { AgencyTripPost } from './types';
 import { RateLastBookingModal } from './components/common/RateLastBookingModal';
@@ -60,6 +63,7 @@ export function App() {
 
   const [activeTab, setActiveTab] = useState('tours');
   const [detailsTourId, setDetailsTourId] = useState<string | null>(null);
+  const [selectedHotel, setSelectedHotel] = useState<HotelListing | null>(null);
   const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
   const [detailsFrom, setDetailsFrom] = useState<'tours' | 'my-tours'>('tours');
   const [chatThreadId, setChatThreadId] = useState<string | null>(null);
@@ -104,6 +108,7 @@ export function App() {
     setActiveTab(tab);
     if (tab !== 'tour-details') setDetailsTourId(null);
     if (tab !== 'cars') setSelectedCarId(null);
+    if (tab !== 'hotel-details') setSelectedHotel(null);
     setAppView('rider-app');
 
     const hash = tabToHash(tab);
@@ -173,6 +178,7 @@ export function App() {
       const appTabMap: Record<string, string> = {
         cars: 'cars',
         tours: 'tours',
+        hotels: 'hotels',
         plans: 'packages',
         packages: 'packages',
         chat: 'chat',
@@ -420,11 +426,13 @@ export function App() {
             activeTab === 'my-drivers' ||
             activeTab === 'my-tours' ||
             activeTab === 'my-bookings' ||
-            activeTab === 'bank-details'
+            activeTab === 'bank-details' ||
+            activeTab === 'hotel-details'
           }
           onBack={() => {
             if (chatThreadOpen) setChatThreadId(null);
             else if (activeTab === 'tour-details') closeTourDetails();
+            else if (activeTab === 'hotel-details') navigateTab('hotels');
             else if (activeTab === 'cars' && selectedCarId) {
               setSelectedCarId(null);
               window.history.replaceState(null, '', '#cars');
@@ -440,6 +448,7 @@ export function App() {
             setIsNotificationsOpen(true);
           }}
           onLoginClick={() => setAuthOpen(true)}
+          onOpenHotels={() => navigateTab('hotels')}
         />
 
         {tourAlert && (
@@ -508,6 +517,19 @@ export function App() {
                 navigateTab('chat');
               }}
             />
+          )}
+
+          {activeTab === 'hotels' && (
+            <HotelsBrowseView
+              onOpenDetails={(hotel) => {
+                setSelectedHotel(hotel);
+                navigateTab('hotel-details');
+              }}
+            />
+          )}
+
+          {activeTab === 'hotel-details' && selectedHotel && (
+            <HotelDetailsView hotel={selectedHotel} onNeedLogin={() => setAuthOpen(true)} />
           )}
 
           {activeTab === 'tour-details' && detailsTour && (
