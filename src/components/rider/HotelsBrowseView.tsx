@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, MapPin, Search, Star, IndianRupee, ArrowUpDown, Sparkles, Lock } from 'lucide-react';
+import { Building2, MapPin, Search, Star, IndianRupee, ArrowUpDown, Sparkles, Lock, Share2 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { mapHotelListing } from '../../lib/listings';
 import type { HotelListing } from '../../types';
 import { ListSkeleton } from '../common/SkeletonLoader';
 import { useAppStore } from '../../store/useAppStore';
+import { shareHotelListing } from '../../lib/share';
 
 type SortKey = 'rating' | 'price_low' | 'price_high';
 
@@ -185,8 +186,20 @@ export const HotelsBrowseView: React.FC<HotelsBrowseViewProps> = ({ onOpenDetail
           return (
             <article
               key={hotel.id}
-              className="bg-white rounded-3xl border border-[#EBE5D8] shadow-card overflow-hidden"
+              className="relative bg-white rounded-3xl border border-[#EBE5D8] shadow-card overflow-hidden"
             >
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  shareHotelListing(hotel);
+                }}
+                className="absolute top-2.5 left-2.5 z-10 p-2 rounded-xl bg-white/90 hover:bg-[#25D366] hover:text-white text-[#1C1C1C] shadow-xs transition-all active-press"
+                title="Share hotel"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+              </button>
+
               <button
                 type="button"
                 onClick={() => onOpenDetails(hotel)}

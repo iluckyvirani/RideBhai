@@ -262,6 +262,7 @@ export interface HotelListing {
   ratingCount: number;
   starCategory?: number;
   nearbyPlaces: { name: string; distance: string }[];
+  mapUrl?: string;
   images: string[];
   videoUrl?: string;
   status: 'active' | 'inactive';

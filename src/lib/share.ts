@@ -1,5 +1,5 @@
 export interface SharedLinkTarget {
-  type: 'tour' | 'car' | null;
+  type: 'tour' | 'car' | 'hotel' | null;
   id: string | null;
 }
 
@@ -17,6 +17,8 @@ export function parseSharedLink(): SharedLinkTarget {
     if (tourParam) return { type: 'tour', id: tourParam.trim() };
     const carParam = params.get('car');
     if (carParam) return { type: 'car', id: carParam.trim() };
+    const hotelParam = params.get('hotel');
+    if (hotelParam) return { type: 'hotel', id: hotelParam.trim() };
   } catch {
     /* ignore search params parse error */
   }
@@ -37,6 +39,12 @@ export function parseSharedLink(): SharedLinkTarget {
   if (rawHash.startsWith('car-')) {
     return { type: 'car', id: decodeURIComponent(rawHash.slice(4)).trim() };
   }
+  if (rawHash.startsWith('hotel=')) {
+    return { type: 'hotel', id: decodeURIComponent(rawHash.slice(6)).trim() };
+  }
+  if (rawHash.startsWith('hotel-')) {
+    return { type: 'hotel', id: decodeURIComponent(rawHash.slice(6)).trim() };
+  }
 
   return { type: null, id: null };
 }
@@ -51,6 +59,12 @@ export function getCarShareUrl(carId: string): string {
   if (typeof window === 'undefined') return '';
   const base = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
   return `${base}#car=${encodeURIComponent(carId)}`;
+}
+
+export function getHotelShareUrl(hotelId: string): string {
+  if (typeof window === 'undefined') return '';
+  const base = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
+  return `${base}#hotel=${encodeURIComponent(hotelId)}`;
 }
 
 export async function shareListing(options: {
@@ -152,6 +166,39 @@ export function shareCarListing(car: {
 
   return shareListing({
     title: `Car Available: ${car.carName} - ${car.currentCity}`,
+    text: lines.join('\n'),
+    url,
+  });
+}
+
+export function shareHotelListing(hotel: {
+  id?: string;
+  title: string;
+  city: string;
+  state: string;
+  priceLow: number;
+  priceHigh: number;
+  starCategory?: number;
+  rating?: number;
+  ratingCount?: number;
+}) {
+  const price =
+    hotel.priceHigh > hotel.priceLow
+      ? `₹${hotel.priceLow.toLocaleString('en-IN')} – ₹${hotel.priceHigh.toLocaleString('en-IN')} / night`
+      : `₹${hotel.priceLow.toLocaleString('en-IN')} / night`;
+
+  const lines = [
+    `🏨 *Hotel on Ride Bhai*`,
+    `📍 *${hotel.title}* — ${hotel.city}, ${hotel.state}`,
+    hotel.starCategory ? `⭐ *Category:* ${hotel.starCategory} Star` : '',
+    hotel.ratingCount ? `🌟 *Rating:* ${hotel.rating?.toFixed(1)} (${hotel.ratingCount} reviews)` : '',
+    `💰 *Price:* ${price}`,
+  ].filter(Boolean);
+
+  const url = hotel.id ? getHotelShareUrl(hotel.id) : undefined;
+
+  return shareListing({
+    title: `Hotel: ${hotel.title} - ${hotel.city}`,
     text: lines.join('\n'),
     url,
   });

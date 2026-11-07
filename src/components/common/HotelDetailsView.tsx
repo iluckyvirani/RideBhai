@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Building2, MapPin, Star, IndianRupee, PlayCircle, Navigation } from 'lucide-react';
+import { Building2, MapPin, Star, IndianRupee, PlayCircle, Navigation, Share2, MapPinned } from 'lucide-react';
 import type { HotelListing } from '../../types';
 import { ContactActions } from './ContactActions';
 import { ratingLabel } from '../common/RateStars';
 import { useAppStore } from '../../store/useAppStore';
+import { shareHotelListing } from '../../lib/share';
 
 interface HotelDetailsViewProps {
   hotel: HotelListing;
@@ -42,6 +43,15 @@ export const HotelDetailsView: React.FC<HotelDetailsViewProps> = ({ hotel, onNee
               </span>
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => shareHotelListing(hotel)}
+            className="absolute top-2.5 right-2.5 p-2 rounded-xl bg-white/15 hover:bg-[#25D366] text-white transition-all flex items-center justify-center active-press"
+            title="Share hotel"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
         </div>
 
         {(images.length > 1 || (hotel.videoUrl && images.length > 0)) && (
@@ -89,11 +99,24 @@ export const HotelDetailsView: React.FC<HotelDetailsViewProps> = ({ hotel, onNee
           <MapPin className="w-3.5 h-3.5 text-[#F15A24] shrink-0" />
           {[hotel.address, hotel.city, hotel.state].filter(Boolean).join(', ')}
         </p>
-        <span className="inline-flex items-center gap-1 mt-2 px-2.5 py-1 rounded-full bg-[#FFF9F0] border border-[#FCE7C2] text-[11px] font-extrabold text-[#8A6A1C]">
-          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-          {ratingLabel(hotel.rating, hotel.ratingCount)}
-          {hotel.ratingCount > 0 ? ' reviews' : ''}
-        </span>
+        <div className="flex items-center flex-wrap gap-2 mt-2">
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FFF9F0] border border-[#FCE7C2] text-[11px] font-extrabold text-[#8A6A1C]">
+            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            {ratingLabel(hotel.rating, hotel.ratingCount)}
+            {hotel.ratingCount > 0 ? ' reviews' : ''}
+          </span>
+          {hotel.mapUrl && (
+            <a
+              href={hotel.mapUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#EBF7F0] border border-[#B8E6CB] text-[11px] font-extrabold text-[#1B6B3A] active-press"
+            >
+              <MapPinned className="w-3.5 h-3.5" />
+              View on Map
+            </a>
+          )}
+        </div>
       </div>
 
       <div className="p-3 rounded-2xl bg-[#FFF0EB] border border-[#FFD8CB] flex items-center justify-between">

@@ -141,6 +141,7 @@ export function mapHotelListing(row: any): HotelListing {
     ratingCount: Number(row.rating_count || 0) || 0,
     starCategory: row.star_category ? Number(row.star_category) : undefined,
     nearbyPlaces: asPlaceArray(row.nearby_places),
+    mapUrl: row.map_url || undefined,
     images: asStringArray(row.image_urls),
     videoUrl: row.video_url || undefined,
     status: row.status === 'inactive' ? 'inactive' : 'active',

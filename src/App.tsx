@@ -34,6 +34,7 @@ import { LegalPageView, type LegalSlug } from './components/legal/LegalPageView'
 import { ShieldAlert, Sparkles } from 'lucide-react';
 import type { Deal } from './lib/deals';
 import { parseSharedLink } from './lib/share';
+import { mapHotelListing } from './lib/listings';
 import { useNewTourAlerts } from './hooks/useNewTourAlerts';
 import { NewTourAlertPopup } from './components/common/NewTourAlertPopup';
 
@@ -165,6 +166,14 @@ export function App() {
         setSelectedCarId(shared.id);
         setActiveTab('cars');
         setAppView('rider-app');
+        return;
+      }
+      if (shared.type === 'hotel' && shared.id) {
+        setActiveTab('hotel-details');
+        setAppView('rider-app');
+        api<any>(`/listings/hotels/${shared.id}`)
+          .then((row) => setSelectedHotel(mapHotelListing(row)))
+          .catch(() => undefined);
         return;
       }
 
@@ -531,6 +540,15 @@ export function App() {
 
           {activeTab === 'hotel-details' && selectedHotel && (
             <HotelDetailsView hotel={selectedHotel} onNeedLogin={() => setAuthOpen(true)} />
+          )}
+
+          {activeTab === 'hotel-details' && !selectedHotel && (
+            <div className="p-8 text-center space-y-3 rounded-3xl bg-white border border-[#EBE5D8] animate-pulse">
+              <div className="w-10 h-10 rounded-full bg-[#F15A24]/10 text-[#F15A24] flex items-center justify-center mx-auto">
+                <Sparkles className="w-5 h-5 animate-spin" />
+              </div>
+              <p className="text-xs font-bold text-[#6B6B6B]">Loading hotel details...</p>
+            </div>
           )}
 
           {activeTab === 'tour-details' && detailsTour && (
