@@ -260,6 +260,8 @@ export interface HotelListing {
   priceHigh: number;
   rating: number;
   ratingCount: number;
+  starCategory?: number;
+  nearbyPlaces: { name: string; distance: string }[];
   images: string[];
   videoUrl?: string;
   status: 'active' | 'inactive';

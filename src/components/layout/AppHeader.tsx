@@ -26,7 +26,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 }) => {
   const { currentUser } = useAppStore();
   const { unread: unreadCount } = useLiveNotifications();
-  const status = currentUser?.profileStatus;
 
   const handleGoWebsite = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -63,10 +62,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           <button
             type="button"
             onClick={onOpenHotels}
-            title="Hotels"
-            className="w-8 h-8 rounded-full bg-white border border-[#EBE5D8] flex items-center justify-center text-[#1C1C1C] active-press shadow-sm hover:border-[#F15A24] hover:text-[#F15A24] shrink-0"
+            title="Find Hotel"
+            className="h-8 pl-2 pr-3 rounded-full bg-white border border-[#EBE5D8] flex items-center gap-1 text-[#1C1C1C] active-press shadow-sm hover:border-[#F15A24] hover:text-[#F15A24] shrink-0"
           >
             <Building2 className="w-4 h-4" />
+            <span className="text-[11px] font-extrabold whitespace-nowrap">Find Hotel</span>
           </button>
         )}
       </div>
@@ -84,20 +84,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           </button>
         ) : (
           <>
-            {status && (
-              <div className="hidden whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#EBE5D8] bg-white shadow-xs min-[380px]:block">
-                {status === 'verified' ? (
-                  <span className="text-[#00A86B]">Verified</span>
-                ) : status === 'pending_verification' ? (
-                  <span className="text-amber-600">Pending KYC</span>
-                ) : status === 'rejected' ? (
-                  <span className="text-[#E8380D]">Rejected</span>
-                ) : (
-                  <span className="text-[#6B6B6B]">Profile</span>
-                )}
-              </div>
-            )}
-
             {/* Notifications Button with unread badge */}
             <button
               onClick={onOpenNotifications}

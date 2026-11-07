@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, MapPin, Star, IndianRupee, PlayCircle } from 'lucide-react';
+import { Building2, MapPin, Star, IndianRupee, PlayCircle, Navigation } from 'lucide-react';
 import type { HotelListing } from '../../types';
 import { ContactActions } from './ContactActions';
 import { ratingLabel } from '../common/RateStars';
@@ -77,7 +77,14 @@ export const HotelDetailsView: React.FC<HotelDetailsViewProps> = ({ hotel, onNee
       </div>
 
       <div>
-        <h2 className="text-base font-extrabold text-[#1C1C1C] leading-snug">{hotel.title}</h2>
+        <div className="flex items-center gap-1.5">
+          <h2 className="text-base font-extrabold text-[#1C1C1C] leading-snug">{hotel.title}</h2>
+          {hotel.starCategory ? (
+            <span className="shrink-0 px-2 py-0.5 rounded-md bg-[#1C1C1C] text-white text-[10px] font-extrabold whitespace-nowrap">
+              {hotel.starCategory}★ Hotel
+            </span>
+          ) : null}
+        </div>
         <p className="text-[11px] text-[#6B6B6B] font-bold flex items-center gap-1 mt-1">
           <MapPin className="w-3.5 h-3.5 text-[#F15A24] shrink-0" />
           {[hotel.address, hotel.city, hotel.state].filter(Boolean).join(', ')}
@@ -104,6 +111,23 @@ export const HotelDetailsView: React.FC<HotelDetailsViewProps> = ({ hotel, onNee
         <div className="p-3 rounded-2xl bg-white border border-[#EBE5D8]">
           <p className="text-[10px] font-extrabold uppercase text-[#6B6B6B] mb-1">About this hotel</p>
           <p className="text-xs text-[#1C1C1C] leading-relaxed whitespace-pre-line">{hotel.description}</p>
+        </div>
+      )}
+
+      {hotel.nearbyPlaces.length > 0 && (
+        <div className="p-3 rounded-2xl bg-white border border-[#EBE5D8]">
+          <p className="text-[10px] font-extrabold uppercase text-[#6B6B6B] mb-2">Nearby places</p>
+          <div className="space-y-2">
+            {hotel.nearbyPlaces.map((place, i) => (
+              <div key={place.name + i} className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-[#1C1C1C] flex items-center gap-1.5 min-w-0">
+                  <Navigation className="w-3.5 h-3.5 text-[#F15A24] shrink-0" />
+                  <span className="truncate">{place.name}</span>
+                </span>
+                <span className="text-[11px] font-extrabold text-[#6B6B6B] shrink-0">{place.distance}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

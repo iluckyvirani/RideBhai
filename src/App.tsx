@@ -525,6 +525,7 @@ export function App() {
                 setSelectedHotel(hotel);
                 navigateTab('hotel-details');
               }}
+              onNeedLogin={() => setAuthOpen(true)}
             />
           )}
 

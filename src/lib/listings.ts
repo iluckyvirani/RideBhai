@@ -110,6 +110,21 @@ export function mapTourListing(row: any): AgencyTripPost {
   };
 }
 
+function asPlaceArray(value: unknown): { name: string; distance: string }[] {
+  let rows: unknown = value;
+  if (typeof rows === 'string' && rows.trim()) {
+    try {
+      rows = JSON.parse(rows);
+    } catch {
+      rows = [];
+    }
+  }
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map((row: any) => ({ name: String(row?.name || '').trim(), distance: String(row?.distance || '').trim() }))
+    .filter((row) => row.name && row.distance);
+}
+
 export function mapHotelListing(row: any): HotelListing {
   return {
     id: row.id,
@@ -124,6 +139,8 @@ export function mapHotelListing(row: any): HotelListing {
     priceHigh: Number(row.price_high || 0),
     rating: Number(row.rating || 0) || 0,
     ratingCount: Number(row.rating_count || 0) || 0,
+    starCategory: row.star_category ? Number(row.star_category) : undefined,
+    nearbyPlaces: asPlaceArray(row.nearby_places),
     images: asStringArray(row.image_urls),
     videoUrl: row.video_url || undefined,
     status: row.status === 'inactive' ? 'inactive' : 'active',
