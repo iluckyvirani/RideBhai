@@ -9,9 +9,14 @@ import {
 
 interface LanguageToggleProps {
   className?: string;
+  /** Always render the compact icon + code trigger, ignoring the sm: breakpoint.
+   * Use this wherever the component sits inside a narrow, fixed-width shell
+   * (e.g. the phone-mockup app header) — that container can be narrow even on
+   * a wide desktop viewport, so viewport-based sm: classes pick the wrong size. */
+  compact?: boolean;
 }
 
-export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }) => {
+export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '', compact = false }) => {
   const [currentLang, setCurrentLang] = useState<string>('en');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -143,16 +148,20 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ className = '' }
         onClick={() => setIsOpen((open) => !open)}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        className="notranslate active-press inline-flex shrink-0 items-center gap-1 rounded-full border border-[#EBE5D8] bg-white px-2.5 py-1.5 text-xs font-extrabold text-[#1C1C1C] shadow-xs transition-all hover:border-[#F15A24] sm:gap-1.5 sm:px-3"
+        className={`notranslate active-press inline-flex shrink-0 items-center gap-1 rounded-full border border-[#EBE5D8] bg-white px-2.5 py-1.5 text-xs font-extrabold text-[#1C1C1C] shadow-xs transition-all hover:border-[#F15A24] ${
+          compact ? '' : 'sm:gap-1.5 sm:px-3'
+        }`}
         title="Select Language / भाषा चुनें"
       >
         <Languages className="h-3.5 w-3.5 shrink-0 text-[#F15A24]" />
-        <span className="text-[10px] font-black uppercase tracking-wide sm:hidden">
+        <span className={`text-[10px] font-black uppercase tracking-wide ${compact ? '' : 'sm:hidden'}`}>
           {currentObj.code}
         </span>
-        <span className="hidden max-w-[72px] truncate text-[11px] font-extrabold sm:inline">
-          {currentObj.nativeName}
-        </span>
+        {!compact && (
+          <span className="hidden max-w-[72px] truncate text-[11px] font-extrabold sm:inline">
+            {currentObj.nativeName}
+          </span>
+        )}
         <ChevronDown
           className={`h-3 w-3 shrink-0 text-[#6B6B6B] transition-transform duration-200 ${
             isOpen ? 'rotate-180 text-[#F15A24]' : ''

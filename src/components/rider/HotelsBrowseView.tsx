@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, MapPin, Search, Star, IndianRupee, ArrowUpDown, Sparkles, Lock, Share2 } from 'lucide-react';
+import { Building2, MapPin, Search, Star, IndianRupee, ArrowUpDown, Lock, Share2 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { mapHotelListing } from '../../lib/listings';
 import type { HotelListing } from '../../types';
@@ -262,13 +262,6 @@ export const HotelsBrowseView: React.FC<HotelsBrowseViewProps> = ({ onOpenDetail
                       <p className="text-[9px] text-[#9E9E9E] font-bold">Per Night</p>
                     </div>
                   </div>
-
-                  {hotel.description && (
-                    <p className="text-[11px] text-[#6B6B6B] font-semibold flex items-start gap-1 pt-0.5">
-                      <Sparkles className="w-3 h-3 text-amber-500 shrink-0 mt-0.5" />
-                      <span className="line-clamp-1">{hotel.description}</span>
-                    </p>
-                  )}
                 </div>
               </button>
 
